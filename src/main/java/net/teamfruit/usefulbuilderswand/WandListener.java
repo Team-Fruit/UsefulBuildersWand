@@ -1,6 +1,5 @@
 package net.teamfruit.usefulbuilderswand;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import org.bukkit.GameMode;
@@ -18,8 +17,13 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.metadata.MetadataValue;
+import org.bukkit.metadata.MetadataValueAdapter;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitRunnable;
+
+import com.google.common.collect.Lists;
 
 import net.teamfruit.usefulbuilderswand.NativeMinecraft.RayTraceResult;
 
@@ -62,18 +66,122 @@ public class WandListener implements Listener {
 
 	@EventHandler(priority = EventPriority.HIGH)
 	public void onPlayerUse(final PlayerInteractEvent event) {
+		if (!this.nativemc.isMainHand(event))
+			return;
+
 		final Player player = event.getPlayer();
 		final ItemStack itemStack = this.nativemc.getItemInHand(player.getInventory());
+		final Material material = itemStack.getType();
+		final Action action = event.getAction();
+		final Block block = event.getClickedBlock();
 
-		if (this.nativemc.isMainHand(event)&&event.getAction()==Action.RIGHT_CLICK_BLOCK)
-			if (itemStack.getType()==Material.STICK||itemStack.getType()==Material.BLAZE_ROD) {
-				final Block block = event.getClickedBlock();
+		if (material==Material.STICK||material==Material.BLAZE_ROD) {
+			if (block!=null&&action==Action.RIGHT_CLICK_BLOCK) {
 				final BlockFace face = event.getBlockFace();
-				if (block!=null&&face!=null) {
+				if (face!=null) {
 					onItemUse(itemStack, player, player.getWorld(), block, face);
 					event.setCancelled(true);
 				}
+			} else if (player.isSneaking()&&(action==Action.LEFT_CLICK_AIR||action==Action.LEFT_CLICK_BLOCK)) {
+				final ItemMeta meta = itemStack.getItemMeta();
+				List<String> lore = meta.getLore();
+				if (lore==null)
+					lore = Lists.newArrayList();
+				if (lore.contains("§r"))
+					lore.remove("§r");
+				else
+					lore.add("§r");
+				meta.setLore(lore);
+				itemStack.setItemMeta(meta);
+				event.setCancelled(true);
 			}
+		} else if (material==Material.OBSIDIAN&&action==Action.RIGHT_CLICK_AIR) {
+			final List<String> lore2 = itemStack.getItemMeta().getLore();
+			final boolean isVertical = lore2!=null&&lore2.contains("§r");
+			if (!isVertical)
+				return;
+
+			final Location location = player.getEyeLocation();
+			Block target = location.getBlock();
+			BlockFace face;
+
+			final float pitch = location.getPitch()+90;
+			final int pitchrotate = (int) pitch/45;
+			if (pitchrotate<=0)
+				face = BlockFace.UP;
+			else if (pitchrotate>=3) {
+				face = BlockFace.DOWN;
+				target = target.getRelative(BlockFace.DOWN);
+			} else {
+				final float yaw = ((location.getYaw()-45)%360+360)%360;
+				final int rotate = (int) yaw/90;
+				switch (rotate) {
+					default:
+					case 1:
+						face = BlockFace.NORTH;
+						break;
+					case 2:
+						face = BlockFace.EAST;
+						break;
+					case 3:
+						face = BlockFace.SOUTH;
+						break;
+					case 0:
+						face = BlockFace.WEST;
+						break;
+				}
+			}
+
+			final Block relative = target.getRelative(face);
+			if (relative.isEmpty()) {
+				relative.setType(Material.OBSIDIAN);
+				relative.setMetadata("AngelBlock", new AngelBlockMetadata().setAngel(true));
+
+				final ItemStack itemStack2 = new ItemStack(Material.OBSIDIAN);
+				final ItemMeta meta = itemStack2.getItemMeta();
+				List<String> lore = meta.getLore();
+				if (lore==null)
+					lore = Lists.newArrayList();
+				lore.add("§r");
+				meta.setLore(lore);
+				itemStack2.setItemMeta(meta);
+
+				player.getInventory().addItem(itemStack2);
+			}
+		} else if (block!=null&&block.getType()==Material.OBSIDIAN) {
+			final List<MetadataValue> metadatas = block.getMetadata("AngelBlock");
+			for (final MetadataValue metadata : metadatas)
+				if (metadata instanceof AngelBlockMetadata)
+					if (((AngelBlockMetadata) metadata).isAngel()) {
+						block.setType(Material.AIR);
+						itemStack.setAmount(itemStack.getAmount()-1);
+						event.setCancelled(true);
+					}
+		}
+	}
+
+	public class AngelBlockMetadata extends MetadataValueAdapter {
+		private boolean isAngel;
+
+		protected AngelBlockMetadata() {
+			super(WandListener.this.plugin);
+		}
+
+		public AngelBlockMetadata setAngel(final boolean isAngel) {
+			this.isAngel = isAngel;
+			return this;
+		}
+
+		public boolean isAngel() {
+			return this.isAngel;
+		}
+
+		public void invalidate() {
+		}
+
+		public Object value() {
+			return this.isAngel;
+		}
 	}
 
 	public boolean onItemUse(final ItemStack itemStack, final Player player, final World world, final Block target, final BlockFace face) {
@@ -139,7 +247,7 @@ public class WandListener implements Listener {
 	public List<Location> getPotentialBlocks(final ItemStack itemStack, final Player player, final World world, final Block target, final BlockFace face) {
 		final int maxBlocks = itemStack.getType()==Material.BLAZE_ROD ? 49 : 9;
 
-		final List<Location> blocks = new ArrayList<Location>();
+		final List<Location> blocks = Lists.newArrayList();
 
 		if (world==null)
 			return blocks;
@@ -175,15 +283,30 @@ public class WandListener implements Listener {
 		final int dx = face.getModX();
 		final int dy = face.getModY();
 		final int dz = face.getModZ();
-		final int mx = dx==0 ? 1 : 0;
+		int mx = dx==0 ? 1 : 0;
 		int my = dy==0 ? 1 : 0;
-		final int mz = dz==0 ? 1 : 0;
+		int mz = dz==0 ? 1 : 0;
 
-		if (player.isSneaking())
+		if (player.isSneaking()) {
+			final List<String> lore = itemStack.getItemMeta().getLore();
+			final boolean isVertical = lore!=null&&lore.contains("§r");
 			if (face!=BlockFace.UP&&face!=BlockFace.DOWN)
-				my = 0;
-			else
-				return blocks;
+				if (isVertical) {
+					if (face!=BlockFace.NORTH&&face!=BlockFace.SOUTH)
+						mz = 0;
+					else
+						mx = 0;
+				} else
+					my = 0;
+			else {
+				final double rotation = player.getLocation().getYaw()+360;
+				final boolean b = 45*1<=rotation&&rotation<45*3||45*5<=rotation&&rotation<45*7;
+				if ((b||isVertical)&&(!b||!isVertical))
+					mx = 0;
+				else
+					mz = 0;
+			}
+		}
 
 		final Location modblockpos = target.getLocation().clone().add(dx, dy, dz);
 

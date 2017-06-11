@@ -6,7 +6,7 @@ import java.lang.reflect.Method;
 
 import javax.annotation.Nullable;
 
-import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang.ArrayUtils;
 
 public class ReflectionUtil {
 	public static Constructor<?> $new(final Class<?> $class, final Class<?>... $paramtypes) throws Exception {
