@@ -2,12 +2,16 @@ package net.teamfruit.usefulbuilderswand;
 
 import java.util.List;
 
+import org.apache.commons.lang.StringUtils;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandExecutor;
+import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -25,20 +29,48 @@ import org.bukkit.scheduler.BukkitRunnable;
 
 import com.google.common.collect.Lists;
 
+import net.teamfruit.usefulbuilderswand.ItemLore.ItemLoreContent;
+import net.teamfruit.usefulbuilderswand.ItemLore.ItemLoreDataFormat;
+import net.teamfruit.usefulbuilderswand.ItemLore.ItemLoreMeta;
+import net.teamfruit.usefulbuilderswand.ItemLore.ItemLoreRaw;
 import net.teamfruit.usefulbuilderswand.NativeMinecraft.RayTraceResult;
+import net.teamfruit.usefulbuilderswand.UsefulBuildersWand.WandData;
 
-public class WandListener implements Listener {
+public class WandListener implements Listener, CommandExecutor {
 	private final Plugin plugin;
+	private final WandData wanddata;
 	private NativeMinecraft nativemc;
 
-	public WandListener(final Plugin plugin) {
+	public WandListener(final Plugin plugin, final WandData data) {
 		this.plugin = plugin;
+		this.wanddata = data;
 		this.nativemc = NativeMinecraft.NativeMinecraftFactory.create(plugin);
 		new BukkitRunnable() {
 			public void run() {
 				onEffect();
 			}
 		}.runTaskTimer(this.plugin, 3, 3);
+	}
+
+	public boolean onCommand(final CommandSender sender, final Command cmd, final String label, final String[] args) {
+		if (sender instanceof Player) {
+			final Player player = (Player) sender;
+			final ItemStack item = player.getInventory().getItemInMainHand();
+			if (item!=null) {
+				final ItemLoreDataFormat format = this.wanddata.getFormat();
+				final ItemLoreRaw raw = new ItemLoreRaw().readItemStack(format, item);
+				final ItemLoreMeta meta = new ItemLoreMeta().fromContents(format, new ItemLoreContent().fromRaw(format, raw));
+				for (final String arg : args)
+					if (StringUtils.contains(arg, "=")) {
+						final String key = StringUtils.substringBefore(arg, "=");
+						final String value = StringUtils.substringAfter(arg, "=");
+						meta.set(format, key, value);
+					}
+				raw.updateContents(format, new ItemLoreContent().fromMeta(format, meta));
+				raw.writeItemStack(format, item);
+			}
+		}
+		return false;
 	}
 
 	public void onEffect() {
@@ -71,6 +103,13 @@ public class WandListener implements Listener {
 
 		final Player player = event.getPlayer();
 		final ItemStack itemStack = this.nativemc.getItemInHand(player.getInventory());
+		final ItemLoreDataFormat format = this.wanddata.getFormat();
+		final ItemLoreRaw raw = new ItemLoreRaw().readItemStack(format, itemStack);
+		if (!raw.hasContent(format))
+			return;
+		final ItemLoreMeta meta = new ItemLoreMeta().fromContents(format, new ItemLoreContent().fromRaw(format, raw));
+		final int modcount = meta.getModCount();
+
 		final Material material = itemStack.getType();
 		final Action action = event.getAction();
 		final Block block = event.getClickedBlock();
@@ -83,16 +122,8 @@ public class WandListener implements Listener {
 					event.setCancelled(true);
 				}
 			} else if (player.isSneaking()&&(action==Action.LEFT_CLICK_AIR||action==Action.LEFT_CLICK_BLOCK)) {
-				final ItemMeta meta = itemStack.getItemMeta();
-				List<String> lore = meta.getLore();
-				if (lore==null)
-					lore = Lists.newArrayList();
-				if (lore.contains("§r"))
-					lore.remove("§r");
-				else
-					lore.add("§r");
-				meta.setLore(lore);
-				itemStack.setItemMeta(meta);
+				final String key = this.wanddata.key(WandData.FEATURE_DATA_VERTICALMODE);
+				meta.setFlag(key, !meta.getFlag(key));
 				event.setCancelled(true);
 			}
 		} else if (material==Material.OBSIDIAN&&action==Action.RIGHT_CLICK_AIR) {
@@ -138,13 +169,13 @@ public class WandListener implements Listener {
 				relative.setMetadata("AngelBlock", new AngelBlockMetadata().setAngel(true));
 
 				final ItemStack itemStack2 = new ItemStack(Material.OBSIDIAN);
-				final ItemMeta meta = itemStack2.getItemMeta();
-				List<String> lore = meta.getLore();
+				final ItemMeta metad = itemStack2.getItemMeta();
+				List<String> lore = metad.getLore();
 				if (lore==null)
 					lore = Lists.newArrayList();
 				lore.add("§r");
-				meta.setLore(lore);
-				itemStack2.setItemMeta(meta);
+				metad.setLore(lore);
+				itemStack2.setItemMeta(metad);
 
 				player.getInventory().addItem(itemStack2);
 			}
@@ -158,6 +189,9 @@ public class WandListener implements Listener {
 						event.setCancelled(true);
 					}
 		}
+
+		if (modcount!=meta.getModCount())
+			raw.updateContents(format, new ItemLoreContent().fromMeta(format, meta)).writeItemStack(format, itemStack);
 	}
 
 	public class AngelBlockMetadata extends MetadataValueAdapter {

@@ -13,7 +13,10 @@ import org.junit.Test;
 
 import com.google.common.collect.Lists;
 
-import net.teamfruit.usefulbuilderswand.ItemLoreMeta.ItemLoreDataFormat;
+import net.teamfruit.usefulbuilderswand.ItemLore.ItemLoreContent;
+import net.teamfruit.usefulbuilderswand.ItemLore.ItemLoreDataFormat;
+import net.teamfruit.usefulbuilderswand.ItemLore.ItemLoreMeta;
+import net.teamfruit.usefulbuilderswand.ItemLore.ItemLoreRaw;
 
 public class ItemLoreDataTest {
 	@BeforeClass
@@ -55,11 +58,9 @@ public class ItemLoreDataTest {
 		loreSrc.add(prefix+"SUSHI=_"+begin+"SUSHI"+end+"_");
 		loreSrc.add(prefix+"JOHN=_"+begin+"JOHN"+"12"+end+"_");
 
-		final ItemLoreMeta dataDst = new ItemLoreMeta();
-		dataDst.fromLore(format, loreSrc);
+		final ItemLoreMeta dataDst = new ItemLoreMeta().fromContents(format, new ItemLoreContent().fromRaw(format, new ItemLoreRaw().read(loreSrc)));
 
-		final List<String> loreDst = new ArrayList<String>();
-		dataSrc.toLore(format, loreDst);
+		final List<String> loreDst = new ItemLoreRaw().read(Lists.newArrayList(loreSrc)).updateContents(format, new ItemLoreContent().fromMeta(format, dataSrc)).get();
 
 		assertEquals(dataSrc, dataDst);
 		assertEquals(loreSrc, loreDst);

@@ -1,3 +1,14 @@
 name: UsefulBuildersWand
-version: 1.0.0
 main: net.teamfruit.usefulbuilderswand.UsefulBuildersWand
+version: 1.0.0
+author: Kamesuta
+commands:
+  usefulbuilderswand:
+    description: create/modify wand from item in your hand
+    usage: /uw [key=data]
+    aliases: [uw, ub, uwand]
+    permission: usefulbuilderswand.edit
+permissions:
+  usefulbuilderswand.create:
+    description: create/modify wand from item in your hand
+    default: op

@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import org.apache.commons.lang.StringUtils;
@@ -17,243 +18,299 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
-import net.teamfruit.usefulbuilderswand.ItemLoreMeta.ItemLoreDataFormat.FlagMeta;
-import net.teamfruit.usefulbuilderswand.ItemLoreMeta.ItemLoreDataFormat.NumberMeta;
-import net.teamfruit.usefulbuilderswand.ItemLoreMeta.ItemLoreDataFormat.TextMeta;
+import net.teamfruit.usefulbuilderswand.ItemLore.ItemLoreDataFormat.FlagMeta;
+import net.teamfruit.usefulbuilderswand.ItemLore.ItemLoreDataFormat.NumberMeta;
+import net.teamfruit.usefulbuilderswand.ItemLore.ItemLoreDataFormat.TextMeta;
 
-public class ItemLoreMeta {
-	private final Map<String, Integer> dataNumber = Maps.newHashMap();
-	private final Map<String, String> dataText = Maps.newHashMap();
-	private final Set<String> dataFlag = Sets.newHashSet();
+public abstract class ItemLore {
+	public static class ItemLoreRaw {
+		private List<String> lore;
 
-	public ItemLoreMeta() {
-	}
-
-	public static List<String> contentsFromLore(final ItemLoreDataFormat format, final List<String> lore) {
-		final List<String> lines = Lists.newArrayList();
-		for (final ListIterator<String> itr = lore.listIterator(); itr.hasNext();) {
-			final String line = itr.next();
-			if (StringUtils.startsWith(line, format.prefix)) {
-				final String data = StringUtils.substringAfter(line, format.prefix);
-				lines.add(data);
-			}
+		public @Nonnull List<String> get() {
+			if (this.lore==null)
+				this.lore = Lists.newArrayList();
+			return this.lore;
 		}
-		return lines;
+
+		public ItemLoreRaw read(final List<String> lore) {
+			this.lore = lore;
+			return this;
+		}
+
+		public ItemLoreRaw write(final List<String> lore) {
+			lore.clear();
+			lore.addAll(get());
+			return this;
+		}
+
+		public ItemLoreRaw readItemStack(final ItemLoreDataFormat format, final ItemStack itemStack) {
+			this.lore = itemStack.getItemMeta().getLore();
+			return this;
+		}
+
+		public ItemLoreRaw writeItemStack(final ItemLoreDataFormat format, final ItemStack itemStack) {
+			final ItemMeta meta = itemStack.getItemMeta();
+			meta.setLore(get());
+			itemStack.setItemMeta(meta);
+			return this;
+		}
+
+		public boolean hasContent(final ItemLoreDataFormat format) {
+			if (this.lore==null||this.lore.isEmpty())
+				return false;
+			for (final String line : this.lore)
+				if (StringUtils.startsWith(line, format.prefix))
+					return true;
+			return false;
+		}
+
+		public ItemLoreRaw updateContents(final ItemLoreDataFormat format, final ItemLoreContent contents) {
+			final List<String> output = get();
+			final List<String> input = contents.get();
+			if (!output.isEmpty()) {
+				final int loresize = output.size();
+				int i = 0;
+				boolean done = false;
+				for (final ListIterator<String> itr = output.listIterator(); itr.hasNext(); i++) {
+					boolean flag = i+1==loresize;
+					final String line = itr.next();
+					if (StringUtils.startsWith(line, format.prefix)) {
+						itr.remove();
+						flag = true;
+					}
+					if (flag&&!done) {
+						for (final String content : input)
+							itr.add(format.prefix+content);
+						done = true;
+					}
+				}
+			} else
+				for (final String content : input)
+					output.add(format.prefix+content);
+			return this;
+		}
 	}
 
-	public static void contentsToLore(final ItemLoreDataFormat format, final List<String> lore, final List<String> contents) {
-		if (!lore.isEmpty()) {
-			final int loresize = lore.size();
-			int i = 0;
-			boolean done = false;
-			for (final ListIterator<String> itr = lore.listIterator(); itr.hasNext(); i++) {
-				boolean flag = i+1==loresize;
+	public static class ItemLoreContent {
+		private List<String> contents;
+
+		public @Nonnull List<String> get() {
+			if (this.contents==null)
+				this.contents = Lists.newArrayList();
+			return this.contents;
+		}
+
+		public ItemLoreContent from(final List<String> contents) {
+			this.contents = contents;
+			return this;
+		}
+
+		public ItemLoreContent fromRaw(final ItemLoreDataFormat format, final ItemLoreRaw lore) {
+			final List<String> output = get();
+			final List<String> input = lore.get();
+			for (final ListIterator<String> itr = input.listIterator(); itr.hasNext();) {
 				final String line = itr.next();
 				if (StringUtils.startsWith(line, format.prefix)) {
-					itr.remove();
-					flag = true;
-				}
-				if (flag&&!done) {
-					for (final String content : contents)
-						itr.add(format.prefix+content);
-					done = true;
+					final String data = StringUtils.substringAfter(line, format.prefix);
+					output.add(data);
 				}
 			}
-		} else
-			for (final String content : contents)
-				lore.add(format.prefix+content);
-	}
+			return this;
+		}
 
-	public static void metaFromContents(final ItemLoreDataFormat format, final ItemLoreMeta meta, final List<String> contents) {
-		for (final ListIterator<String> itr = contents.listIterator(); itr.hasNext();) {
-			final String line = itr.next();
-			String data = line;
-			readvalue: while (!StringUtils.isEmpty(data = StringUtils.substringAfter(data, format.valueprefix))) {
-				final String current = StringUtils.substringBefore(data, format.valuesuffix);
-				for (final Entry<String, FlagMeta> entry : format.typeFlag.entrySet()) {
-					final String typeFlag = entry.getKey();
-					if (StringUtils.startsWith(current, typeFlag)) {
-						final String dataValue = StringUtils.substringAfter(current, typeFlag);
-
-						if (meta!=null)
-							meta.setFlag(typeFlag, entry.getValue().parse(format, dataValue));
-						continue readvalue;
+		public ItemLoreContent fromMeta(final ItemLoreDataFormat format, final ItemLoreMeta meta) {
+			final List<String> output = get();
+			for (final String line : format.metaFormat) {
+				final StringBuilder stb = new StringBuilder();
+				String data = line;
+				while (true) {
+					stb.append(StringUtils.substringBefore(data, "$"));
+					if ((data = StringUtils.substringAfter(data, "$")).isEmpty())
+						break;
+					if (StringUtils.startsWith(data, "$"))
+						data = StringUtils.substringAfter(data, "$");
+					else if (StringUtils.startsWith(data, "{")) {
+						final String current = StringUtils.substringBetween(data, "{", "}");
+						final String type = StringUtils.substringBefore(current, ":");
+						final String namevalue = StringUtils.substringAfter(current, ":");
+						final String name = StringUtils.substringBefore(namevalue, "=");
+						if (StringUtils.equals(type, "B")) {
+							final String s = format.typeFlag.get(name).compose(format, meta.getFlag(name));
+							if (s!=null)
+								stb.append(format.valueprefix).append(name).append(s).append(format.valuesuffix);
+						} else if (StringUtils.equals(type, "I")) {
+							final String s = format.typeNumber.get(name).compose(format, meta.getNumber(name));
+							if (s!=null)
+								stb.append(format.valueprefix).append(name).append(s).append(format.valuesuffix);
+						} else if (StringUtils.equals(type, "S")) {
+							final String s = format.typeText.get(name).compose(format, meta.getText(name));
+							if (s!=null)
+								stb.append(format.valueprefix).append(name).append(s).append(format.valuesuffix);
+						}
+						data = StringUtils.substringAfter(data, "}");
 					}
 				}
-				for (final Entry<String, NumberMeta> entry : format.typeNumber.entrySet()) {
-					final String typeNumber = entry.getKey();
-					if (StringUtils.startsWith(current, typeNumber)) {
-						final String dataValue = StringUtils.substringAfter(current, typeNumber);
-
-						if (meta!=null)
-							meta.setNumber(typeNumber, entry.getValue().parse(format, dataValue));
-						continue readvalue;
-					}
-				}
-				for (final Entry<String, TextMeta> entry : format.typeText.entrySet()) {
-					final String typeText = entry.getKey();
-					if (StringUtils.startsWith(current, typeText)) {
-						final String dataValue = StringUtils.substringAfter(current, typeText);
-
-						if (meta!=null)
-							meta.setText(typeText, entry.getValue().parse(format, dataValue));
-						continue readvalue;
-					}
-				}
+				output.add(stb.toString());
 			}
+			return this;
 		}
 	}
 
-	public static List<String> metaToContents(final ItemLoreDataFormat format, final ItemLoreMeta meta) {
-		final List<String> contents = Lists.newArrayList();
-		for (final String line : format.metaFormat) {
-			final StringBuilder stb = new StringBuilder();
-			String data = line;
-			while (true) {
-				stb.append(StringUtils.substringBefore(data, "$"));
-				if ((data = StringUtils.substringAfter(data, "$")).isEmpty())
-					break;
-				if (StringUtils.startsWith(data, "$"))
-					data = StringUtils.substringAfter(data, "$");
-				else if (StringUtils.startsWith(data, "{")) {
-					final String current = StringUtils.substringBetween(data, "{", "}");
-					final String type = StringUtils.substringBefore(current, ":");
-					final String namevalue = StringUtils.substringAfter(current, ":");
-					final String name = StringUtils.substringBefore(namevalue, "=");
-					if (StringUtils.equals(type, "B")) {
-						final String s = format.typeFlag.get(name).compose(format, meta.getFlag(name));
-						if (s!=null)
-							stb.append(format.valueprefix).append(name).append(s).append(format.valuesuffix);
-					} else if (StringUtils.equals(type, "I")) {
-						final String s = format.typeNumber.get(name).compose(format, meta.getNumber(name));
-						if (s!=null)
-							stb.append(format.valueprefix).append(name).append(s).append(format.valuesuffix);
-					} else if (StringUtils.equals(type, "S")) {
-						final String s = format.typeText.get(name).compose(format, meta.getText(name));
-						if (s!=null)
-							stb.append(format.valueprefix).append(name).append(s).append(format.valuesuffix);
+	public static class ItemLoreMeta {
+		private final Set<String> dataFlag = Sets.newHashSet();
+		private final Map<String, Integer> dataNumber = Maps.newHashMap();
+		private final Map<String, String> dataText = Maps.newHashMap();
+		private int modcount;
+
+		public int getModCount() {
+			return this.modcount;
+		}
+
+		public ItemLoreMeta fromContents(final ItemLoreDataFormat format, final ItemLoreContent contents) {
+			this.modcount++;
+			final List<String> input = contents.get();
+			for (final ListIterator<String> itr = input.listIterator(); itr.hasNext();) {
+				final String line = itr.next();
+				String data = line;
+				readvalue: while (!StringUtils.isEmpty(data = StringUtils.substringAfter(data, format.valueprefix))) {
+					final String current = StringUtils.substringBefore(data, format.valuesuffix);
+					for (final Entry<String, FlagMeta> entry : format.typeFlag.entrySet()) {
+						final String typeFlag = entry.getKey();
+						if (StringUtils.startsWith(current, typeFlag)) {
+							final String dataValue = StringUtils.substringAfter(current, typeFlag);
+
+							setFlag(typeFlag, entry.getValue().parse(format, dataValue));
+							continue readvalue;
+						}
 					}
-					data = StringUtils.substringAfter(data, "}");
+					for (final Entry<String, NumberMeta> entry : format.typeNumber.entrySet()) {
+						final String typeNumber = entry.getKey();
+						if (StringUtils.startsWith(current, typeNumber)) {
+							final String dataValue = StringUtils.substringAfter(current, typeNumber);
+
+							setNumber(typeNumber, entry.getValue().parse(format, dataValue));
+							continue readvalue;
+						}
+					}
+					for (final Entry<String, TextMeta> entry : format.typeText.entrySet()) {
+						final String typeText = entry.getKey();
+						if (StringUtils.startsWith(current, typeText)) {
+							final String dataValue = StringUtils.substringAfter(current, typeText);
+
+							setText(typeText, entry.getValue().parse(format, dataValue));
+							continue readvalue;
+						}
+					}
 				}
 			}
-			contents.add(stb.toString());
+			return this;
 		}
-		return contents;
-	}
 
-	public void fromItemStack(final ItemLoreDataFormat format, final ItemStack itemStack) {
-		fromLore(format, itemStack.getItemMeta().getLore());
-	}
+		public @Nullable Integer getNumber(final String key) {
+			return this.dataNumber.get(key);
+		}
 
-	public void toItemStack(final ItemLoreDataFormat format, final ItemStack itemStack) {
-		final ItemMeta meta = itemStack.getItemMeta();
-		final List<String> lore = meta.getLore();
-		toLore(format, lore);
-		meta.setLore(lore);
-		itemStack.setItemMeta(meta);
-	}
+		public void setNumber(final String key, @Nullable final Integer value) {
+			this.modcount++;
+			if (key!=null)
+				this.dataNumber.put(key, value);
+			else
+				this.dataNumber.remove(key);
+		}
 
-	public void fromLore(final ItemLoreDataFormat format, final List<String> lore) {
-		final List<String> contents = contentsFromLore(format, lore);
-		metaFromContents(format, this, contents);
-	}
+		public @Nullable String getText(final String key) {
+			return this.dataText.get(key);
+		}
 
-	public void toLore(final ItemLoreDataFormat format, final List<String> lore) {
-		final List<String> contents = metaToContents(format, this);
-		contentsToLore(format, lore, contents);
-	}
+		public void setText(final String key, @Nullable final String value) {
+			this.modcount++;
+			if (key!=null)
+				this.dataText.put(key, value);
+			else
+				this.dataText.remove(key);
+		}
 
-	public @Nullable Integer getNumber(final String key) {
-		return this.dataNumber.get(key);
-	}
+		public boolean getFlag(final String key) {
+			return this.dataFlag.contains(key);
+		}
 
-	public void setNumber(final String key, @Nullable final Integer value) {
-		if (key!=null)
-			this.dataNumber.put(key, value);
-		else
-			this.dataNumber.remove(key);
-	}
+		public void setFlag(final String key, final boolean value) {
+			this.modcount++;
+			if (value)
+				this.dataFlag.add(key);
+			else
+				this.dataFlag.remove(key);
+		}
 
-	public @Nullable String getText(final String key) {
-		return this.dataText.get(key);
-	}
+		public void set(final ItemLoreDataFormat format, final String key, final String value) {
+			if (format.typeFlag.containsKey(key))
+				setFlag(key, format.typeFlag.get(key).parse(format, value));
+			else if (format.typeNumber.containsKey(key))
+				setNumber(key, format.typeNumber.get(key).parse(format, value));
+			else if (format.typeText.containsKey(key))
+				setText(key, format.typeText.get(key).parse(format, value));
+		}
 
-	public void setText(final String key, @Nullable final String value) {
-		if (key!=null)
-			this.dataText.put(key, value);
-		else
-			this.dataText.remove(key);
-	}
+		@Override
+		public String toString() {
+			return String.format("ItemLoreMeta [dataNumber=%s, dataText=%s, dataFlag=%s]", this.dataNumber, this.dataText, this.dataFlag);
+		}
 
-	public boolean getFlag(final String key) {
-		return this.dataFlag.contains(key);
-	}
+		@Override
+		public int hashCode() {
+			final int prime = 31;
+			int result = 1;
+			result = prime*result+(this.dataFlag==null ? 0 : this.dataFlag.hashCode());
+			result = prime*result+(this.dataNumber==null ? 0 : this.dataNumber.hashCode());
+			result = prime*result+(this.dataText==null ? 0 : this.dataText.hashCode());
+			return result;
+		}
 
-	public void setFlag(final String key, final boolean value) {
-		if (value)
-			this.dataFlag.add(key);
-		else
-			this.dataFlag.remove(key);
-	}
-
-	@Override
-	public String toString() {
-		return String.format("ItemLoreMeta [dataNumber=%s, dataText=%s, dataFlag=%s]", this.dataNumber, this.dataText, this.dataFlag);
-	}
-
-	@Override
-	public int hashCode() {
-		final int prime = 31;
-		int result = 1;
-		result = prime*result+(this.dataFlag==null ? 0 : this.dataFlag.hashCode());
-		result = prime*result+(this.dataNumber==null ? 0 : this.dataNumber.hashCode());
-		result = prime*result+(this.dataText==null ? 0 : this.dataText.hashCode());
-		return result;
-	}
-
-	@Override
-	public boolean equals(final Object obj) {
-		if (this==obj)
+		@Override
+		public boolean equals(final Object obj) {
+			if (this==obj)
+				return true;
+			if (obj==null)
+				return false;
+			if (!(obj instanceof ItemLoreMeta))
+				return false;
+			final ItemLoreMeta other = (ItemLoreMeta) obj;
+			if (this.dataFlag==null) {
+				if (other.dataFlag!=null)
+					return false;
+			} else if (!this.dataFlag.equals(other.dataFlag))
+				return false;
+			if (this.dataNumber==null) {
+				if (other.dataNumber!=null)
+					return false;
+			} else if (!this.dataNumber.equals(other.dataNumber))
+				return false;
+			if (this.dataText==null) {
+				if (other.dataText!=null)
+					return false;
+			} else if (!this.dataText.equals(other.dataText))
+				return false;
 			return true;
-		if (obj==null)
-			return false;
-		if (!(obj instanceof ItemLoreMeta))
-			return false;
-		final ItemLoreMeta other = (ItemLoreMeta) obj;
-		if (this.dataFlag==null) {
-			if (other.dataFlag!=null)
-				return false;
-		} else if (!this.dataFlag.equals(other.dataFlag))
-			return false;
-		if (this.dataNumber==null) {
-			if (other.dataNumber!=null)
-				return false;
-		} else if (!this.dataNumber.equals(other.dataNumber))
-			return false;
-		if (this.dataText==null) {
-			if (other.dataText!=null)
-				return false;
-		} else if (!this.dataText.equals(other.dataText))
-			return false;
-		return true;
+		}
+
 	}
 
 	public static class ItemLoreDataFormat {
 		public final String prefix;
 		public final String valueprefix;
 		public final String valuesuffix;
+		public final Map<String, FlagMeta> typeFlag;
 		public final Map<String, NumberMeta> typeNumber;
 		public final Map<String, TextMeta> typeText;
-		public final Map<String, FlagMeta> typeFlag;
 		public final List<String> metaFormat;
 
-		public ItemLoreDataFormat(final String prefix, final String valueprefix, final String valuesuffix, final Map<String, NumberMeta> typeNumber, final Map<String, TextMeta> typeText, final Map<String, FlagMeta> typeFlag, final List<String> metaFormat) {
+		public ItemLoreDataFormat(final String prefix, final String valueprefix, final String valuesuffix, final Map<String, FlagMeta> typeFlag, final Map<String, NumberMeta> typeNumber, final Map<String, TextMeta> typeText, final List<String> metaFormat) {
 			this.prefix = prefix;
 			this.valueprefix = valueprefix;
 			this.valuesuffix = valuesuffix;
+			this.typeFlag = typeFlag;
 			this.typeNumber = typeNumber;
 			this.typeText = typeText;
-			this.typeFlag = typeFlag;
 			this.metaFormat = metaFormat;
 		}
 
@@ -458,9 +515,9 @@ public class ItemLoreMeta {
 			String compose(ItemLoreDataFormat format, Integer data);
 
 			public static class HiddenNumberMeta implements NumberMeta {
-				private final int defaultValue;
+				private final Integer defaultValue;
 
-				public HiddenNumberMeta(final int defaultValue) {
+				public HiddenNumberMeta(final Integer defaultValue) {
 					this.defaultValue = defaultValue;
 				}
 
@@ -470,9 +527,12 @@ public class ItemLoreMeta {
 					return num;
 				}
 
-				public @Nullable String compose(final ItemLoreDataFormat format, final Integer data) {
+				public @Nullable String compose(final ItemLoreDataFormat format, Integer data) {
 					if (data==null)
-						return null;
+						if (defaultValue!=null)
+							data = defaultValue;
+						else
+							return null;
 					final String numstr = String.valueOf(data);
 					final StringBuilder stb = new StringBuilder();
 					for (final char str : numstr.toCharArray())
@@ -509,9 +569,9 @@ public class ItemLoreMeta {
 			}
 
 			public static class TextNumberMeta implements NumberMeta {
-				private final int defaultValue;
+				private final Integer defaultValue;
 
-				public TextNumberMeta(final int defaultValue) {
+				public TextNumberMeta(final Integer defaultValue) {
 					this.defaultValue = defaultValue;
 				}
 
@@ -520,9 +580,12 @@ public class ItemLoreMeta {
 					return num;
 				}
 
-				public @Nullable String compose(final ItemLoreDataFormat format, final Integer data) {
+				public @Nullable String compose(final ItemLoreDataFormat format, Integer data) {
 					if (data==null)
-						return null;
+						if (defaultValue!=null)
+							data = defaultValue;
+						else
+							return null;
 					final String numstr = String.valueOf(data);
 					return numstr;
 				}
@@ -559,9 +622,9 @@ public class ItemLoreMeta {
 				public static NumberMeta create(final String format) {
 					if (StringUtils.startsWith(format, "\u00A7")) {
 						final String numstr = StringUtils.substringAfter(format, "\u00A7");
-						return new HiddenNumberMeta(NumberUtils.toInt(numstr));
+						return new HiddenNumberMeta(NumberUtils.isNumber(numstr) ? NumberUtils.toInt(numstr) : null);
 					}
-					return new TextNumberMeta(NumberUtils.toInt(format));
+					return new TextNumberMeta(NumberUtils.isNumber(format) ? NumberUtils.toInt(format) : null);
 				}
 			}
 		}
