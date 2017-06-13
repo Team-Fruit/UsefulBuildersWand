@@ -20,7 +20,7 @@ public interface NativeMinecraft {
 
 	ItemStack getItemFromBlock(final Block block);
 
-	boolean placeItem(final Player player, final Block block, final ItemStack itemStack, final EquipmentSlot hand, final BlockFace face, final Location eyeLocation);
+	boolean placeItem(final Player player, final Block block, final ItemStackHolder handItemStack, final ItemStack placeItemStack, final EquipmentSlot hand, final BlockFace face, final Location eyeLocation);
 
 	void playSound(final Player player, final Location location, final Block block, float volume, float pitch);
 

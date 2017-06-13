@@ -5,7 +5,6 @@ import java.util.List;
 import org.apache.commons.lang.StringUtils;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
-import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
@@ -21,9 +20,7 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.metadata.MetadataValue;
-import org.bukkit.metadata.MetadataValueAdapter;
+import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitRunnable;
 
@@ -34,7 +31,6 @@ import net.teamfruit.usefulbuilderswand.ItemLore.ItemLoreDataFormat;
 import net.teamfruit.usefulbuilderswand.ItemLore.ItemLoreMeta;
 import net.teamfruit.usefulbuilderswand.ItemLore.ItemLoreRaw;
 import net.teamfruit.usefulbuilderswand.NativeMinecraft.RayTraceResult;
-import net.teamfruit.usefulbuilderswand.UsefulBuildersWand.WandData;
 
 public class WandListener implements Listener, CommandExecutor {
 	private final Plugin plugin;
@@ -55,38 +51,49 @@ public class WandListener implements Listener, CommandExecutor {
 	public boolean onCommand(final CommandSender sender, final Command cmd, final String label, final String[] args) {
 		if (sender instanceof Player) {
 			final Player player = (Player) sender;
-			final ItemStack item = player.getInventory().getItemInMainHand();
-			if (item!=null) {
+			final ItemStack itemStack = this.nativemc.getItemInHand(player.getInventory());
+			if (itemStack!=null) {
 				final ItemLoreDataFormat format = this.wanddata.getFormat();
-				final ItemLoreRaw raw = new ItemLoreRaw().readItemStack(format, item);
+				final ItemLoreRaw raw = new ItemLoreRaw().readItemStack(format, itemStack);
 				final ItemLoreMeta meta = new ItemLoreMeta().fromContents(format, new ItemLoreContent().fromRaw(format, raw));
 				for (final String arg : args)
 					if (StringUtils.contains(arg, "=")) {
 						final String key = StringUtils.substringBefore(arg, "=");
 						final String value = StringUtils.substringAfter(arg, "=");
-						meta.set(format, key, value);
+						final String key1 = this.wanddata.keyData(WandData.FEATURE+"."+key);
+						meta.set(format, key1!=null ? key1 : key, value);
 					}
-				raw.updateContents(format, new ItemLoreContent().fromMeta(format, meta));
-				raw.writeItemStack(format, item);
+				raw.updateContents(format, new ItemLoreContent().fromMeta(format, meta)).writeItemStack(format, itemStack);
 			}
 		}
 		return false;
 	}
 
 	public void onEffect() {
+		final ItemLoreDataFormat format = this.wanddata.getFormat();
 		for (final Player player : this.plugin.getServer().getOnlinePlayers()) {
-			final ItemStack item = this.nativemc.getItemInHand(player.getInventory());
-			if (item.getType()==Material.STICK||item.getType()==Material.BLAZE_ROD)
-				onEffect(player, item);
+			final ItemStackHolder itemStackHolder = new ItemStackHolder(this.nativemc.getItemInHand(player.getInventory()));
+
+			{
+				final ItemStack itemStack = itemStackHolder.get();
+				if (itemStack==null||itemStack.getAmount()==0)
+					return;
+			}
+
+			final ItemLoreRaw raw = new ItemLoreRaw().readItemStack(format, itemStackHolder.get());
+			final ItemLoreMeta meta = new ItemLoreMeta().fromContents(format, new ItemLoreContent().fromRaw(format, raw));
+
+			if (raw.hasContent(format))
+				onEffect(player, itemStackHolder, meta);
 		}
 	}
 
-	public void onEffect(final Player player, final ItemStack itemStack) {
+	public void onEffect(final Player player, final ItemStackHolder itemStack, final ItemLoreMeta meta) {
 		List<Location> blocks = null;
 		try {
 			final RayTraceResult res = this.nativemc.rayTrace(player);
 			if (res!=null)
-				blocks = getPotentialBlocks(itemStack, player, player.getWorld(), res.location.getBlock(), res.face);
+				blocks = getPotentialBlocks(itemStack, meta, player, player.getWorld(), res.location.getBlock(), res.face);
 		} catch (final Exception e) {
 			e.printStackTrace();
 		}
@@ -102,129 +109,68 @@ public class WandListener implements Listener, CommandExecutor {
 			return;
 
 		final Player player = event.getPlayer();
-		final ItemStack itemStack = this.nativemc.getItemInHand(player.getInventory());
+		final PlayerInventory inventory = player.getInventory();
+		final ItemStackHolder itemStackHolder = new ItemStackHolder(this.nativemc.getItemInHand(inventory));
+
+		{
+			final ItemStack itemStack = itemStackHolder.get();
+			if (itemStack==null||itemStack.getAmount()==0)
+				return;
+
+			if (itemStack.getAmount()>1) {
+				final ItemStack[] stacks = inventory.getStorageContents();
+				final int heldslot = inventory.getHeldItemSlot();
+				stackbreak: {
+					final ItemStack newItemStack = itemStack.clone();
+					newItemStack.setAmount(itemStack.getAmount()-1);
+					itemStack.setAmount(1);
+					for (int i = 0; i<stacks.length; i++)
+						if (i!=heldslot&&stacks[i]==null) {
+							inventory.setItem(i, newItemStack);
+							break stackbreak;
+						}
+					player.getWorld().dropItem(player.getEyeLocation(), newItemStack);
+				}
+			}
+		}
+
 		final ItemLoreDataFormat format = this.wanddata.getFormat();
-		final ItemLoreRaw raw = new ItemLoreRaw().readItemStack(format, itemStack);
+		final ItemLoreRaw raw = new ItemLoreRaw().readItemStack(format, itemStackHolder.get());
+
 		if (!raw.hasContent(format))
 			return;
+
 		final ItemLoreMeta meta = new ItemLoreMeta().fromContents(format, new ItemLoreContent().fromRaw(format, raw));
 		final int modcount = meta.getModCount();
 
-		final Material material = itemStack.getType();
 		final Action action = event.getAction();
 		final Block block = event.getClickedBlock();
 
-		if (material==Material.STICK||material==Material.BLAZE_ROD) {
-			if (block!=null&&action==Action.RIGHT_CLICK_BLOCK) {
-				final BlockFace face = event.getBlockFace();
-				if (face!=null) {
-					onItemUse(itemStack, player, player.getWorld(), block, face);
-					event.setCancelled(true);
-				}
-			} else if (player.isSneaking()&&(action==Action.LEFT_CLICK_AIR||action==Action.LEFT_CLICK_BLOCK)) {
-				final String key = this.wanddata.key(WandData.FEATURE_DATA_VERTICALMODE);
-				meta.setFlag(key, !meta.getFlag(key));
+		if (block!=null&&action==Action.RIGHT_CLICK_BLOCK) {
+			final BlockFace face = event.getBlockFace();
+			if (face!=null) {
+				onItemUse(itemStackHolder, meta, player, player.getWorld(), block, face);
 				event.setCancelled(true);
 			}
-		} else if (material==Material.OBSIDIAN&&action==Action.RIGHT_CLICK_AIR) {
-			final List<String> lore2 = itemStack.getItemMeta().getLore();
-			final boolean isVertical = lore2!=null&&lore2.contains("§r");
-			if (!isVertical)
-				return;
-
-			final Location location = player.getEyeLocation();
-			Block target = location.getBlock();
-			BlockFace face;
-
-			final float pitch = location.getPitch()+90;
-			final int pitchrotate = (int) pitch/45;
-			if (pitchrotate<=0)
-				face = BlockFace.UP;
-			else if (pitchrotate>=3) {
-				face = BlockFace.DOWN;
-				target = target.getRelative(BlockFace.DOWN);
-			} else {
-				final float yaw = ((location.getYaw()-45)%360+360)%360;
-				final int rotate = (int) yaw/90;
-				switch (rotate) {
-					default:
-					case 1:
-						face = BlockFace.NORTH;
-						break;
-					case 2:
-						face = BlockFace.EAST;
-						break;
-					case 3:
-						face = BlockFace.SOUTH;
-						break;
-					case 0:
-						face = BlockFace.WEST;
-						break;
-				}
-			}
-
-			final Block relative = target.getRelative(face);
-			if (relative.isEmpty()) {
-				relative.setType(Material.OBSIDIAN);
-				relative.setMetadata("AngelBlock", new AngelBlockMetadata().setAngel(true));
-
-				final ItemStack itemStack2 = new ItemStack(Material.OBSIDIAN);
-				final ItemMeta metad = itemStack2.getItemMeta();
-				List<String> lore = metad.getLore();
-				if (lore==null)
-					lore = Lists.newArrayList();
-				lore.add("§r");
-				metad.setLore(lore);
-				itemStack2.setItemMeta(metad);
-
-				player.getInventory().addItem(itemStack2);
-			}
-		} else if (block!=null&&block.getType()==Material.OBSIDIAN) {
-			final List<MetadataValue> metadatas = block.getMetadata("AngelBlock");
-			for (final MetadataValue metadata : metadatas)
-				if (metadata instanceof AngelBlockMetadata)
-					if (((AngelBlockMetadata) metadata).isAngel()) {
-						block.setType(Material.AIR);
-						itemStack.setAmount(itemStack.getAmount()-1);
-						event.setCancelled(true);
-					}
+		} else if (player.isSneaking()&&(action==Action.LEFT_CLICK_AIR||action==Action.LEFT_CLICK_BLOCK)) {
+			final String key = this.wanddata.key(WandData.FEATURE_META_VERTICALMODE);
+			final boolean b = !meta.getFlag(key, false);
+			player.chat(String.valueOf(b));
+			meta.setFlag(key, b);
+			event.setCancelled(true);
 		}
 
 		if (modcount!=meta.getModCount())
-			raw.updateContents(format, new ItemLoreContent().fromMeta(format, meta)).writeItemStack(format, itemStack);
+			raw.updateContents(format, new ItemLoreContent().fromMeta(format, meta)).writeItemStack(format, itemStackHolder.get());
 	}
 
-	public class AngelBlockMetadata extends MetadataValueAdapter {
-		private boolean isAngel;
-
-		protected AngelBlockMetadata() {
-			super(WandListener.this.plugin);
-		}
-
-		public AngelBlockMetadata setAngel(final boolean isAngel) {
-			this.isAngel = isAngel;
-			return this;
-		}
-
-		public boolean isAngel() {
-			return this.isAngel;
-		}
-
-		public void invalidate() {
-		}
-
-		public Object value() {
-			return this.isAngel;
-		}
-	}
-
-	public boolean onItemUse(final ItemStack itemStack, final Player player, final World world, final Block target, final BlockFace face) {
+	public boolean onItemUse(final ItemStackHolder itemStack, final ItemLoreMeta meta, final Player player, final World world, final Block target, final BlockFace face) {
 		/*if (!player.capabilities.allowEdit)
 			return false;
 		else*/ {
-			final List<Location> blocks = getPotentialBlocks(itemStack, player, world, target, face);
+			final List<Location> blocks = getPotentialBlocks(itemStack, meta, player, world, target, face);
 
-			if (blocks.size()==0)
+			if (blocks.isEmpty())
 				return false;
 			else if (target.isEmpty())
 				return false;
@@ -236,50 +182,53 @@ public class WandListener implements Listener, CommandExecutor {
 				if (this.nativemc.hasSubType(item1))
 					data = this.nativemc.getDropData(target);
 
-				if (blocks.size()>0) {
-					int slot = 0;
-					final Inventory inventory = player.getInventory();
-					for (final Location temp : blocks) {
-						for (slot = 0; slot<inventory.getSize(); ++slot) {
-							final ItemStack item = inventory.getItem(slot);
-							if (item==null||!item.getType().equals(item1.getType()))
-								continue;
-							if (data==-1||data==item.getDurability())
-								break;
-						}
-
-						if (slot>=inventory.getSize())
-							break;
-
+				int slot = 0;
+				final PlayerInventory inventory = player.getInventory();
+				int placecount = 0;
+				for (final Location temp : blocks) {
+					for (slot = 0; slot<inventory.getSize(); ++slot) {
 						final ItemStack item = inventory.getItem(slot);
-						ItemStack objitem = item;
-						if (player.getGameMode()==GameMode.CREATIVE) {
-							objitem = objitem.clone();
-							objitem.setAmount(1);
-						}
+						if (item==null||!item.getType().equals(item1.getType()))
+							continue;
+						if (data==-1||data==item.getDurability())
+							break;
+					}
 
-						final Block block = temp.getBlock().getRelative(face.getOppositeFace());
+					if (slot>=inventory.getSize())
+						break;
 
-						if (this.nativemc.placeItem(player, block, objitem, EquipmentSlot.HAND, face, player.getEyeLocation())) {
+					final ItemStack item = inventory.getItem(slot);
+					ItemStack objitem = item;
+					if (player.getGameMode()==GameMode.CREATIVE) {
+						objitem = objitem.clone();
+						objitem.setAmount(1);
+					}
 
-							objitem.setAmount(objitem.getAmount()-1);
-							if (item.getAmount()<=0)
-								inventory.setItem(slot, null);
-							else
-								inventory.setItem(slot, item);
+					final Block block = temp.getBlock().getRelative(face.getOppositeFace());
 
-							this.nativemc.playSound(player, temp, target, .25f, 1f);
-						}
+					if (this.nativemc.placeItem(player, block, itemStack, objitem, EquipmentSlot.HAND, face, player.getEyeLocation())) {
+						objitem.setAmount(objitem.getAmount()-1);
+						if (item.getAmount()<=0)
+							inventory.setItem(slot, null);
+						else
+							inventory.setItem(slot, item);
+
+						this.nativemc.playSound(player, temp, target, .25f, 1f);
+						placecount++;
 					}
 				}
+				final String keyplace = this.wanddata.keyData(WandData.FEATURE_META_COUNT_PLACE);
+				meta.setNumber(keyplace, meta.getNumber(keyplace, 0)+placecount);
+				final String keyuse = this.wanddata.keyData(WandData.FEATURE_META_COUNT_USE);
+				meta.setNumber(keyuse, meta.getNumber(keyuse, 0)+1);
 
 				return true;
 			}
 		}
 	}
 
-	public List<Location> getPotentialBlocks(final ItemStack itemStack, final Player player, final World world, final Block target, final BlockFace face) {
-		final int maxBlocks = itemStack.getType()==Material.BLAZE_ROD ? 49 : 9;
+	public List<Location> getPotentialBlocks(final ItemStackHolder itemStack, final ItemLoreMeta meta, final Player player, final World world, final Block target, final BlockFace face) {
+		final int maxBlocks = meta.getNumber(this.wanddata.keyData(WandData.FEATURE_META_SIZE), 0);
 
 		final List<Location> blocks = Lists.newArrayList();
 
@@ -322,8 +271,8 @@ public class WandListener implements Listener, CommandExecutor {
 		int mz = dz==0 ? 1 : 0;
 
 		if (player.isSneaking()) {
-			final List<String> lore = itemStack.getItemMeta().getLore();
-			final boolean isVertical = lore!=null&&lore.contains("§r");
+			final boolean isVertical = meta.getFlag(this.wanddata.keyData(WandData.FEATURE_META_VERTICALMODE), false);
+			;
 			if (face!=BlockFace.UP&&face!=BlockFace.DOWN)
 				if (isVertical) {
 					if (face!=BlockFace.NORTH&&face!=BlockFace.SOUTH)

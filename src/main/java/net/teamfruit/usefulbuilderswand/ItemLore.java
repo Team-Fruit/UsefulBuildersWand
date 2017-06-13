@@ -4,11 +4,11 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import org.apache.commons.lang.BooleanUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.math.NumberUtils;
 import org.bukkit.inventory.ItemStack;
@@ -16,7 +16,6 @@ import org.bukkit.inventory.meta.ItemMeta;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 
 import net.teamfruit.usefulbuilderswand.ItemLore.ItemLoreDataFormat.FlagMeta;
 import net.teamfruit.usefulbuilderswand.ItemLore.ItemLoreDataFormat.NumberMeta;
@@ -157,7 +156,7 @@ public abstract class ItemLore {
 	}
 
 	public static class ItemLoreMeta {
-		private final Set<String> dataFlag = Sets.newHashSet();
+		private final Map<String, Boolean> dataFlag = Maps.newHashMap();
 		private final Map<String, Integer> dataNumber = Maps.newHashMap();
 		private final Map<String, String> dataText = Maps.newHashMap();
 		private int modcount;
@@ -210,9 +209,16 @@ public abstract class ItemLore {
 			return this.dataNumber.get(key);
 		}
 
+		public Integer getNumber(final String key, final Integer defaultValue) {
+			final Integer value = getNumber(key);
+			if (value!=null)
+				return value;
+			return defaultValue;
+		}
+
 		public void setNumber(final String key, @Nullable final Integer value) {
 			this.modcount++;
-			if (key!=null)
+			if (value!=null)
 				this.dataNumber.put(key, value);
 			else
 				this.dataNumber.remove(key);
@@ -222,22 +228,36 @@ public abstract class ItemLore {
 			return this.dataText.get(key);
 		}
 
+		public String getText(final String key, final String defaultValue) {
+			final String value = getText(key);
+			if (value!=null)
+				return value;
+			return defaultValue;
+		}
+
 		public void setText(final String key, @Nullable final String value) {
 			this.modcount++;
-			if (key!=null)
+			if (value!=null)
 				this.dataText.put(key, value);
 			else
 				this.dataText.remove(key);
 		}
 
-		public boolean getFlag(final String key) {
-			return this.dataFlag.contains(key);
+		public @Nullable Boolean getFlag(final String key) {
+			return this.dataFlag.get(key);
 		}
 
-		public void setFlag(final String key, final boolean value) {
+		public Boolean getFlag(final String key, final Boolean defaultValue) {
+			final Boolean value = getFlag(key);
+			if (value!=null)
+				return value;
+			return defaultValue;
+		}
+
+		public void setFlag(final String key, @Nullable final Boolean value) {
 			this.modcount++;
-			if (value)
-				this.dataFlag.add(key);
+			if (value!=null)
+				this.dataFlag.put(key, value);
 			else
 				this.dataFlag.remove(key);
 		}
@@ -413,41 +433,67 @@ public abstract class ItemLore {
 		public static interface FlagMeta {
 			boolean parse(ItemLoreDataFormat format, String src);
 
-			String compose(ItemLoreDataFormat format, boolean data);
+			String compose(ItemLoreDataFormat format, Boolean data);
 
 			public static class HiddenFlagMeta implements FlagMeta {
-				public HiddenFlagMeta() {
+				private final Boolean defaultValue;
+
+				public HiddenFlagMeta(final Boolean defaultValue) {
+					this.defaultValue = defaultValue;
 				}
 
 				public boolean parse(final ItemLoreDataFormat format, final String src) {
 					return true;
 				}
 
-				public @Nullable String compose(final ItemLoreDataFormat format, final boolean data) {
+				public @Nullable String compose(final ItemLoreDataFormat format, Boolean data) {
+					if (data==null)
+						if (defaultValue!=null)
+							data = defaultValue;
+						else
+							data = false;
 					return data ? "" : null;
 				}
 
 				@Override
 				public String toString() {
-					return String.format("HiddenFlagMeta []");
+					return String.format("HiddenFlagMeta [defaultValue=%s]", defaultValue);
 				}
 
 				@Override
 				public int hashCode() {
-					return 0;
+					final int prime = 31;
+					int result = 1;
+					result = prime*result+(defaultValue==null ? 0 : defaultValue.hashCode());
+					return result;
 				}
 
 				@Override
 				public boolean equals(final Object obj) {
-					return obj instanceof HiddenFlagMeta;
+					if (this==obj)
+						return true;
+					if (obj==null)
+						return false;
+					if (!(obj instanceof HiddenFlagMeta))
+						return false;
+					final HiddenFlagMeta other = (HiddenFlagMeta) obj;
+					if (defaultValue==null) {
+						if (other.defaultValue!=null)
+							return false;
+					} else if (!defaultValue.equals(other.defaultValue))
+						return false;
+					return true;
 				}
 			}
 
 			public static class TextFlagMeta implements FlagMeta {
+				private final Boolean defaultValue;
+
 				private final String strTrue;
 				private final String strFalse;
 
-				public TextFlagMeta(final String strTrue, final String strFalse) {
+				public TextFlagMeta(final Boolean defaultValue, final String strTrue, final String strFalse) {
+					this.defaultValue = defaultValue;
 					this.strTrue = strTrue;
 					this.strFalse = strFalse;
 				}
@@ -456,19 +502,25 @@ public abstract class ItemLore {
 					return StringUtils.equalsIgnoreCase(src, strTrue);
 				}
 
-				public @Nullable String compose(final ItemLoreDataFormat format, final boolean data) {
+				public @Nullable String compose(final ItemLoreDataFormat format, Boolean data) {
+					if (data==null)
+						if (defaultValue!=null)
+							data = defaultValue;
+						else
+							data = false;
 					return data ? strTrue : strFalse;
 				}
 
 				@Override
 				public String toString() {
-					return String.format("TextFlagMeta [strTrue=%s, strFalse=%s]", strTrue, strFalse);
+					return String.format("TextFlagMeta [defaultValue=%s, strTrue=%s, strFalse=%s]", defaultValue, strTrue, strFalse);
 				}
 
 				@Override
 				public int hashCode() {
 					final int prime = 31;
 					int result = 1;
+					result = prime*result+(defaultValue==null ? 0 : defaultValue.hashCode());
 					result = prime*result+(strFalse==null ? 0 : strFalse.hashCode());
 					result = prime*result+(strTrue==null ? 0 : strTrue.hashCode());
 					return result;
@@ -483,6 +535,11 @@ public abstract class ItemLore {
 					if (!(obj instanceof TextFlagMeta))
 						return false;
 					final TextFlagMeta other = (TextFlagMeta) obj;
+					if (defaultValue==null) {
+						if (other.defaultValue!=null)
+							return false;
+					} else if (!defaultValue.equals(other.defaultValue))
+						return false;
 					if (strFalse==null) {
 						if (other.strFalse!=null)
 							return false;
@@ -500,11 +557,23 @@ public abstract class ItemLore {
 			public static class Factory {
 				public static FlagMeta create(final String format) {
 					if (!StringUtils.isEmpty(format)) {
-						final String[] selectable = StringUtils.split(format, ":");
-						if (selectable.length>=2)
-							return new TextFlagMeta(selectable[0], selectable[1]);
+						final String defaultStr;
+						final String format1;
+						if (StringUtils.contains(format, "?")) {
+							defaultStr = StringUtils.substringBefore(format, "?");
+							format1 = StringUtils.substringAfter(format, "?");
+						} else {
+							defaultStr = null;
+							format1 = format;
+						}
+						if (StringUtils.contains(format, ":")) {
+							final String trueStr = StringUtils.substringBefore(format1, ":");
+							final String falseStr = StringUtils.substringAfter(format1, ":");
+							return new TextFlagMeta(BooleanUtils.toBooleanObject(defaultStr), trueStr, falseStr);
+						} else
+							return new HiddenFlagMeta(BooleanUtils.toBooleanObject(defaultStr));
 					}
-					return new HiddenFlagMeta();
+					return new HiddenFlagMeta(false);
 				}
 			}
 		}
@@ -515,15 +584,15 @@ public abstract class ItemLore {
 			String compose(ItemLoreDataFormat format, Integer data);
 
 			public static class HiddenNumberMeta implements NumberMeta {
-				private final Integer defaultValue;
+				private final @Nullable Integer defaultValue;
 
-				public HiddenNumberMeta(final Integer defaultValue) {
+				public HiddenNumberMeta(final @Nullable Integer defaultValue) {
 					this.defaultValue = defaultValue;
 				}
 
 				public int parse(final ItemLoreDataFormat format, final String src) {
 					final String numstr = StringUtils.replace(src, "\u00A7", "");
-					final int num = NumberUtils.toInt(numstr, defaultValue);
+					final int num = NumberUtils.toInt(numstr, defaultValue!=null ? defaultValue : 0);
 					return num;
 				}
 
@@ -549,7 +618,7 @@ public abstract class ItemLore {
 				public int hashCode() {
 					final int prime = 31;
 					int result = 1;
-					result = prime*result+defaultValue;
+					result = prime*result+(defaultValue!=null ? defaultValue.hashCode() : 0);
 					return result;
 				}
 
@@ -562,21 +631,24 @@ public abstract class ItemLore {
 					if (!(obj instanceof HiddenNumberMeta))
 						return false;
 					final HiddenNumberMeta other = (HiddenNumberMeta) obj;
-					if (defaultValue!=other.defaultValue)
+					if (defaultValue!=null) {
+						if (!defaultValue.equals(other.defaultValue))
+							return false;
+					} else if (other.defaultValue!=null)
 						return false;
 					return true;
 				}
 			}
 
 			public static class TextNumberMeta implements NumberMeta {
-				private final Integer defaultValue;
+				private final @Nullable Integer defaultValue;
 
-				public TextNumberMeta(final Integer defaultValue) {
+				public TextNumberMeta(final @Nullable Integer defaultValue) {
 					this.defaultValue = defaultValue;
 				}
 
 				public int parse(final ItemLoreDataFormat format, final String src) {
-					final int num = NumberUtils.toInt(src, defaultValue);
+					final int num = NumberUtils.toInt(src, defaultValue!=null ? defaultValue : 0);
 					return num;
 				}
 
@@ -599,7 +671,7 @@ public abstract class ItemLore {
 				public int hashCode() {
 					final int prime = 31;
 					int result = 1;
-					result = prime*result+defaultValue;
+					result = prime*result+(defaultValue!=null ? defaultValue.hashCode() : 0);
 					return result;
 				}
 
@@ -612,7 +684,10 @@ public abstract class ItemLore {
 					if (!(obj instanceof TextNumberMeta))
 						return false;
 					final TextNumberMeta other = (TextNumberMeta) obj;
-					if (defaultValue!=other.defaultValue)
+					if (defaultValue!=null) {
+						if (!defaultValue.equals(other.defaultValue))
+							return false;
+					} else if (other.defaultValue!=null)
 						return false;
 					return true;
 				}
@@ -635,36 +710,58 @@ public abstract class ItemLore {
 			String compose(ItemLoreDataFormat format, String data);
 
 			public static class TextTextMeta implements TextMeta {
-				public TextTextMeta() {
+				private final @Nullable String defaultValue;
+
+				public TextTextMeta(final @Nullable String defaultValue) {
+					this.defaultValue = defaultValue;
 				}
 
-				public String parse(final ItemLoreDataFormat format, final String src) {
+				public String parse(final ItemLoreDataFormat format, String src) {
+					if (defaultValue!=null&&src==null)
+						src = defaultValue;
 					return src;
 				}
 
-				public @Nullable String compose(final ItemLoreDataFormat format, final String data) {
+				public @Nullable String compose(final ItemLoreDataFormat format, String data) {
+					if (defaultValue!=null&&data==null)
+						data = defaultValue;
 					return data;
 				}
 
 				@Override
 				public String toString() {
-					return String.format("TextTextMeta []");
+					return String.format("TextTextMeta [defaultValue=%s]", defaultValue);
 				}
 
 				@Override
 				public int hashCode() {
-					return 0;
+					final int prime = 31;
+					int result = 1;
+					result = prime*result+(defaultValue!=null ? defaultValue.hashCode() : 0);
+					return result;
 				}
 
 				@Override
 				public boolean equals(final Object obj) {
-					return obj instanceof TextTextMeta;
+					if (this==obj)
+						return true;
+					if (obj==null)
+						return false;
+					if (!(obj instanceof TextTextMeta))
+						return false;
+					final TextTextMeta other = (TextTextMeta) obj;
+					if (defaultValue!=null) {
+						if (!defaultValue.equals(other.defaultValue))
+							return false;
+					} else if (other.defaultValue!=null)
+						return false;
+					return true;
 				}
 			}
 
 			public static class Factory {
 				public static TextMeta create(final String format) {
-					return new TextTextMeta();
+					return new TextTextMeta(format);
 				}
 			}
 		}

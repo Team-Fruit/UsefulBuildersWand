@@ -234,11 +234,11 @@ public class NativeMinecraft_v1_8_R3 implements NativeMinecraft {
 	}
 
 	// public EnumInteractionResult placeItem(EntityHuman entityhuman, World world, BlockPosition blockposition, EnumHand enumhand, EnumDirection enumdirection, float f, float f1, float f2)
-	public boolean placeItem(final Player player, final Block block, final ItemStack itemStack, final EquipmentSlot hand, final BlockFace face, final Location eyeLocation) {
+	public boolean placeItem(final Player player, final Block block, final ItemStackHolder handItemStack, final ItemStack placeItemStack, final EquipmentSlot hand, final BlockFace face, final Location eyeLocation) {
 		if (block!=null)
 			if (this.c$CraftBlock!=null)
 				try {
-					final Object nItemStack = this.m$CraftItemStack$asNMSCopy.invoke(null, itemStack);
+					final Object nItemStack = this.m$CraftItemStack$asNMSCopy.invoke(null, placeItemStack);
 					final Object nPlayer = this.m$CraftPlayer$getHandle.invoke(player);
 
 					final Object nChunk = this.f$CraftBlock$chunk.get(block);
