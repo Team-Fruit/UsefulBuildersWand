@@ -1,6 +1,8 @@
 package net.teamfruit.usefulbuilderswand;
 
 import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.lang.StringUtils;
 import org.bukkit.GameMode;
@@ -24,11 +26,16 @@ import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitRunnable;
 
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 import com.google.common.collect.Lists;
 
 import net.teamfruit.usefulbuilderswand.ItemLore.ItemLoreContent;
 import net.teamfruit.usefulbuilderswand.ItemLore.ItemLoreDataFormat;
 import net.teamfruit.usefulbuilderswand.ItemLore.ItemLoreMeta;
+import net.teamfruit.usefulbuilderswand.ItemLore.ItemLoreMetaEditable;
+import net.teamfruit.usefulbuilderswand.ItemLore.ItemLoreMetaImmutable;
 import net.teamfruit.usefulbuilderswand.ItemLore.ItemLoreRaw;
 import net.teamfruit.usefulbuilderswand.NativeMinecraft.RayTraceResult;
 
@@ -36,6 +43,17 @@ public class WandListener implements Listener, CommandExecutor {
 	private final Plugin plugin;
 	private final WandData wanddata;
 	private NativeMinecraft nativemc;
+	private LoadingCache<ItemLoreRaw, ItemLoreMetaImmutable> cache = CacheBuilder.newBuilder()
+			.maximumSize(100)
+			.expireAfterAccess(6, TimeUnit.SECONDS)
+			.expireAfterWrite(12, TimeUnit.SECONDS)
+			.build(new CacheLoader<ItemLoreRaw, ItemLoreMetaImmutable>() {
+				@Override
+				public ItemLoreMetaImmutable load(final ItemLoreRaw key) throws Exception {
+					final ItemLoreDataFormat format = WandListener.this.wanddata.getFormat();
+					return new ItemLoreMetaEditable().fromContents(format, new ItemLoreContent().fromRaw(format, key)).toImmutable();
+				}
+			});
 
 	public WandListener(final Plugin plugin, final WandData data) {
 		this.plugin = plugin;
@@ -54,16 +72,19 @@ public class WandListener implements Listener, CommandExecutor {
 			final ItemStack itemStack = this.nativemc.getItemInHand(player.getInventory());
 			if (itemStack!=null) {
 				final ItemLoreDataFormat format = this.wanddata.getFormat();
-				final ItemLoreRaw raw = new ItemLoreRaw().readItemStack(format, itemStack);
-				final ItemLoreMeta meta = new ItemLoreMeta().fromContents(format, new ItemLoreContent().fromRaw(format, raw));
-				for (final String arg : args)
-					if (StringUtils.contains(arg, "=")) {
-						final String key = StringUtils.substringBefore(arg, "=");
-						final String value = StringUtils.substringAfter(arg, "=");
-						final String key1 = this.wanddata.keyData(WandData.FEATURE+"."+key);
-						meta.set(format, key1!=null ? key1 : key, value);
-					}
-				raw.updateContents(format, new ItemLoreContent().fromMeta(format, meta)).writeItemStack(format, itemStack);
+				final ItemLoreRaw raw = ItemLoreRaw.create().readItemStack(format, itemStack);
+				try {
+					final ItemLoreMetaEditable meta = this.cache.get(raw).toEditable();
+					for (final String arg : args)
+						if (StringUtils.contains(arg, "=")) {
+							final String key = StringUtils.substringBefore(arg, "=");
+							final String value = StringUtils.substringAfter(arg, "=");
+							final String key1 = this.wanddata.keyData(WandData.FEATURE+"."+key);
+							meta.set(format, key1!=null ? key1 : key, value);
+						}
+					raw.updateContents(format, new ItemLoreContent().fromMeta(format, meta)).writeItemStack(format, itemStack);
+				} catch (final ExecutionException e) {
+				}
 			}
 		}
 		return false;
@@ -80,11 +101,13 @@ public class WandListener implements Listener, CommandExecutor {
 					return;
 			}
 
-			final ItemLoreRaw raw = new ItemLoreRaw().readItemStack(format, itemStackHolder.get());
-			final ItemLoreMeta meta = new ItemLoreMeta().fromContents(format, new ItemLoreContent().fromRaw(format, raw));
-
-			if (raw.hasContent(format))
-				onEffect(player, itemStackHolder, meta);
+			try {
+				final ItemLoreRaw raw = ItemLoreRaw.create().readItemStack(format, itemStackHolder.get());
+				final ItemLoreMeta meta = this.cache.get(raw);
+				if (meta!=null)
+					onEffect(player, itemStackHolder, meta);
+			} catch (final ExecutionException e) {
+			}
 		}
 	}
 
@@ -135,36 +158,37 @@ public class WandListener implements Listener, CommandExecutor {
 		}
 
 		final ItemLoreDataFormat format = this.wanddata.getFormat();
-		final ItemLoreRaw raw = new ItemLoreRaw().readItemStack(format, itemStackHolder.get());
+		final ItemLoreRaw raw = ItemLoreRaw.create().readItemStack(format, itemStackHolder.get());
 
 		if (!raw.hasContent(format))
 			return;
 
-		final ItemLoreMeta meta = new ItemLoreMeta().fromContents(format, new ItemLoreContent().fromRaw(format, raw));
-		final int modcount = meta.getModCount();
+		try {
+			final ItemLoreMetaEditable meta = this.cache.get(raw).toEditable();
+			final int modcount = meta.getModCount();
 
-		final Action action = event.getAction();
-		final Block block = event.getClickedBlock();
+			final Action action = event.getAction();
+			final Block block = event.getClickedBlock();
 
-		if (block!=null&&action==Action.RIGHT_CLICK_BLOCK) {
-			final BlockFace face = event.getBlockFace();
-			if (face!=null) {
-				onItemUse(itemStackHolder, meta, player, player.getWorld(), block, face);
+			if (block!=null&&action==Action.RIGHT_CLICK_BLOCK) {
+				final BlockFace face = event.getBlockFace();
+				if (face!=null) {
+					onItemUse(itemStackHolder, meta, player, player.getWorld(), block, face);
+					event.setCancelled(true);
+				}
+			} else if (player.isSneaking()&&(action==Action.LEFT_CLICK_AIR||action==Action.LEFT_CLICK_BLOCK)) {
+				final String key = this.wanddata.key(WandData.FEATURE_META_VERTICALMODE);
+				meta.setFlag(key, !meta.getFlag(key, false));
 				event.setCancelled(true);
 			}
-		} else if (player.isSneaking()&&(action==Action.LEFT_CLICK_AIR||action==Action.LEFT_CLICK_BLOCK)) {
-			final String key = this.wanddata.key(WandData.FEATURE_META_VERTICALMODE);
-			final boolean b = !meta.getFlag(key, false);
-			player.chat(String.valueOf(b));
-			meta.setFlag(key, b);
-			event.setCancelled(true);
-		}
 
-		if (modcount!=meta.getModCount())
-			raw.updateContents(format, new ItemLoreContent().fromMeta(format, meta)).writeItemStack(format, itemStackHolder.get());
+			if (modcount!=meta.getModCount())
+				raw.updateContents(format, new ItemLoreContent().fromMeta(format, meta)).writeItemStack(format, itemStackHolder.get());
+		} catch (final ExecutionException e) {
+		}
 	}
 
-	public boolean onItemUse(final ItemStackHolder itemStack, final ItemLoreMeta meta, final Player player, final World world, final Block target, final BlockFace face) {
+	public boolean onItemUse(final ItemStackHolder itemStack, final ItemLoreMetaEditable meta, final Player player, final World world, final Block target, final BlockFace face) {
 		/*if (!player.capabilities.allowEdit)
 			return false;
 		else*/ {
@@ -175,6 +199,14 @@ public class WandListener implements Listener, CommandExecutor {
 			else if (target.isEmpty())
 				return false;
 			else {
+				final int maxdurability = meta.getNumber(this.wanddata.keyData(WandData.FEATURE_META_DURABILITY_MAX), 0);
+				meta.setFlag(this.wanddata.keyData(WandData.FEATURE_DISPLAY_UNBREAKABLE), maxdurability<=0);
+				final String keydurability = this.wanddata.keyData(WandData.FEATURE_META_DURABILITY);
+				final int durability = meta.getNumber(keydurability, 0);
+
+				if (maxdurability>0&&durability<=0)
+					return false;
+
 				int data = -1;
 
 				final ItemStack item1 = this.nativemc.getItemFromBlock(target);
@@ -221,6 +253,8 @@ public class WandListener implements Listener, CommandExecutor {
 				meta.setNumber(keyplace, meta.getNumber(keyplace, 0)+placecount);
 				final String keyuse = this.wanddata.keyData(WandData.FEATURE_META_COUNT_USE);
 				meta.setNumber(keyuse, meta.getNumber(keyuse, 0)+1);
+				if (maxdurability>0)
+					meta.setNumber(keydurability, durability-1);
 
 				return true;
 			}
@@ -228,9 +262,15 @@ public class WandListener implements Listener, CommandExecutor {
 	}
 
 	public List<Location> getPotentialBlocks(final ItemStackHolder itemStack, final ItemLoreMeta meta, final Player player, final World world, final Block target, final BlockFace face) {
-		final int maxBlocks = meta.getNumber(this.wanddata.keyData(WandData.FEATURE_META_SIZE), 0);
-
 		final List<Location> blocks = Lists.newArrayList();
+
+		final int maxdurability = meta.getNumber(this.wanddata.keyData(WandData.FEATURE_META_DURABILITY_MAX), 0);
+		final int durability = meta.getNumber(this.wanddata.keyData(WandData.FEATURE_META_DURABILITY), 0);
+
+		if (maxdurability>0&&durability<=0)
+			return blocks;
+
+		final int maxBlocks = meta.getNumber(this.wanddata.keyData(WandData.FEATURE_META_SIZE), 0);
 
 		if (world==null)
 			return blocks;

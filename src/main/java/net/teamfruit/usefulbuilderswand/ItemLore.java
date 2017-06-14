@@ -14,6 +14,9 @@ import org.apache.commons.lang.math.NumberUtils;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableMap.Builder;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
@@ -23,17 +26,24 @@ import net.teamfruit.usefulbuilderswand.ItemLore.ItemLoreDataFormat.TextMeta;
 
 public abstract class ItemLore {
 	public static class ItemLoreRaw {
-		private List<String> lore;
+		private static final ItemLoreRaw instance = new ItemLoreRaw(ImmutableList.<String> of());
 
-		public @Nonnull List<String> get() {
-			if (this.lore==null)
-				this.lore = Lists.newArrayList();
+		public static final ItemLoreRaw create() {
+			return instance;
+		}
+
+		private final @Nonnull ImmutableList<String> lore;
+
+		private ItemLoreRaw(final @Nonnull ImmutableList<String> lore) {
+			this.lore = lore;
+		}
+
+		public @Nonnull ImmutableList<String> get() {
 			return this.lore;
 		}
 
 		public ItemLoreRaw read(final List<String> lore) {
-			this.lore = lore;
-			return this;
+			return new ItemLoreRaw(ImmutableList.copyOf(lore));
 		}
 
 		public ItemLoreRaw write(final List<String> lore) {
@@ -43,19 +53,46 @@ public abstract class ItemLore {
 		}
 
 		public ItemLoreRaw readItemStack(final ItemLoreDataFormat format, final ItemStack itemStack) {
-			this.lore = itemStack.getItemMeta().getLore();
+			if (itemStack!=null) {
+				final ItemMeta meta = itemStack.getItemMeta();
+				if (meta!=null) {
+					final ImmutableList.Builder<String> builder = ImmutableList.builder();
+					if (!format.metaFormat.isEmpty()) {
+						final String formatFirst = format.metaFormat.get(0);
+						if (!StringUtils.isEmpty(formatFirst))
+							builder.add(format.prefix+StringUtils.substringAfter(StringUtils.defaultString(meta.getDisplayName()), format.prefix));
+					}
+					final List<String> lore = meta.getLore();
+					if (lore!=null)
+						builder.addAll(lore);
+					return new ItemLoreRaw(builder.build());
+				}
+			}
 			return this;
 		}
 
 		public ItemLoreRaw writeItemStack(final ItemLoreDataFormat format, final ItemStack itemStack) {
-			final ItemMeta meta = itemStack.getItemMeta();
-			meta.setLore(get());
-			itemStack.setItemMeta(meta);
+			if (itemStack!=null) {
+				final ItemMeta meta = itemStack.getItemMeta();
+				if (meta!=null) {
+					ImmutableList<String> lore = get();
+					final int size = lore.size();
+					if (!format.metaFormat.isEmpty()&&size>0) {
+						meta.setDisplayName(lore.get(0));
+						if (size>1)
+							lore = lore.subList(1, size-1);
+						else
+							lore = ImmutableList.of();
+					}
+					meta.setLore(lore);
+					itemStack.setItemMeta(meta);
+				}
+			}
 			return this;
 		}
 
 		public boolean hasContent(final ItemLoreDataFormat format) {
-			if (this.lore==null||this.lore.isEmpty())
+			if (this.lore.isEmpty())
 				return false;
 			for (final String line : this.lore)
 				if (StringUtils.startsWith(line, format.prefix))
@@ -64,7 +101,7 @@ public abstract class ItemLore {
 		}
 
 		public ItemLoreRaw updateContents(final ItemLoreDataFormat format, final ItemLoreContent contents) {
-			final List<String> output = get();
+			final List<String> output = Lists.newArrayList(get());
 			final List<String> input = contents.get();
 			if (!output.isEmpty()) {
 				final int loresize = output.size();
@@ -86,7 +123,34 @@ public abstract class ItemLore {
 			} else
 				for (final String content : input)
 					output.add(format.prefix+content);
-			return this;
+			return new ItemLoreRaw(ImmutableList.copyOf(output));
+		}
+
+		@Override
+		public String toString() {
+			return String.format("ItemLoreRaw [lore=%s]", this.lore);
+		}
+
+		@Override
+		public int hashCode() {
+			final int prime = 31;
+			int result = 1;
+			result = prime*result+this.lore.hashCode();
+			return result;
+		}
+
+		@Override
+		public boolean equals(final Object obj) {
+			if (this==obj)
+				return true;
+			if (obj==null)
+				return false;
+			if (!(obj instanceof ItemLoreRaw))
+				return false;
+			final ItemLoreRaw other = (ItemLoreRaw) obj;
+			if (!this.lore.equals(other.lore))
+				return false;
+			return true;
 		}
 	}
 
@@ -133,15 +197,15 @@ public abstract class ItemLore {
 						final String type = StringUtils.substringBefore(current, ":");
 						final String namevalue = StringUtils.substringAfter(current, ":");
 						final String name = StringUtils.substringBefore(namevalue, "=");
-						if (StringUtils.equals(type, "B")) {
+						if (StringUtils.equalsIgnoreCase(type, "B")) {
 							final String s = format.typeFlag.get(name).compose(format, meta.getFlag(name));
 							if (s!=null)
 								stb.append(format.valueprefix).append(name).append(s).append(format.valuesuffix);
-						} else if (StringUtils.equals(type, "I")) {
+						} else if (StringUtils.equalsIgnoreCase(type, "I")) {
 							final String s = format.typeNumber.get(name).compose(format, meta.getNumber(name));
 							if (s!=null)
 								stb.append(format.valueprefix).append(name).append(s).append(format.valuesuffix);
-						} else if (StringUtils.equals(type, "S")) {
+						} else if (StringUtils.equalsIgnoreCase(type, "S")) {
 							final String s = format.typeText.get(name).compose(format, meta.getText(name));
 							if (s!=null)
 								stb.append(format.valueprefix).append(name).append(s).append(format.valuesuffix);
@@ -153,19 +217,188 @@ public abstract class ItemLore {
 			}
 			return this;
 		}
+
+		@Override
+		public String toString() {
+			return String.format("ItemLoreContent [contents=%s]", this.contents);
+		}
+
+		@Override
+		public int hashCode() {
+			final int prime = 31;
+			int result = 1;
+			result = prime*result+(this.contents==null ? 0 : this.contents.hashCode());
+			return result;
+		}
+
+		@Override
+		public boolean equals(final Object obj) {
+			if (this==obj)
+				return true;
+			if (obj==null)
+				return false;
+			if (!(obj instanceof ItemLoreContent))
+				return false;
+			final ItemLoreContent other = (ItemLoreContent) obj;
+			if (this.contents==null||this.contents.isEmpty()) {
+				if (other.contents!=null&&other.contents.isEmpty())
+					return false;
+			} else if (!this.contents.equals(other.contents))
+				return false;
+			return true;
+		}
 	}
 
-	public static class ItemLoreMeta {
-		private final Map<String, Boolean> dataFlag = Maps.newHashMap();
-		private final Map<String, Integer> dataNumber = Maps.newHashMap();
-		private final Map<String, String> dataText = Maps.newHashMap();
+	public interface ItemLoreMeta {
+
+		ItemLoreMetaImmutable toImmutable();
+
+		ItemLoreMetaEditable toEditable();
+
+		Integer getNumber(final String key);
+
+		Integer getNumber(final String key, final Integer defaultValue);
+
+		String getText(final String key);
+
+		String getText(final String key, final String defaultValue);
+
+		Boolean getFlag(final String key);
+
+		Boolean getFlag(final String key, final Boolean defaultValue);
+
+	}
+
+	public static class ItemLoreMetaImmutable implements ItemLoreMeta {
+		private final ImmutableMap<String, Boolean> dataFlag;
+		private final ImmutableMap<String, Integer> dataNumber;
+		private final ImmutableMap<String, String> dataText;
+
+		ItemLoreMetaImmutable(final ImmutableMap<String, Boolean> dataFlag, final ImmutableMap<String, Integer> dataNumber, final ImmutableMap<String, String> dataText) {
+			this.dataFlag = dataFlag;
+			this.dataNumber = dataNumber;
+			this.dataText = dataText;
+		}
+
+		public ItemLoreMetaImmutable toImmutable() {
+			return this;
+		}
+
+		public ItemLoreMetaEditable toEditable() {
+			return new ItemLoreMetaEditable(Maps.newHashMap(this.dataFlag), Maps.newHashMap(this.dataNumber), Maps.newHashMap(this.dataText));
+		}
+
+		public @Nullable Integer getNumber(final String key) {
+			return this.dataNumber.get(key);
+		}
+
+		public Integer getNumber(final String key, final Integer defaultValue) {
+			final Integer value = getNumber(key);
+			if (value!=null)
+				return value;
+			return defaultValue;
+		}
+
+		public @Nullable String getText(final String key) {
+			return this.dataText.get(key);
+		}
+
+		public String getText(final String key, final String defaultValue) {
+			final String value = getText(key);
+			if (value!=null)
+				return value;
+			return defaultValue;
+		}
+
+		public @Nullable Boolean getFlag(final String key) {
+			return this.dataFlag.get(key);
+		}
+
+		public Boolean getFlag(final String key, final Boolean defaultValue) {
+			final Boolean value = getFlag(key);
+			if (value!=null)
+				return value;
+			return defaultValue;
+		}
+
+		@Override
+		public String toString() {
+			return String.format("ItemLoreMetaImmutable [dataFlag=%s, dataNumber=%s, dataText=%s]", this.dataFlag, this.dataNumber, this.dataText);
+		}
+
+		@Override
+		public int hashCode() {
+			final int prime = 31;
+			int result = 1;
+			result = prime*result+(this.dataFlag==null ? 0 : this.dataFlag.hashCode());
+			result = prime*result+(this.dataNumber==null ? 0 : this.dataNumber.hashCode());
+			result = prime*result+(this.dataText==null ? 0 : this.dataText.hashCode());
+			return result;
+		}
+
+		@Override
+		public boolean equals(final Object obj) {
+			if (this==obj)
+				return true;
+			if (obj==null)
+				return false;
+			if (!(obj instanceof ItemLoreMetaImmutable))
+				return false;
+			final ItemLoreMetaImmutable other = (ItemLoreMetaImmutable) obj;
+			if (this.dataFlag==null) {
+				if (other.dataFlag!=null)
+					return false;
+			} else if (!this.dataFlag.equals(other.dataFlag))
+				return false;
+			if (this.dataNumber==null) {
+				if (other.dataNumber!=null)
+					return false;
+			} else if (!this.dataNumber.equals(other.dataNumber))
+				return false;
+			if (this.dataText==null) {
+				if (other.dataText!=null)
+					return false;
+			} else if (!this.dataText.equals(other.dataText))
+				return false;
+			return true;
+		}
+	}
+
+	public static class ItemLoreMetaEditable implements ItemLoreMeta, Cloneable {
+		private final Map<String, Boolean> dataFlag;
+		private final Map<String, Integer> dataNumber;
+		private final Map<String, String> dataText;
 		private int modcount;
+
+		ItemLoreMetaEditable(final Map<String, Boolean> dataFlag, final Map<String, Integer> dataNumber, final Map<String, String> dataText) {
+			this.dataFlag = dataFlag;
+			this.dataNumber = dataNumber;
+			this.dataText = dataText;
+		}
+
+		public ItemLoreMetaEditable() {
+			this(Maps.<String, Boolean> newHashMap(), Maps.<String, Integer> newHashMap(), Maps.<String, String> newHashMap());
+		}
 
 		public int getModCount() {
 			return this.modcount;
 		}
 
-		public ItemLoreMeta fromContents(final ItemLoreDataFormat format, final ItemLoreContent contents) {
+		public ItemLoreMetaImmutable toImmutable() {
+			return new ItemLoreMetaImmutable(ImmutableMap.copyOf(this.dataFlag), ImmutableMap.copyOf(this.dataNumber), ImmutableMap.copyOf(this.dataText));
+		}
+
+		public ItemLoreMetaEditable toEditable() {
+			return this;
+		}
+
+		@Override
+		public ItemLoreMetaEditable clone() {
+			return new ItemLoreMetaEditable(Maps.newHashMap(this.dataFlag), Maps.newHashMap(this.dataNumber), Maps.newHashMap(this.dataText));
+		}
+
+		public ItemLoreMetaEditable fromContents(final ItemLoreDataFormat format, final ItemLoreContent contents) {
+			System.out.print("parsed");
 			this.modcount++;
 			final List<String> input = contents.get();
 			for (final ListIterator<String> itr = input.listIterator(); itr.hasNext();) {
@@ -273,7 +506,7 @@ public abstract class ItemLore {
 
 		@Override
 		public String toString() {
-			return String.format("ItemLoreMeta [dataNumber=%s, dataText=%s, dataFlag=%s]", this.dataNumber, this.dataText, this.dataFlag);
+			return String.format("ItemLoreMetaMutable [dataFlag=%s, dataNumber=%s, dataText=%s, modcount=%s]", this.dataFlag, this.dataNumber, this.dataText, this.modcount);
 		}
 
 		@Override
@@ -292,9 +525,9 @@ public abstract class ItemLore {
 				return true;
 			if (obj==null)
 				return false;
-			if (!(obj instanceof ItemLoreMeta))
+			if (!(obj instanceof ItemLoreMetaEditable))
 				return false;
-			final ItemLoreMeta other = (ItemLoreMeta) obj;
+			final ItemLoreMetaEditable other = (ItemLoreMetaEditable) obj;
 			if (this.dataFlag==null) {
 				if (other.dataFlag!=null)
 					return false;
@@ -319,28 +552,18 @@ public abstract class ItemLore {
 		public final String prefix;
 		public final String valueprefix;
 		public final String valuesuffix;
-		public final Map<String, FlagMeta> typeFlag;
-		public final Map<String, NumberMeta> typeNumber;
-		public final Map<String, TextMeta> typeText;
-		public final List<String> metaFormat;
-
-		public ItemLoreDataFormat(final String prefix, final String valueprefix, final String valuesuffix, final Map<String, FlagMeta> typeFlag, final Map<String, NumberMeta> typeNumber, final Map<String, TextMeta> typeText, final List<String> metaFormat) {
-			this.prefix = prefix;
-			this.valueprefix = valueprefix;
-			this.valuesuffix = valuesuffix;
-			this.typeFlag = typeFlag;
-			this.typeNumber = typeNumber;
-			this.typeText = typeText;
-			this.metaFormat = metaFormat;
-		}
+		public final ImmutableMap<String, FlagMeta> typeFlag;
+		public final ImmutableMap<String, NumberMeta> typeNumber;
+		public final ImmutableMap<String, TextMeta> typeText;
+		public final ImmutableList<String> metaFormat;
 
 		public ItemLoreDataFormat(final String prefix, final String valueprefix, final String valueend, final List<String> metaFormat) {
 			this.prefix = prefix;
 			this.valueprefix = valueprefix;
 			this.valuesuffix = valueend;
-			this.typeNumber = Maps.newHashMap();
-			this.typeText = Maps.newHashMap();
-			this.typeFlag = Maps.newHashMap();
+			final Builder<String, FlagMeta> typeFlagBuilder = ImmutableMap.builder();
+			final Builder<String, NumberMeta> typeNumberBuilder = ImmutableMap.builder();
+			final Builder<String, TextMeta> typeTextBuilder = ImmutableMap.builder();
 			for (final String line : metaFormat) {
 				String data = line;
 				while (!(data = StringUtils.substringAfter(data, "$")).isEmpty())
@@ -353,15 +576,18 @@ public abstract class ItemLore {
 						final String name = StringUtils.substringBefore(namevalue, "=");
 						final String constant = StringUtils.substringAfter(namevalue, "=");
 						if (StringUtils.equals(type, "B"))
-							this.typeFlag.put(name, FlagMeta.Factory.create(constant));
+							typeFlagBuilder.put(name, FlagMeta.Factory.create(constant));
 						else if (StringUtils.equals(type, "I"))
-							this.typeNumber.put(name, NumberMeta.Factory.create(constant));
+							typeNumberBuilder.put(name, NumberMeta.Factory.create(constant));
 						else if (StringUtils.equals(type, "S"))
-							this.typeText.put(name, TextMeta.Factory.create(constant));
+							typeTextBuilder.put(name, TextMeta.Factory.create(constant));
 						data = StringUtils.substringAfter(data, "}");
 					}
 			}
-			this.metaFormat = metaFormat;
+			this.typeNumber = typeNumberBuilder.build();
+			this.typeText = typeTextBuilder.build();
+			this.typeFlag = typeFlagBuilder.build();
+			this.metaFormat = ImmutableList.copyOf(metaFormat);
 		}
 
 		@Override

@@ -16,6 +16,7 @@ import com.google.common.collect.Lists;
 import net.teamfruit.usefulbuilderswand.ItemLore.ItemLoreContent;
 import net.teamfruit.usefulbuilderswand.ItemLore.ItemLoreDataFormat;
 import net.teamfruit.usefulbuilderswand.ItemLore.ItemLoreMeta;
+import net.teamfruit.usefulbuilderswand.ItemLore.ItemLoreMetaEditable;
 import net.teamfruit.usefulbuilderswand.ItemLore.ItemLoreRaw;
 
 public class ItemLoreDataTest {
@@ -48,7 +49,7 @@ public class ItemLoreDataTest {
 
 		final ItemLoreDataFormat format = new ItemLoreDataFormat(prefix, begin, end, descFormat);
 
-		final ItemLoreMeta dataSrc = new ItemLoreMeta();
+		final ItemLoreMetaEditable dataSrc = new ItemLoreMetaEditable();
 		dataSrc.setText("HI!", "hi");
 		dataSrc.setFlag("SUSHI", true);
 		dataSrc.setNumber("JOHN", 12);
@@ -58,9 +59,9 @@ public class ItemLoreDataTest {
 		loreSrc.add(prefix+"SUSHI=_"+begin+"SUSHI"+end+"_");
 		loreSrc.add(prefix+"JOHN=_"+begin+"JOHN"+"12"+end+"_");
 
-		final ItemLoreMeta dataDst = new ItemLoreMeta().fromContents(format, new ItemLoreContent().fromRaw(format, new ItemLoreRaw().read(loreSrc)));
+		final ItemLoreMeta dataDst = new ItemLoreMetaEditable().fromContents(format, new ItemLoreContent().fromRaw(format, ItemLoreRaw.create().read(loreSrc)));
 
-		final List<String> loreDst = new ItemLoreRaw().read(Lists.newArrayList(loreSrc)).updateContents(format, new ItemLoreContent().fromMeta(format, dataSrc)).get();
+		final List<String> loreDst = ItemLoreRaw.create().read(Lists.newArrayList(loreSrc)).updateContents(format, new ItemLoreContent().fromMeta(format, dataSrc)).get();
 
 		assertEquals(dataSrc, dataDst);
 		assertEquals(loreSrc, loreDst);
