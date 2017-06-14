@@ -62,12 +62,12 @@ public class WandData {
 
 		final List<String> format = Lists.newArrayList(new String[] {
 				"§eBuilder's Wand §7x${i:"+ft(FEATURE_META_SIZE)+"=0} §7[${b:"+ft(FEATURE_META_VERTICALMODE)+"=┃:━}§7](${i:"+ft(FEATURE_META_DURABILITY)+"=0}/${i:"+ft(FEATURE_META_DURABILITY_MAX)+"=0}${b:"+ft(FEATURE_DISPLAY_UNBREAKABLE)+"= (Infinity):}§7)",
-				"§e - Mode §7: ${B:"+ft(FEATURE_META_VERTICALMODE)+"=Vertical:Horizonal}",
-				"§e - Durability §7: ${I:"+ft(FEATURE_META_DURABILITY)+"=0} of ${I:"+ft(FEATURE_META_DURABILITY_MAX)+"=0} ${B:"+ft(FEATURE_DISPLAY_UNBREAKABLE)+"=(Infinity):}",
-				"§e - Size §7: ${I:"+ft(FEATURE_META_SIZE)+"=0}",
-				"§e - UseCount §7: ${I:"+ft(FEATURE_META_COUNT_USE)+"=0}",
-				"§e - PlaceCount §7: ${I:"+ft(FEATURE_META_COUNT_PLACE)+"=0}",
-				"§e - Level §7: ${I:"+ft(FEATURE_DISPLAY_LEVEL)+"=0}",
+				"§3 - Mode §7: ${B:"+ft(FEATURE_META_VERTICALMODE)+"=Vertical:Horizonal}",
+				"§3 - Durability §7: ${I:"+ft(FEATURE_META_DURABILITY)+"=0} of ${I:"+ft(FEATURE_META_DURABILITY_MAX)+"=0} ${B:"+ft(FEATURE_DISPLAY_UNBREAKABLE)+"=(Infinity):}",
+				"§3 - Size §7: ${I:"+ft(FEATURE_META_SIZE)+"=0}",
+				"§3 - UseCount §7: ${I:"+ft(FEATURE_META_COUNT_USE)+"=0}",
+				"§3 - PlaceCount §7: ${I:"+ft(FEATURE_META_COUNT_PLACE)+"=0}",
+				"§3 - Level §7: ${I:"+ft(FEATURE_DISPLAY_LEVEL)+"=0}",
 				// "§e - Exp : ${I:"+ft(FEATURE_META_EXP+")=0} of ${I:"+ft(FEATURE_META_EXP_MAX)+"=0}",
 				// "§e - Particle   : ${I:"+ft(FEATURE_META_PARTICLE)+"=§}${S:"+ft(FEATURE_DISPLAY_PARTICLE)+"}",
 		});

@@ -43,6 +43,7 @@ public class WandListener implements Listener, CommandExecutor {
 	private final Plugin plugin;
 	private final WandData wanddata;
 	private NativeMinecraft nativemc;
+	private final WorldGuardHandler worldguard;
 	private LoadingCache<ItemLoreRaw, ItemLoreMetaImmutable> cache = CacheBuilder.newBuilder()
 			.maximumSize(100)
 			.expireAfterAccess(6, TimeUnit.SECONDS)
@@ -59,6 +60,7 @@ public class WandListener implements Listener, CommandExecutor {
 		this.plugin = plugin;
 		this.wanddata = data;
 		this.nativemc = NativeMinecraft.NativeMinecraftFactory.create(plugin);
+		this.worldguard = WorldGuardHandler.Factory.create(plugin);
 		new BukkitRunnable() {
 			public void run() {
 				onEffect();
@@ -172,10 +174,9 @@ public class WandListener implements Listener, CommandExecutor {
 
 			if (block!=null&&action==Action.RIGHT_CLICK_BLOCK) {
 				final BlockFace face = event.getBlockFace();
-				if (face!=null) {
-					onItemUse(itemStackHolder, meta, player, player.getWorld(), block, face);
-					event.setCancelled(true);
-				}
+				if (face!=null)
+					if (onItemUse(itemStackHolder, meta, player, player.getWorld(), block, face))
+						event.setCancelled(true);
 			} else if (player.isSneaking()&&(action==Action.LEFT_CLICK_AIR||action==Action.LEFT_CLICK_BLOCK)) {
 				final String key = this.wanddata.key(WandData.FEATURE_META_VERTICALMODE);
 				meta.setFlag(key, !meta.getFlag(key, false));
@@ -192,15 +193,17 @@ public class WandListener implements Listener, CommandExecutor {
 		/*if (!player.capabilities.allowEdit)
 			return false;
 		else*/ {
+			if (target.isEmpty())
+				return false;
+
+			final int maxdurability = meta.getNumber(this.wanddata.keyData(WandData.FEATURE_META_DURABILITY_MAX), 0);
+			meta.setFlag(this.wanddata.keyData(WandData.FEATURE_DISPLAY_UNBREAKABLE), maxdurability<=0);
+
 			final List<Location> blocks = getPotentialBlocks(itemStack, meta, player, world, target, face);
 
 			if (blocks.isEmpty())
 				return false;
-			else if (target.isEmpty())
-				return false;
 			else {
-				final int maxdurability = meta.getNumber(this.wanddata.keyData(WandData.FEATURE_META_DURABILITY_MAX), 0);
-				meta.setFlag(this.wanddata.keyData(WandData.FEATURE_DISPLAY_UNBREAKABLE), maxdurability<=0);
 				final String keydurability = this.wanddata.keyData(WandData.FEATURE_META_DURABILITY);
 				final int durability = meta.getNumber(keydurability, 0);
 
@@ -278,6 +281,9 @@ public class WandListener implements Listener, CommandExecutor {
 		if (target==null||target.isEmpty())
 			return blocks;
 
+		if (!this.worldguard.canBuild(player, target))
+			return blocks;
+
 		final ItemStack blockItem = this.nativemc.getItemFromBlock(target);
 
 		int data = -1;
@@ -333,7 +339,13 @@ public class WandListener implements Listener, CommandExecutor {
 
 		final Location modblockpos = target.getLocation().clone().add(dx, dy, dz);
 
-		if (numBlocks<=0||!this.nativemc.canPlace(modblockpos.getBlock())||modblockpos.getBlockY()>=255||!world.getNearbyEntities(modblockpos.clone().add(.5, .5, .5), .5, .5, .5).isEmpty())
+		if (numBlocks<=0||!this.nativemc.canPlace(modblockpos.getBlock())||modblockpos.getBlockY()>=255)
+			return blocks;
+
+		if (!world.getNearbyEntities(modblockpos.clone().add(.5, .5, .5), .5, .5, .5).isEmpty())
+			return blocks;
+
+		if (!this.worldguard.canBuild(player, modblockpos))
 			return blocks;
 
 		blocks.add(modblockpos);
@@ -350,6 +362,7 @@ public class WandListener implements Listener, CommandExecutor {
 							blocks.size()>=numBlocks||
 									blocks.contains(targetloc)||
 									!this.nativemc.canPlace(targetloc.getBlock())||
+									!this.worldguard.canBuild(player, targetloc)||
 									!baseloc.getBlock().getState().getData().equals(target.getState().getData())||
 									data!=-1&&data!=this.nativemc.getDropData(baseloc.getBlock())||
 									!world.getNearbyEntities(targetloc.clone().add(.5, .5, .5), .5, .5, .5).isEmpty()

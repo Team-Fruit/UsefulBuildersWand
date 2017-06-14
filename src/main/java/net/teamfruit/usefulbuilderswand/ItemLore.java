@@ -60,7 +60,7 @@ public abstract class ItemLore {
 					if (!format.metaFormat.isEmpty()) {
 						final String formatFirst = format.metaFormat.get(0);
 						if (!StringUtils.isEmpty(formatFirst))
-							builder.add(format.prefix+StringUtils.substringAfter(StringUtils.defaultString(meta.getDisplayName()), format.prefix));
+							builder.add(StringUtils.defaultString(meta.getDisplayName()));
 					}
 					final List<String> lore = meta.getLore();
 					if (lore!=null)
@@ -102,8 +102,17 @@ public abstract class ItemLore {
 
 		public ItemLoreRaw updateContents(final ItemLoreDataFormat format, final ItemLoreContent contents) {
 			final List<String> output = Lists.newArrayList(get());
-			final List<String> input = contents.get();
+			List<String> input = contents.get();
+
 			if (!output.isEmpty()) {
+				String first = null;
+				if (!format.metaFormat.isEmpty()) {
+					final String formatFirst = format.metaFormat.get(0);
+					if (!StringUtils.isEmpty(formatFirst)&&!input.isEmpty()) {
+						first = input.get(0);
+						input = input.subList(1, input.size());
+					}
+				}
 				final int loresize = output.size();
 				int i = 0;
 				boolean done = false;
@@ -120,6 +129,8 @@ public abstract class ItemLore {
 						done = true;
 					}
 				}
+				if (first!=null)
+					output.set(0, format.prefix+first);
 			} else
 				for (final String content : input)
 					output.add(format.prefix+content);
