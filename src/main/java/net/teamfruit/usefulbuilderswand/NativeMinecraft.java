@@ -32,7 +32,7 @@ public interface NativeMinecraft {
 
 	RayTraceResult rayTrace(final Player player);
 
-	void spawnParticles(final Player player, final Location loc);
+	void spawnParticles(final Player player, final Location loc, float r, float g, float b);
 
 	boolean isMainHand(final PlayerInteractEvent event);
 

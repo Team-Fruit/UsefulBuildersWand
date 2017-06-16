@@ -123,9 +123,13 @@ public class WandListener implements Listener, CommandExecutor {
 			e.printStackTrace();
 		}
 
-		if (blocks!=null)
+		if (blocks!=null) {
+			final int color_r = meta.getNumber(this.wanddata.keyData(WandData.FEATURE_META_PARTICLE_COLOR_R), 255);
+			final int color_g = meta.getNumber(this.wanddata.keyData(WandData.FEATURE_META_PARTICLE_COLOR_G), 255);
+			final int color_b = meta.getNumber(this.wanddata.keyData(WandData.FEATURE_META_PARTICLE_COLOR_B), 255);
 			for (final Location block : blocks)
-				this.nativemc.spawnParticles(player, block);
+				this.nativemc.spawnParticles(player, block, color_r/255f, color_g/255f, color_b/255f);
+		}
 	}
 
 	@EventHandler(priority = EventPriority.HIGH)

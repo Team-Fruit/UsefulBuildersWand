@@ -30,8 +30,11 @@ public class WandData {
 	public static final String FEATURE_META_COUNT_PLACE = "feature.meta.count.place";
 	public static final String FEATURE_META_COUNT_USE = "feature.meta.count.use";
 	// public static final String FEATURE_META_PARTICLE = "feature.meta.particle";
+	public static final String FEATURE_META_PARTICLE_COLOR_R = "feature.meta.particle.color.r";
+	public static final String FEATURE_META_PARTICLE_COLOR_G = "feature.meta.particle.color.g";
+	public static final String FEATURE_META_PARTICLE_COLOR_B = "feature.meta.particle.color.b";
 	public static final String FEATURE_DISPLAY_UNBREAKABLE = "feature.display.unbreakable";
-	public static final String FEATURE_DISPLAY_LEVEL = "feature.display.level";
+	// public static final String FEATURE_DISPLAY_LEVEL = "feature.display.level";
 	// public static final String FEATURE_DISPLAY_PARTICLE = "feature.display.particle";
 
 	private FileConfiguration cfg;
@@ -56,18 +59,21 @@ public class WandData {
 		features.put(FEATURE_META_COUNT_PLACE, "§6§8§e§r");
 		features.put(FEATURE_META_COUNT_USE, "§2§7§b§r");
 		// features.put(FEATURE_META_PARTICLE, "§3§4§b§r");
+		features.put(FEATURE_META_PARTICLE_COLOR_R, "§4§3§4§r");
+		features.put(FEATURE_META_PARTICLE_COLOR_G, "§c§a§d§r");
+		features.put(FEATURE_META_PARTICLE_COLOR_B, "§f§8§e§r");
 		features.put(FEATURE_DISPLAY_UNBREAKABLE, "§3§a§c§r");
-		features.put(FEATURE_DISPLAY_LEVEL, "§2§a§b§r");
+		// features.put(FEATURE_DISPLAY_LEVEL, "§2§a§b§r");
 		// features.put(FEATURE_DISPLAY_PARTICLE, "§4§4§f§r");
 
 		final List<String> format = Lists.newArrayList(new String[] {
 				"§eBuilder's Wand §7x${i:"+ft(FEATURE_META_SIZE)+"=0} §7[${b:"+ft(FEATURE_META_VERTICALMODE)+"=┃:━}§7](${i:"+ft(FEATURE_META_DURABILITY)+"=0}/${i:"+ft(FEATURE_META_DURABILITY_MAX)+"=0}${b:"+ft(FEATURE_DISPLAY_UNBREAKABLE)+"= (Infinity):}§7)",
 				"§3 - Mode §7: ${B:"+ft(FEATURE_META_VERTICALMODE)+"=Vertical:Horizonal}",
 				"§3 - Durability §7: ${I:"+ft(FEATURE_META_DURABILITY)+"=0} of ${I:"+ft(FEATURE_META_DURABILITY_MAX)+"=0} ${B:"+ft(FEATURE_DISPLAY_UNBREAKABLE)+"=(Infinity):}",
-				"§3 - Size §7: ${I:"+ft(FEATURE_META_SIZE)+"=0}",
+				"§3 - Size §7: ${I:"+ft(FEATURE_META_SIZE)+"=0}${I:"+ft(FEATURE_META_PARTICLE_COLOR_R)+"=§255}${I:"+ft(FEATURE_META_PARTICLE_COLOR_G)+"=§255}${I:"+ft(FEATURE_META_PARTICLE_COLOR_B)+"=§255}",
 				"§3 - UseCount §7: ${I:"+ft(FEATURE_META_COUNT_USE)+"=0}",
 				"§3 - PlaceCount §7: ${I:"+ft(FEATURE_META_COUNT_PLACE)+"=0}",
-				"§3 - Level §7: ${I:"+ft(FEATURE_DISPLAY_LEVEL)+"=0}",
+				// "§3 - Level §7: ${I:"+ft(FEATURE_DISPLAY_LEVEL)+"=0}",
 				// "§e - Exp : ${I:"+ft(FEATURE_META_EXP+")=0} of ${I:"+ft(FEATURE_META_EXP_MAX)+"=0}",
 				// "§e - Particle   : ${I:"+ft(FEATURE_META_PARTICLE)+"=§}${S:"+ft(FEATURE_DISPLAY_PARTICLE)+"}",
 		});

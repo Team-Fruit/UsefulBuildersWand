@@ -81,7 +81,7 @@ public class NativeMinecraft_v1_8_R3 implements NativeMinecraft {
 	private final Field f$CraftWorld$world;
 	private final Field f$MovingObjectPosition$direction;
 	private final Field f$EntityPlayer$playerConnection;
-	private final Field f$EnumParticle$CRIT_MAGIC;
+	private final Field f$EnumParticle$REDSTONE;
 
 	private final Constructor<?> n$BlockPosition;
 	private final Constructor<?> n$Vec3D;
@@ -149,7 +149,7 @@ public class NativeMinecraft_v1_8_R3 implements NativeMinecraft {
 		this.f$CraftWorld$world = $pfield(this.c$CraftWorld, "world");
 		this.f$MovingObjectPosition$direction = $field(this.c$MovingObjectPosition, "direction");
 		this.f$EntityPlayer$playerConnection = $field(this.c$EntityPlayer, "playerConnection");
-		this.f$EnumParticle$CRIT_MAGIC = $field(this.c$EnumParticle, "CRIT_MAGIC");
+		this.f$EnumParticle$REDSTONE = $field(this.c$EnumParticle, "REDSTONE");
 
 		this.n$BlockPosition = $new(this.c$BlockPosition, int.class, int.class, int.class);
 		this.n$Vec3D = $new(this.c$Vec3D, double.class, double.class, double.class);
@@ -326,9 +326,9 @@ public class NativeMinecraft_v1_8_R3 implements NativeMinecraft {
 		return null;
 	}
 
-	public void spawnParticles(final Player player, final Location loc) {
+	public void spawnParticles(final Player player, final Location loc, final float r, final float g, final float b) {
 		try {
-			final Object nPacket = this.n$PacketPlayOutWorldParticles.newInstance(this.f$EnumParticle$CRIT_MAGIC.get(null), true, loc.getBlockX()+.5f, loc.getBlockY()+.5f, loc.getBlockZ()+.5f, 0f, 0f, 0f, 0f, 1, new int[] {});
+			final Object nPacket = this.n$PacketPlayOutWorldParticles.newInstance(this.f$EnumParticle$REDSTONE.get(null), true, loc.getBlockX()+.5f, loc.getBlockY()+.5f, loc.getBlockZ()+.5f, r+Float.MIN_VALUE, g, b, 1f, 0, new int[] {});
 			final Object nPlayer = this.m$CraftPlayer$getHandle.invoke(player);
 			final Object nConnection = this.f$EntityPlayer$playerConnection.get(nPlayer);
 			this.m$PlayerConnection$sendPacket.invoke(nConnection, nPacket);

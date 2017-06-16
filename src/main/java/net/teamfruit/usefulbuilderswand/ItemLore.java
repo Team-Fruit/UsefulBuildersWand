@@ -80,7 +80,7 @@ public abstract class ItemLore {
 					if (!format.metaFormat.isEmpty()&&size>0) {
 						meta.setDisplayName(lore.get(0));
 						if (size>1)
-							lore = lore.subList(1, size-1);
+							lore = lore.subList(1, size);
 						else
 							lore = ImmutableList.of();
 					}
@@ -130,7 +130,7 @@ public abstract class ItemLore {
 					}
 				}
 				if (first!=null)
-					output.set(0, format.prefix+first);
+					output.add(0, format.prefix+first);
 			} else
 				for (final String content : input)
 					output.add(format.prefix+content);
