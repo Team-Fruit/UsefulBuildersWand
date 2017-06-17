@@ -82,7 +82,7 @@ public class WandListener implements Listener, CommandExecutor {
 							final String key = StringUtils.substringBefore(arg, "=");
 							final String value = StringUtils.substringAfter(arg, "=");
 							final String key1 = this.wanddata.keyData(WandData.FEATURE+"."+key);
-							meta.set(format, key1!=null ? key1 : key, value);
+							meta.addAttribute(format, key1!=null ? key1 : key, value);
 						}
 					raw.updateContents(format, new ItemLoreContent().fromMeta(format, meta)).writeItemStack(format, itemStack);
 				} catch (final ExecutionException e) {

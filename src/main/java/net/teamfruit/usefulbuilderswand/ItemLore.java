@@ -193,44 +193,53 @@ public abstract class ItemLore {
 
 		public ItemLoreContent fromMeta(final ItemLoreDataFormat format, final ItemLoreMeta meta) {
 			final List<String> output = get();
-			for (final String line : format.metaFormat) {
-				final StringBuilder stb = new StringBuilder();
-				String data = line;
-				String current;
-				while (true) {
-					stb.append(NestedStringUtils.substringBeforeNested(data, "${", "$"));
-					if (StringUtils.isEmpty(current = NestedStringUtils.substringNested(data, "${", "}", "$", null)))
-						break;
-					final String type = StringUtils.substringBefore(current, ":");
-					final String namevalue = StringUtils.substringAfter(current, ":");
-					final String name = StringUtils.substringBefore(namevalue, "=");
-					if (StringUtils.equalsIgnoreCase(type, "B")) {
-						final FlagMeta m = format.attributesFormat.typeFlag.get(name);
-						if (m!=null) {
-							final String s = m.compose(format, meta.getFlag(name));
-							if (s!=null)
-								stb.append(format.valueprefix).append(name).append(s).append(format.valuesuffix);
-						}
-					} else if (StringUtils.equalsIgnoreCase(type, "I")) {
-						final NumberMeta m = format.attributesFormat.typeNumber.get(name);
-						if (m!=null) {
-							final String s = m.compose(format, meta.getNumber(name));
-							if (s!=null)
-								stb.append(format.valueprefix).append(name).append(s).append(format.valuesuffix);
-						}
-					} else if (StringUtils.equalsIgnoreCase(type, "S")) {
-						final TextMeta m = format.attributesFormat.typeText.get(name);
-						if (m!=null) {
-							final String s = m.compose(format, meta.getText(name));
-							if (s!=null)
-								stb.append(format.valueprefix).append(name).append(s).append(format.valuesuffix);
-						}
-					}
-					data = NestedStringUtils.substringAfterNested(data, "${", "}", "$", null);
-				}
-				output.add(stb.toString());
-			}
+			for (final String line : format.metaFormat)
+				output.add(getAttributes(format, meta, line));
 			return this;
+		}
+
+		public String getAttributes(final ItemLoreDataFormat format, final ItemLoreMeta meta, final String attributesbase) {
+			final StringBuilder stb = new StringBuilder();
+			String data = attributesbase;
+			String current;
+			while (true) {
+				stb.append(NestedStringUtils.substringBeforeNested(data, "${", "$"));
+				if (StringUtils.isEmpty(current = NestedStringUtils.substringNested(data, "${", "}", "$", null)))
+					break;
+				stb.append(getAttribute(format, meta, current));
+				data = NestedStringUtils.substringAfterNested(data, "${", "}", "$", null);
+			}
+			return stb.toString();
+		}
+
+		public String getAttribute(final ItemLoreDataFormat format, final ItemLoreMeta meta, final String attributebase) {
+			final StringBuilder stb = new StringBuilder();
+			final String type = StringUtils.substringBefore(attributebase, ":");
+			final String namevalue = StringUtils.substringAfter(attributebase, ":");
+			final String name = StringUtils.substringBefore(namevalue, "=");
+			if (StringUtils.equalsIgnoreCase(type, "B")) {
+				final FlagMeta m = format.attributesFormat.typeFlag.get(name);
+				if (m!=null) {
+					final String s = m.compose(format, meta.getFlag(name));
+					if (s!=null)
+						stb.append(format.valueprefix).append(name).append(s).append(format.valuesuffix);
+				}
+			} else if (StringUtils.equalsIgnoreCase(type, "I")) {
+				final NumberMeta m = format.attributesFormat.typeNumber.get(name);
+				if (m!=null) {
+					final String s = m.compose(format, meta.getNumber(name));
+					if (s!=null)
+						stb.append(format.valueprefix).append(name).append(s).append(format.valuesuffix);
+				}
+			} else if (StringUtils.equalsIgnoreCase(type, "S")) {
+				final TextMeta m = format.attributesFormat.typeText.get(name);
+				if (m!=null) {
+					final String s = m.compose(format, meta.getText(name));
+					if (s!=null)
+						stb.append(format.valueprefix).append(name).append(s).append(format.valuesuffix);
+				}
+			}
+			return stb.toString();
 		}
 
 		@Override
@@ -414,44 +423,62 @@ public abstract class ItemLore {
 
 		public ItemLoreMetaEditable fromContents(final ItemLoreDataFormat format, final ItemLoreContent contents) {
 			System.out.print("parsed");
-			this.modcount++;
 			final List<String> input = contents.get();
 			for (final ListIterator<String> itr = input.listIterator(); itr.hasNext();) {
 				final String line = itr.next();
-				String data = line;
-				String current;
-				readvalue: while (!StringUtils.isEmpty(current = NestedStringUtils.substringNested(data, format.valueprefix, format.valuesuffix))) {
-					data = NestedStringUtils.substringAfterNested(data, format.valueprefix, format.valuesuffix);
-					for (final Entry<String, FlagMeta> entry : format.attributesFormat.typeFlag.entrySet()) {
-						final String typeFlag = entry.getKey();
-						if (StringUtils.startsWith(current, typeFlag)) {
-							final String dataValue = StringUtils.substringAfter(current, typeFlag);
+				addAttributes(format, line);
+			}
+			return this;
+		}
 
-							setFlag(typeFlag, entry.getValue().parse(format, dataValue));
-							continue readvalue;
-						}
-					}
-					for (final Entry<String, NumberMeta> entry : format.attributesFormat.typeNumber.entrySet()) {
-						final String typeNumber = entry.getKey();
-						if (StringUtils.startsWith(current, typeNumber)) {
-							final String dataValue = StringUtils.substringAfter(current, typeNumber);
+		public ItemLoreMetaEditable addAttributes(final ItemLoreDataFormat format, final String attributes) {
+			String data = attributes;
+			String current;
+			while (!StringUtils.isEmpty(current = NestedStringUtils.substringNested(data, format.valueprefix, format.valuesuffix))) {
+				data = NestedStringUtils.substringAfterNested(data, format.valueprefix, format.valuesuffix);
+				addAttribute(format, current);
+			}
+			return this;
+		}
 
-							setNumber(typeNumber, entry.getValue().parse(format, dataValue));
-							continue readvalue;
-						}
-					}
-					for (final Entry<String, TextMeta> entry : format.attributesFormat.typeText.entrySet()) {
-						final String typeText = entry.getKey();
-						if (StringUtils.startsWith(current, typeText)) {
-							final String dataValue = StringUtils.substringAfter(current, typeText);
+		public ItemLoreMetaEditable addAttribute(final ItemLoreDataFormat format, final String attribute) {
+			for (final Entry<String, FlagMeta> entry : format.attributesFormat.typeFlag.entrySet()) {
+				final String typeFlag = entry.getKey();
+				if (StringUtils.startsWith(attribute, typeFlag)) {
+					final String dataValue = StringUtils.substringAfter(attribute, typeFlag);
 
-							setText(typeText, entry.getValue().parse(format, dataValue));
-							continue readvalue;
-						}
-					}
+					setFlag(typeFlag, entry.getValue().parse(format, dataValue));
+					return this;
+				}
+			}
+			for (final Entry<String, NumberMeta> entry : format.attributesFormat.typeNumber.entrySet()) {
+				final String typeNumber = entry.getKey();
+				if (StringUtils.startsWith(attribute, typeNumber)) {
+					final String dataValue = StringUtils.substringAfter(attribute, typeNumber);
+
+					setNumber(typeNumber, entry.getValue().parse(format, dataValue));
+					return this;
+				}
+			}
+			for (final Entry<String, TextMeta> entry : format.attributesFormat.typeText.entrySet()) {
+				final String typeText = entry.getKey();
+				if (StringUtils.startsWith(attribute, typeText)) {
+					final String dataValue = StringUtils.substringAfter(attribute, typeText);
+
+					setText(typeText, entry.getValue().parse(format, dataValue));
+					return this;
 				}
 			}
 			return this;
+		}
+
+		public void addAttribute(final ItemLoreDataFormat format, final String key, final String value) {
+			if (format.attributesFormat.typeFlag.containsKey(key))
+				setFlag(key, format.attributesFormat.typeFlag.get(key).parse(format, value));
+			else if (format.attributesFormat.typeNumber.containsKey(key))
+				setNumber(key, format.attributesFormat.typeNumber.get(key).parse(format, value));
+			else if (format.attributesFormat.typeText.containsKey(key))
+				setText(key, format.attributesFormat.typeText.get(key).parse(format, value));
 		}
 
 		public @Nullable Integer getNumber(final String key) {
@@ -509,15 +536,6 @@ public abstract class ItemLore {
 				this.dataFlag.put(key, value);
 			else
 				this.dataFlag.remove(key);
-		}
-
-		public void set(final ItemLoreDataFormat format, final String key, final String value) {
-			if (format.attributesFormat.typeFlag.containsKey(key))
-				setFlag(key, format.attributesFormat.typeFlag.get(key).parse(format, value));
-			else if (format.attributesFormat.typeNumber.containsKey(key))
-				setNumber(key, format.attributesFormat.typeNumber.get(key).parse(format, value));
-			else if (format.attributesFormat.typeText.containsKey(key))
-				setText(key, format.attributesFormat.typeText.get(key).parse(format, value));
 		}
 
 		@Override
@@ -817,6 +835,7 @@ public abstract class ItemLore {
 							data = defaultValue;
 						else
 							data = false;
+					//					new ItemLoreMetaEditable().f
 					return data ? strTrue : strFalse;
 				}
 
