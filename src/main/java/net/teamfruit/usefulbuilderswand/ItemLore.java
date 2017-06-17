@@ -20,6 +20,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 import net.teamfruit.usefulbuilderswand.ItemLore.ItemLoreDataFormat.FlagMeta;
+import net.teamfruit.usefulbuilderswand.ItemLore.ItemLoreDataFormat.FlagMeta.FlagMetaAccess;
 import net.teamfruit.usefulbuilderswand.ItemLore.ItemLoreDataFormat.NumberMeta;
 import net.teamfruit.usefulbuilderswand.ItemLore.ItemLoreDataFormat.TextMeta;
 
@@ -266,22 +267,35 @@ public abstract class ItemLore {
 			final String type = StringUtils.substringBefore(attributebase, ":");
 			final String namevalue = StringUtils.substringAfter(attributebase, ":");
 			final String name = StringUtils.substringBefore(namevalue, "=");
+			final String value = StringUtils.substringAfter(namevalue, "=");
 			if (StringUtils.equalsIgnoreCase(type, "B")) {
-				final FlagMeta m = format.attributesFormat.typeFlag.get(name);
+				final FlagMeta m;
+				if (StringUtils.equals(type, "B"))
+					m = format.attributesFormat.typeFlag.get(name);
+				else
+					m = FlagMeta.Factory.create(value);
 				if (m!=null) {
-					final String s = m.compose(format, getFlag(name));
+					final String s = m instanceof FlagMetaAccess ? ((FlagMetaAccess) m).compose(format, this, getFlag(name)) : m.compose(format, getFlag(name));
 					if (s!=null)
 						stb.append(format.valueprefix).append(name).append(s).append(format.valuesuffix);
 				}
 			} else if (StringUtils.equalsIgnoreCase(type, "I")) {
-				final NumberMeta m = format.attributesFormat.typeNumber.get(name);
+				final NumberMeta m;
+				if (StringUtils.equals(type, "I"))
+					m = format.attributesFormat.typeNumber.get(name);
+				else
+					m = NumberMeta.Factory.create(value);
 				if (m!=null) {
 					final String s = m.compose(format, getNumber(name));
 					if (s!=null)
 						stb.append(format.valueprefix).append(name).append(s).append(format.valuesuffix);
 				}
 			} else if (StringUtils.equalsIgnoreCase(type, "S")) {
-				final TextMeta m = format.attributesFormat.typeText.get(name);
+				final TextMeta m;
+				if (StringUtils.equals(type, "S"))
+					m = format.attributesFormat.typeText.get(name);
+				else
+					m = TextMeta.Factory.create(value);
 				if (m!=null) {
 					final String s = m.compose(format, getText(name));
 					if (s!=null)
