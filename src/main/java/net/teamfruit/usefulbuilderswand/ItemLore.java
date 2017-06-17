@@ -209,17 +209,26 @@ public abstract class ItemLore {
 						final String namevalue = StringUtils.substringAfter(current, ":");
 						final String name = StringUtils.substringBefore(namevalue, "=");
 						if (StringUtils.equalsIgnoreCase(type, "B")) {
-							final String s = format.typeFlag.get(name).compose(format, meta.getFlag(name));
-							if (s!=null)
-								stb.append(format.valueprefix).append(name).append(s).append(format.valuesuffix);
+							final FlagMeta m = format.typeFlag.get(name);
+							if (m!=null) {
+								final String s = m.compose(format, meta.getFlag(name));
+								if (s!=null)
+									stb.append(format.valueprefix).append(name).append(s).append(format.valuesuffix);
+							}
 						} else if (StringUtils.equalsIgnoreCase(type, "I")) {
-							final String s = format.typeNumber.get(name).compose(format, meta.getNumber(name));
-							if (s!=null)
-								stb.append(format.valueprefix).append(name).append(s).append(format.valuesuffix);
+							final NumberMeta m = format.typeNumber.get(name);
+							if (m!=null) {
+								final String s = m.compose(format, meta.getNumber(name));
+								if (s!=null)
+									stb.append(format.valueprefix).append(name).append(s).append(format.valuesuffix);
+							}
 						} else if (StringUtils.equalsIgnoreCase(type, "S")) {
-							final String s = format.typeText.get(name).compose(format, meta.getText(name));
-							if (s!=null)
-								stb.append(format.valueprefix).append(name).append(s).append(format.valuesuffix);
+							final TextMeta m = format.typeText.get(name);
+							if (m!=null) {
+								final String s = m.compose(format, meta.getText(name));
+								if (s!=null)
+									stb.append(format.valueprefix).append(name).append(s).append(format.valuesuffix);
+							}
 						}
 						data = StringUtils.substringAfter(data, "}");
 					}

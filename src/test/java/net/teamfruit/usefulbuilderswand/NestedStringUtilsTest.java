@@ -1,0 +1,119 @@
+package net.teamfruit.usefulbuilderswand;
+
+import static net.teamfruit.usefulbuilderswand.NestedStringUtils.*;
+import static org.junit.Assert.*;
+
+import java.util.Scanner;
+
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.io.input.CloseShieldInputStream;
+import org.apache.commons.lang.StringUtils;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
+public class NestedStringUtilsTest {
+
+	@BeforeClass
+	public static void setUpBeforeClass() throws Exception {
+	}
+
+	@AfterClass
+	public static void tearDownAfterClass() throws Exception {
+	}
+
+	@Before
+	public void setUp() throws Exception {
+	}
+
+	@After
+	public void tearDown() throws Exception {
+	}
+
+	@Test
+	public void testA1() {
+		final String a = substringNested("({{{a=b},{c=d}}}", "{", "}");
+		final String b = "{{a=b},{c=d}}";
+		assertEquals(b, a);
+	}
+
+	@Test
+	public void testA2() {
+		final String a = substringNested("({({a=b},({c=d}}", "({", "}");
+		final String b = "({a=b},({c=d}";
+		assertEquals(b, a);
+	}
+
+	@Test
+	public void testA3() {
+		final String a = substringNested("{{{a=b})}),{c=d})})", "{", "})");
+		final String b = "{{a=b})}),{c=d})";
+		assertEquals(b, a);
+	}
+
+	@Test
+	public void testA4() {
+		final String a = substringNested("({({a=b({}),({})c=d})})", "({", "})");
+		final String b = "({a=b({}),({})c=d})";
+		assertEquals(b, a);
+	}
+
+	@Test
+	public void testA5() {
+		final String a = substringNested("({({({({a=b},({}}c=d}}", "({", "}");
+		final String b = "({({({a=b},({}}c=d}";
+		assertEquals(b, a);
+	}
+
+	@Test
+	public void testB1() {
+		final String a = substringNested("({{{a=b},{c=d}}}", "{", "}", "", "");
+		final String b = "{{a=b},{c=d}}";
+		assertEquals(b, a);
+	}
+
+	@Test
+	public void testB2() {
+		final String a = substringNested("$({({$({({a=$({b},({c=d$({}}", "({", "}", "$", "");
+		final String b = "$({({a=$({b},({c=d$({}";
+		assertEquals(b, a);
+	}
+
+	@Test
+	public void testB3() {
+		final String a = substringNested("%&{&%}){%&{){%&{{a=b})})%&{)&%}),{c=d%&{})%&{&%})})%&{", "{", "})", "%&", "&%");
+		final String b = "%&{){%&{{a=b})})%&{)&%}),{c=d%&{})%&{&%})";
+		assertEquals(b, a);
+	}
+
+	@Test
+	public void testB4() {
+		final String a = substringNested("#})({({###({a=b({###({#})}),({###({})#})c=d###({})###({})#})", "({", "})", "###", "#");
+		final String b = "({###({a=b({###({#})}),({###({})#})c=d###({})###({";
+		assertEquals(b, a);
+	}
+
+	@Test
+	public void testB5() {
+		final String a = substringNested("\\}\\({\\}({({({({\\({a\\}=b},\\({({\\}}}\\({c=d\\({}\\}}\\({", "({", "}", "\\", "\\");
+		final String b = "({({({\\({a\\}=b},\\({({\\}}}\\({c=d\\({}\\}";
+		assertEquals(b, a);
+	}
+
+	public void testInteractive() {
+		Scanner sc = null;
+		try {
+			sc = new Scanner(new CloseShieldInputStream(System.in));
+			String in;
+			while (!StringUtils.isEmpty(in = sc.nextLine()))
+				System.out.println(substringNested(in, "${", "};", "st", "$"));
+		} catch (final Exception e) {
+			e.printStackTrace();
+		} finally {
+			IOUtils.closeQuietly(sc);
+		}
+	}
+
+}

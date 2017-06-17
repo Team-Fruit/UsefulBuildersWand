@@ -19,7 +19,7 @@ import net.teamfruit.usefulbuilderswand.ItemLore.ItemLoreMeta;
 import net.teamfruit.usefulbuilderswand.ItemLore.ItemLoreMetaEditable;
 import net.teamfruit.usefulbuilderswand.ItemLore.ItemLoreRaw;
 
-public class ItemLoreDataTest {
+public class ItemLoreTest {
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
 	}
@@ -37,7 +37,7 @@ public class ItemLoreDataTest {
 	}
 
 	@Test
-	public void test() {
+	public void testLore() {
 		final String prefix = "*PRE+";
 		final String begin = "{{";
 		final String end = "}}";
