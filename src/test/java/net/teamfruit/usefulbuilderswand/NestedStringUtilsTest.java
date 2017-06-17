@@ -102,6 +102,48 @@ public class NestedStringUtilsTest {
 		assertEquals(b, a);
 	}
 
+	@Test
+	public void testC1() {
+		final String a = substringBeforeNested("$({({$({({a=$({b},({c=d$({}}", "({", "$");
+		final String b = "$({";
+		assertEquals(b, a);
+	}
+
+	@Test
+	public void testC2() {
+		final String a = substringBeforeNested("#})({({###({a=b({###({#})}),({###({})#})c=d###({})###({})#})", "({", "###");
+		final String b = "#})";
+		assertEquals(b, a);
+	}
+
+	@Test
+	public void testC3() {
+		final String a = substringBeforeNested("\\}\\({\\}({({({({\\({a\\}=b},\\({({\\}}}\\({c=d\\({}\\}}\\({", "({", "\\");
+		final String b = "\\}\\({\\}";
+		assertEquals(b, a);
+	}
+
+	@Test
+	public void testD1() {
+		final String a = substringAfterNested("$({({$({({a=$({b},({c=d$({}}e", "({", "}", "$", "");
+		final String b = "e";
+		assertEquals(b, a);
+	}
+
+	@Test
+	public void testD2() {
+		final String a = substringAfterNested("#})({({###({a=b({###({#})}),({###({})#})c=d###({})###({})})#})", "({", "})", "###", "#");
+		final String b = "})#})";
+		assertEquals(b, a);
+	}
+
+	@Test
+	public void testD3() {
+		final String a = substringAfterNested("\\}\\({\\}({({({({\\({a\\}=b},\\({({\\}}}\\({c=d\\({}\\}}\\({", "({", "}", "\\", "\\");
+		final String b = "\\({";
+		assertEquals(b, a);
+	}
+
 	public void testInteractive() {
 		Scanner sc = null;
 		try {

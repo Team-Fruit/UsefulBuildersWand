@@ -197,41 +197,37 @@ public abstract class ItemLore {
 			for (final String line : format.metaFormat) {
 				final StringBuilder stb = new StringBuilder();
 				String data = line;
+				String current;
 				while (true) {
-					stb.append(StringUtils.substringBefore(data, "$"));
-					if ((data = StringUtils.substringAfter(data, "$")).isEmpty())
+					stb.append(NestedStringUtils.substringBeforeNested(data, "${", "$"));
+					if (StringUtils.isEmpty(current = NestedStringUtils.substringNested(data, "${", "}", "$", null)))
 						break;
-					if (StringUtils.startsWith(data, "$"))
-						data = StringUtils.substringAfter(data, "$");
-					else if (StringUtils.startsWith(data, "{")) {
-						final String current = StringUtils.substringBetween(data, "{", "}");
-						final String type = StringUtils.substringBefore(current, ":");
-						final String namevalue = StringUtils.substringAfter(current, ":");
-						final String name = StringUtils.substringBefore(namevalue, "=");
-						if (StringUtils.equalsIgnoreCase(type, "B")) {
-							final FlagMeta m = format.typeFlag.get(name);
-							if (m!=null) {
-								final String s = m.compose(format, meta.getFlag(name));
-								if (s!=null)
-									stb.append(format.valueprefix).append(name).append(s).append(format.valuesuffix);
-							}
-						} else if (StringUtils.equalsIgnoreCase(type, "I")) {
-							final NumberMeta m = format.typeNumber.get(name);
-							if (m!=null) {
-								final String s = m.compose(format, meta.getNumber(name));
-								if (s!=null)
-									stb.append(format.valueprefix).append(name).append(s).append(format.valuesuffix);
-							}
-						} else if (StringUtils.equalsIgnoreCase(type, "S")) {
-							final TextMeta m = format.typeText.get(name);
-							if (m!=null) {
-								final String s = m.compose(format, meta.getText(name));
-								if (s!=null)
-									stb.append(format.valueprefix).append(name).append(s).append(format.valuesuffix);
-							}
+					final String type = StringUtils.substringBefore(current, ":");
+					final String namevalue = StringUtils.substringAfter(current, ":");
+					final String name = StringUtils.substringBefore(namevalue, "=");
+					if (StringUtils.equalsIgnoreCase(type, "B")) {
+						final FlagMeta m = format.typeFlag.get(name);
+						if (m!=null) {
+							final String s = m.compose(format, meta.getFlag(name));
+							if (s!=null)
+								stb.append(format.valueprefix).append(name).append(s).append(format.valuesuffix);
 						}
-						data = StringUtils.substringAfter(data, "}");
+					} else if (StringUtils.equalsIgnoreCase(type, "I")) {
+						final NumberMeta m = format.typeNumber.get(name);
+						if (m!=null) {
+							final String s = m.compose(format, meta.getNumber(name));
+							if (s!=null)
+								stb.append(format.valueprefix).append(name).append(s).append(format.valuesuffix);
+						}
+					} else if (StringUtils.equalsIgnoreCase(type, "S")) {
+						final TextMeta m = format.typeText.get(name);
+						if (m!=null) {
+							final String s = m.compose(format, meta.getText(name));
+							if (s!=null)
+								stb.append(format.valueprefix).append(name).append(s).append(format.valuesuffix);
+						}
 					}
+					data = NestedStringUtils.substringAfterNested(data, "${", "}", "$", null);
 				}
 				output.add(stb.toString());
 			}
@@ -586,23 +582,20 @@ public abstract class ItemLore {
 			final Builder<String, TextMeta> typeTextBuilder = ImmutableMap.builder();
 			for (final String line : metaFormat) {
 				String data = line;
-				while (!(data = StringUtils.substringAfter(data, "$")).isEmpty())
-					if (StringUtils.startsWith(data, "$"))
-						data = StringUtils.substringAfter(data, "$");
-					else if (StringUtils.startsWith(data, "{")) {
-						final String current = StringUtils.substringBetween(data, "{", "}");
-						final String type = StringUtils.substringBefore(current, ":");
-						final String namevalue = StringUtils.substringAfter(current, ":");
-						final String name = StringUtils.substringBefore(namevalue, "=");
-						final String constant = StringUtils.substringAfter(namevalue, "=");
-						if (StringUtils.equals(type, "B"))
-							typeFlagBuilder.put(name, FlagMeta.Factory.create(constant));
-						else if (StringUtils.equals(type, "I"))
-							typeNumberBuilder.put(name, NumberMeta.Factory.create(constant));
-						else if (StringUtils.equals(type, "S"))
-							typeTextBuilder.put(name, TextMeta.Factory.create(constant));
-						data = StringUtils.substringAfter(data, "}");
-					}
+				String current;
+				while (!StringUtils.isEmpty(current = NestedStringUtils.substringNested(data, "${", "}", "$", null))) {
+					final String type = StringUtils.substringBefore(current, ":");
+					final String namevalue = StringUtils.substringAfter(current, ":");
+					final String name = StringUtils.substringBefore(namevalue, "=");
+					final String constant = StringUtils.substringAfter(namevalue, "=");
+					if (StringUtils.equals(type, "B"))
+						typeFlagBuilder.put(name, FlagMeta.Factory.create(constant));
+					else if (StringUtils.equals(type, "I"))
+						typeNumberBuilder.put(name, NumberMeta.Factory.create(constant));
+					else if (StringUtils.equals(type, "S"))
+						typeTextBuilder.put(name, TextMeta.Factory.create(constant));
+					data = NestedStringUtils.substringAfterNested(data, "${", "}", "$", null);
+				}
 			}
 			this.typeNumber = typeNumberBuilder.build();
 			this.typeText = typeTextBuilder.build();
