@@ -16,7 +16,6 @@ import org.bukkit.inventory.meta.ItemMeta;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableMap.Builder;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
@@ -206,21 +205,21 @@ public abstract class ItemLore {
 					final String namevalue = StringUtils.substringAfter(current, ":");
 					final String name = StringUtils.substringBefore(namevalue, "=");
 					if (StringUtils.equalsIgnoreCase(type, "B")) {
-						final FlagMeta m = format.typeFlag.get(name);
+						final FlagMeta m = format.attributesFormat.typeFlag.get(name);
 						if (m!=null) {
 							final String s = m.compose(format, meta.getFlag(name));
 							if (s!=null)
 								stb.append(format.valueprefix).append(name).append(s).append(format.valuesuffix);
 						}
 					} else if (StringUtils.equalsIgnoreCase(type, "I")) {
-						final NumberMeta m = format.typeNumber.get(name);
+						final NumberMeta m = format.attributesFormat.typeNumber.get(name);
 						if (m!=null) {
 							final String s = m.compose(format, meta.getNumber(name));
 							if (s!=null)
 								stb.append(format.valueprefix).append(name).append(s).append(format.valuesuffix);
 						}
 					} else if (StringUtils.equalsIgnoreCase(type, "S")) {
-						final TextMeta m = format.typeText.get(name);
+						final TextMeta m = format.attributesFormat.typeText.get(name);
 						if (m!=null) {
 							final String s = m.compose(format, meta.getText(name));
 							if (s!=null)
@@ -422,7 +421,7 @@ public abstract class ItemLore {
 				String data = line;
 				readvalue: while (!StringUtils.isEmpty(data = StringUtils.substringAfter(data, format.valueprefix))) {
 					final String current = StringUtils.substringBefore(data, format.valuesuffix);
-					for (final Entry<String, FlagMeta> entry : format.typeFlag.entrySet()) {
+					for (final Entry<String, FlagMeta> entry : format.attributesFormat.typeFlag.entrySet()) {
 						final String typeFlag = entry.getKey();
 						if (StringUtils.startsWith(current, typeFlag)) {
 							final String dataValue = StringUtils.substringAfter(current, typeFlag);
@@ -431,7 +430,7 @@ public abstract class ItemLore {
 							continue readvalue;
 						}
 					}
-					for (final Entry<String, NumberMeta> entry : format.typeNumber.entrySet()) {
+					for (final Entry<String, NumberMeta> entry : format.attributesFormat.typeNumber.entrySet()) {
 						final String typeNumber = entry.getKey();
 						if (StringUtils.startsWith(current, typeNumber)) {
 							final String dataValue = StringUtils.substringAfter(current, typeNumber);
@@ -440,7 +439,7 @@ public abstract class ItemLore {
 							continue readvalue;
 						}
 					}
-					for (final Entry<String, TextMeta> entry : format.typeText.entrySet()) {
+					for (final Entry<String, TextMeta> entry : format.attributesFormat.typeText.entrySet()) {
 						final String typeText = entry.getKey();
 						if (StringUtils.startsWith(current, typeText)) {
 							final String dataValue = StringUtils.substringAfter(current, typeText);
@@ -512,12 +511,12 @@ public abstract class ItemLore {
 		}
 
 		public void set(final ItemLoreDataFormat format, final String key, final String value) {
-			if (format.typeFlag.containsKey(key))
-				setFlag(key, format.typeFlag.get(key).parse(format, value));
-			else if (format.typeNumber.containsKey(key))
-				setNumber(key, format.typeNumber.get(key).parse(format, value));
-			else if (format.typeText.containsKey(key))
-				setText(key, format.typeText.get(key).parse(format, value));
+			if (format.attributesFormat.typeFlag.containsKey(key))
+				setFlag(key, format.attributesFormat.typeFlag.get(key).parse(format, value));
+			else if (format.attributesFormat.typeNumber.containsKey(key))
+				setNumber(key, format.attributesFormat.typeNumber.get(key).parse(format, value));
+			else if (format.attributesFormat.typeText.containsKey(key))
+				setText(key, format.attributesFormat.typeText.get(key).parse(format, value));
 		}
 
 		@Override
@@ -568,55 +567,125 @@ public abstract class ItemLore {
 		public final String prefix;
 		public final String valueprefix;
 		public final String valuesuffix;
-		public final ImmutableMap<String, FlagMeta> typeFlag;
-		public final ImmutableMap<String, NumberMeta> typeNumber;
-		public final ImmutableMap<String, TextMeta> typeText;
+		public final AttributesFormat attributesFormat;
 		public final ImmutableList<String> metaFormat;
 
 		public ItemLoreDataFormat(final String prefix, final String valueprefix, final String valueend, final List<String> metaFormat) {
 			this.prefix = prefix;
 			this.valueprefix = valueprefix;
 			this.valuesuffix = valueend;
-			final Builder<String, FlagMeta> typeFlagBuilder = ImmutableMap.builder();
-			final Builder<String, NumberMeta> typeNumberBuilder = ImmutableMap.builder();
-			final Builder<String, TextMeta> typeTextBuilder = ImmutableMap.builder();
-			for (final String line : metaFormat) {
-				String data = line;
-				String current;
-				while (!StringUtils.isEmpty(current = NestedStringUtils.substringNested(data, "${", "}", "$", null))) {
-					final String type = StringUtils.substringBefore(current, ":");
-					final String namevalue = StringUtils.substringAfter(current, ":");
+			final AttributesFormat.Builder attrbuilder = new AttributesFormat.Builder();
+			for (final String line : metaFormat)
+				attrbuilder.addAttributes(line);
+			this.attributesFormat = attrbuilder.build();
+			this.metaFormat = ImmutableList.copyOf(metaFormat);
+		}
+
+		public static class AttributesFormat {
+			public final ImmutableMap<String, FlagMeta> typeFlag;
+			public final ImmutableMap<String, NumberMeta> typeNumber;
+			public final ImmutableMap<String, TextMeta> typeText;
+
+			private AttributesFormat(final ImmutableMap<String, FlagMeta> typeFlag, final ImmutableMap<String, NumberMeta> typeNumber, final ImmutableMap<String, TextMeta> typeText) {
+				this.typeFlag = typeFlag;
+				this.typeNumber = typeNumber;
+				this.typeText = typeText;
+			}
+
+			@Override
+			public String toString() {
+				return String.format("AttributesFormat [typeFlag=%s, typeNumber=%s, typeText=%s]", this.typeFlag, this.typeNumber, this.typeText);
+			}
+
+			@Override
+			public int hashCode() {
+				final int prime = 31;
+				int result = 1;
+				result = prime*result+(this.typeFlag==null ? 0 : this.typeFlag.hashCode());
+				result = prime*result+(this.typeNumber==null ? 0 : this.typeNumber.hashCode());
+				result = prime*result+(this.typeText==null ? 0 : this.typeText.hashCode());
+				return result;
+			}
+
+			@Override
+			public boolean equals(final Object obj) {
+				if (this==obj)
+					return true;
+				if (obj==null)
+					return false;
+				if (!(obj instanceof AttributesFormat))
+					return false;
+				final AttributesFormat other = (AttributesFormat) obj;
+				if (this.typeFlag==null) {
+					if (other.typeFlag!=null)
+						return false;
+				} else if (!this.typeFlag.equals(other.typeFlag))
+					return false;
+				if (this.typeNumber==null) {
+					if (other.typeNumber!=null)
+						return false;
+				} else if (!this.typeNumber.equals(other.typeNumber))
+					return false;
+				if (this.typeText==null) {
+					if (other.typeText!=null)
+						return false;
+				} else if (!this.typeText.equals(other.typeText))
+					return false;
+				return true;
+			}
+
+			public static class Builder {
+				public final Map<String, FlagMeta> typeFlag = Maps.newHashMap();
+				public final Map<String, NumberMeta> typeNumber = Maps.newHashMap();
+				public final Map<String, TextMeta> typeText = Maps.newHashMap();
+
+				public Builder addAttributes(final String attributes) {
+					String data = attributes;
+					String current;
+					while (!StringUtils.isEmpty(current = NestedStringUtils.substringNested(data, "${", "}", "$", null))) {
+						addAttribute(current);
+						data = NestedStringUtils.substringAfterNested(data, "${", "}", "$", null);
+					}
+					return this;
+				}
+
+				public Builder addAttribute(final String attribute) {
+					final String type = StringUtils.substringBefore(attribute, ":");
+					final String namevalue = StringUtils.substringAfter(attribute, ":");
 					final String name = StringUtils.substringBefore(namevalue, "=");
 					final String constant = StringUtils.substringAfter(namevalue, "=");
+					addAttribute(type, name, constant);
+					return this;
+				}
+
+				public Builder addAttribute(final String type, final String name, final String constant) {
 					if (StringUtils.equals(type, "B"))
-						typeFlagBuilder.put(name, FlagMeta.Factory.create(constant));
+						this.typeFlag.put(name, FlagMeta.Factory.create(constant));
 					else if (StringUtils.equals(type, "I"))
-						typeNumberBuilder.put(name, NumberMeta.Factory.create(constant));
+						this.typeNumber.put(name, NumberMeta.Factory.create(constant));
 					else if (StringUtils.equals(type, "S"))
-						typeTextBuilder.put(name, TextMeta.Factory.create(constant));
-					data = NestedStringUtils.substringAfterNested(data, "${", "}", "$", null);
+						this.typeText.put(name, TextMeta.Factory.create(constant));
+					return this;
+				}
+
+				public AttributesFormat build() {
+					return new AttributesFormat(ImmutableMap.<String, FlagMeta> copyOf(this.typeFlag), ImmutableMap.<String, NumberMeta> copyOf(this.typeNumber), ImmutableMap.<String, TextMeta> copyOf(this.typeText));
 				}
 			}
-			this.typeNumber = typeNumberBuilder.build();
-			this.typeText = typeTextBuilder.build();
-			this.typeFlag = typeFlagBuilder.build();
-			this.metaFormat = ImmutableList.copyOf(metaFormat);
 		}
 
 		@Override
 		public String toString() {
-			return String.format("ItemLoreDataFormat [prefix=%s, valueprefix=%s, valuesuffix=%s, typeNumber=%s, typeText=%s, typeFlag=%s, metaFormat=%s]", this.prefix, this.valueprefix, this.valuesuffix, this.typeNumber, this.typeText, this.typeFlag, this.metaFormat);
+			return String.format("ItemLoreDataFormat [prefix=%s, valueprefix=%s, valuesuffix=%s, attributesFormat=%s, metaFormat=%s]", this.prefix, this.valueprefix, this.valuesuffix, this.attributesFormat, this.metaFormat);
 		}
 
 		@Override
 		public int hashCode() {
 			final int prime = 31;
 			int result = 1;
+			result = prime*result+(this.attributesFormat==null ? 0 : this.attributesFormat.hashCode());
 			result = prime*result+(this.metaFormat==null ? 0 : this.metaFormat.hashCode());
 			result = prime*result+(this.prefix==null ? 0 : this.prefix.hashCode());
-			result = prime*result+(this.typeFlag==null ? 0 : this.typeFlag.hashCode());
-			result = prime*result+(this.typeNumber==null ? 0 : this.typeNumber.hashCode());
-			result = prime*result+(this.typeText==null ? 0 : this.typeText.hashCode());
 			result = prime*result+(this.valueprefix==null ? 0 : this.valueprefix.hashCode());
 			result = prime*result+(this.valuesuffix==null ? 0 : this.valuesuffix.hashCode());
 			return result;
@@ -631,6 +700,11 @@ public abstract class ItemLore {
 			if (!(obj instanceof ItemLoreDataFormat))
 				return false;
 			final ItemLoreDataFormat other = (ItemLoreDataFormat) obj;
+			if (this.attributesFormat==null) {
+				if (other.attributesFormat!=null)
+					return false;
+			} else if (!this.attributesFormat.equals(other.attributesFormat))
+				return false;
 			if (this.metaFormat==null) {
 				if (other.metaFormat!=null)
 					return false;
@@ -640,21 +714,6 @@ public abstract class ItemLore {
 				if (other.prefix!=null)
 					return false;
 			} else if (!this.prefix.equals(other.prefix))
-				return false;
-			if (this.typeFlag==null) {
-				if (other.typeFlag!=null)
-					return false;
-			} else if (!this.typeFlag.equals(other.typeFlag))
-				return false;
-			if (this.typeNumber==null) {
-				if (other.typeNumber!=null)
-					return false;
-			} else if (!this.typeNumber.equals(other.typeNumber))
-				return false;
-			if (this.typeText==null) {
-				if (other.typeText!=null)
-					return false;
-			} else if (!this.typeText.equals(other.typeText))
 				return false;
 			if (this.valueprefix==null) {
 				if (other.valueprefix!=null)
