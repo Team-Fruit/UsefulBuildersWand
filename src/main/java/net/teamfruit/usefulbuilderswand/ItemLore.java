@@ -400,7 +400,7 @@ public abstract class ItemLore {
 		private final Map<String, Boolean> dataFlag;
 		private final Map<String, Integer> dataNumber;
 		private final Map<String, String> dataText;
-		private int modcount;
+		private int modCount;
 
 		ItemLoreMetaEditable(final Map<String, Boolean> dataFlag, final Map<String, Integer> dataNumber, final Map<String, String> dataText) {
 			this.dataFlag = dataFlag;
@@ -413,7 +413,7 @@ public abstract class ItemLore {
 		}
 
 		public int getModCount() {
-			return this.modcount;
+			return this.modCount;
 		}
 
 		@Override
@@ -505,7 +505,7 @@ public abstract class ItemLore {
 		}
 
 		public void setNumber(final String key, @Nullable final Integer value) {
-			this.modcount++;
+			this.modCount++;
 			if (value!=null)
 				this.dataNumber.put(key, value);
 			else
@@ -526,7 +526,7 @@ public abstract class ItemLore {
 		}
 
 		public void setText(final String key, @Nullable final String value) {
-			this.modcount++;
+			this.modCount++;
 			if (value!=null)
 				this.dataText.put(key, value);
 			else
@@ -547,7 +547,7 @@ public abstract class ItemLore {
 		}
 
 		public void setFlag(final String key, @Nullable final Boolean value) {
-			this.modcount++;
+			this.modCount++;
 			if (value!=null)
 				this.dataFlag.put(key, value);
 			else
@@ -556,7 +556,7 @@ public abstract class ItemLore {
 
 		@Override
 		public String toString() {
-			return String.format("ItemLoreMetaMutable [dataFlag=%s, dataNumber=%s, dataText=%s, modcount=%s]", this.dataFlag, this.dataNumber, this.dataText, this.modcount);
+			return String.format("ItemLoreMetaMutable [dataFlag=%s, dataNumber=%s, dataText=%s, modcount=%s]", this.dataFlag, this.dataNumber, this.dataText, this.modCount);
 		}
 
 		@Override
@@ -605,15 +605,27 @@ public abstract class ItemLore {
 		public final AttributesFormat attributesFormat;
 		public final ImmutableList<String> metaFormat;
 
+		protected ItemLoreDataFormat(final String prefix, final String valueprefix, final String valuesuffix, final List<String> metaFormat, final AttributesFormat attributesFormat) {
+			this.prefix = prefix;
+			this.valueprefix = valueprefix;
+			this.valuesuffix = valuesuffix;
+			this.metaFormat = ImmutableList.copyOf(metaFormat);
+			this.attributesFormat = attributesFormat;
+		}
+
 		public ItemLoreDataFormat(final String prefix, final String valueprefix, final String valueend, final List<String> metaFormat) {
 			this.prefix = prefix;
 			this.valueprefix = valueprefix;
 			this.valuesuffix = valueend;
-			final AttributesFormat.Builder attrbuilder = new AttributesFormat.Builder(this);
+			this.metaFormat = ImmutableList.copyOf(metaFormat);
+			final AttributesFormat.Builder attrbuilder = new AttributesFormat.Builder();
 			for (final String line : metaFormat)
 				attrbuilder.addAttributes(line);
 			this.attributesFormat = attrbuilder.build();
-			this.metaFormat = ImmutableList.copyOf(metaFormat);
+		}
+
+		public ItemLoreDataFormat attributesInstance(final AttributesFormat moreAttributes) {
+			return new ItemLoreDataFormat(this.prefix, this.valueprefix, this.valuesuffix, this.metaFormat, new AttributesFormat.Builder().addAttributes(this.attributesFormat).addAttributes(moreAttributes).build());
 		}
 
 		public static class AttributesFormat {
@@ -670,13 +682,18 @@ public abstract class ItemLore {
 			}
 
 			public static class Builder {
-				private final ItemLoreDataFormat format;
 				public final Map<String, FlagMeta> typeFlag = Maps.newHashMap();
 				public final Map<String, NumberMeta> typeNumber = Maps.newHashMap();
 				public final Map<String, TextMeta> typeText = Maps.newHashMap();
 
-				public Builder(final ItemLoreDataFormat format) {
-					this.format = format;
+				public Builder() {
+				}
+
+				public Builder addAttributes(final AttributesFormat attributes) {
+					this.typeFlag.putAll(attributes.typeFlag);
+					this.typeNumber.putAll(attributes.typeNumber);
+					this.typeText.putAll(attributes.typeText);
+					return this;
 				}
 
 				public Builder addAttributes(final String attributes) {
@@ -700,11 +717,11 @@ public abstract class ItemLore {
 
 				public Builder addAttribute(final String type, final String name, final String constant) {
 					if (StringUtils.equals(type, "B"))
-						this.typeFlag.put(name, FlagMeta.Factory.create(this.format, constant));
+						this.typeFlag.put(name, FlagMeta.Factory.create(constant));
 					else if (StringUtils.equals(type, "I"))
-						this.typeNumber.put(name, NumberMeta.Factory.create(this.format, constant));
+						this.typeNumber.put(name, NumberMeta.Factory.create(constant));
 					else if (StringUtils.equals(type, "S"))
-						this.typeText.put(name, TextMeta.Factory.create(this.format, constant));
+						this.typeText.put(name, TextMeta.Factory.create(constant));
 					return this;
 				}
 
@@ -769,6 +786,10 @@ public abstract class ItemLore {
 		}
 
 		public static interface FlagMeta {
+			public static interface FlagMetaAccess extends FlagMeta {
+				String compose(ItemLoreDataFormat format, ItemLoreMeta meta, Boolean data);
+			}
+
 			boolean parse(ItemLoreDataFormat format, String src);
 
 			String compose(ItemLoreDataFormat format, Boolean data);
@@ -776,7 +797,7 @@ public abstract class ItemLore {
 			public static class HiddenFlagMeta implements FlagMeta {
 				private final Boolean defaultValue;
 
-				public HiddenFlagMeta(final ItemLoreDataFormat format, final Boolean defaultValue) {
+				public HiddenFlagMeta(final Boolean defaultValue) {
 					this.defaultValue = defaultValue;
 				}
 
@@ -824,16 +845,16 @@ public abstract class ItemLore {
 				}
 			}
 
-			public static class TextFlagMeta implements FlagMeta {
+			public static class TextFlagMeta implements FlagMetaAccess {
 				private final Boolean defaultValue;
 
 				private AttributesFormat attributesFormat;
 				private final String strTrue;
 				private final String strFalse;
 
-				public TextFlagMeta(final ItemLoreDataFormat format, final Boolean defaultValue, final String strTrue, final String strFalse) {
+				public TextFlagMeta(final Boolean defaultValue, final String strTrue, final String strFalse) {
 					this.defaultValue = defaultValue;
-					this.attributesFormat = new AttributesFormat.Builder(format)
+					this.attributesFormat = new AttributesFormat.Builder()
 							.addAttributes(strTrue)
 							.addAttributes(strFalse)
 							.build();
@@ -851,8 +872,16 @@ public abstract class ItemLore {
 							data = defaultValue;
 						else
 							data = false;
-					//					new ItemLoreMetaEditable().f
 					return data ? strTrue : strFalse;
+				}
+
+				public @Nullable String compose(final ItemLoreDataFormat format, final ItemLoreMeta meta, Boolean data) {
+					if (data==null)
+						if (defaultValue!=null)
+							data = defaultValue;
+						else
+							data = false;
+					return meta.getAttributes(format.attributesInstance(attributesFormat), data ? strTrue : strFalse);
 				}
 
 				@Override
@@ -899,7 +928,7 @@ public abstract class ItemLore {
 			}
 
 			public static class Factory {
-				public static FlagMeta create(final ItemLoreDataFormat format, final String constant) {
+				public static FlagMeta create(final String constant) {
 					if (!StringUtils.isEmpty(constant)) {
 						final String defaultStr;
 						final String format1;
@@ -913,11 +942,11 @@ public abstract class ItemLore {
 						if (StringUtils.contains(constant, ":")) {
 							final String trueStr = StringUtils.substringBefore(format1, ":");
 							final String falseStr = StringUtils.substringAfter(format1, ":");
-							return new TextFlagMeta(format, BooleanUtils.toBooleanObject(defaultStr), trueStr, falseStr);
+							return new TextFlagMeta(BooleanUtils.toBooleanObject(defaultStr), trueStr, falseStr);
 						} else
-							return new HiddenFlagMeta(format, BooleanUtils.toBooleanObject(defaultStr));
+							return new HiddenFlagMeta(BooleanUtils.toBooleanObject(defaultStr));
 					}
-					return new HiddenFlagMeta(format, false);
+					return new HiddenFlagMeta(false);
 				}
 			}
 		}
@@ -930,7 +959,7 @@ public abstract class ItemLore {
 			public static class HiddenNumberMeta implements NumberMeta {
 				private final @Nullable Integer defaultValue;
 
-				public HiddenNumberMeta(final ItemLoreDataFormat format, final @Nullable Integer defaultValue) {
+				public HiddenNumberMeta(final @Nullable Integer defaultValue) {
 					this.defaultValue = defaultValue;
 				}
 
@@ -987,7 +1016,7 @@ public abstract class ItemLore {
 			public static class TextNumberMeta implements NumberMeta {
 				private final @Nullable Integer defaultValue;
 
-				public TextNumberMeta(final ItemLoreDataFormat format, final @Nullable Integer defaultValue) {
+				public TextNumberMeta(final @Nullable Integer defaultValue) {
 					this.defaultValue = defaultValue;
 				}
 
@@ -1038,12 +1067,12 @@ public abstract class ItemLore {
 			}
 
 			public static class Factory {
-				public static NumberMeta create(final ItemLoreDataFormat format, final String constant) {
+				public static NumberMeta create(final String constant) {
 					if (StringUtils.startsWith(constant, "\u00A7")) {
 						final String numstr = StringUtils.substringAfter(constant, "\u00A7");
-						return new HiddenNumberMeta(format, NumberUtils.isNumber(numstr) ? NumberUtils.toInt(numstr) : null);
+						return new HiddenNumberMeta(NumberUtils.isNumber(numstr) ? NumberUtils.toInt(numstr) : null);
 					}
-					return new TextNumberMeta(format, NumberUtils.isNumber(constant) ? NumberUtils.toInt(constant) : null);
+					return new TextNumberMeta(NumberUtils.isNumber(constant) ? NumberUtils.toInt(constant) : null);
 				}
 			}
 		}
@@ -1056,7 +1085,7 @@ public abstract class ItemLore {
 			public static class TextTextMeta implements TextMeta {
 				private final @Nullable String defaultValue;
 
-				public TextTextMeta(final ItemLoreDataFormat format, final @Nullable String defaultValue) {
+				public TextTextMeta(final @Nullable String defaultValue) {
 					this.defaultValue = defaultValue;
 				}
 
@@ -1104,8 +1133,8 @@ public abstract class ItemLore {
 			}
 
 			public static class Factory {
-				public static TextMeta create(final ItemLoreDataFormat format, final String constant) {
-					return new TextTextMeta(format, constant);
+				public static TextMeta create(final String constant) {
+					return new TextTextMeta(constant);
 				}
 			}
 		}
