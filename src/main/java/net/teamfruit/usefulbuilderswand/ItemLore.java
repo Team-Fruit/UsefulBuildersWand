@@ -194,52 +194,8 @@ public abstract class ItemLore {
 		public ItemLoreContent fromMeta(final ItemLoreDataFormat format, final ItemLoreMeta meta) {
 			final List<String> output = get();
 			for (final String line : format.metaFormat)
-				output.add(getAttributes(format, meta, line));
+				output.add(meta.getAttributes(format, line));
 			return this;
-		}
-
-		public String getAttributes(final ItemLoreDataFormat format, final ItemLoreMeta meta, final String attributesbase) {
-			final StringBuilder stb = new StringBuilder();
-			String data = attributesbase;
-			String current;
-			while (true) {
-				stb.append(NestedStringUtils.substringBeforeNested(data, "${", "$"));
-				if (StringUtils.isEmpty(current = NestedStringUtils.substringNested(data, "${", "}", "$", null)))
-					break;
-				stb.append(getAttribute(format, meta, current));
-				data = NestedStringUtils.substringAfterNested(data, "${", "}", "$", null);
-			}
-			return stb.toString();
-		}
-
-		public String getAttribute(final ItemLoreDataFormat format, final ItemLoreMeta meta, final String attributebase) {
-			final StringBuilder stb = new StringBuilder();
-			final String type = StringUtils.substringBefore(attributebase, ":");
-			final String namevalue = StringUtils.substringAfter(attributebase, ":");
-			final String name = StringUtils.substringBefore(namevalue, "=");
-			if (StringUtils.equalsIgnoreCase(type, "B")) {
-				final FlagMeta m = format.attributesFormat.typeFlag.get(name);
-				if (m!=null) {
-					final String s = m.compose(format, meta.getFlag(name));
-					if (s!=null)
-						stb.append(format.valueprefix).append(name).append(s).append(format.valuesuffix);
-				}
-			} else if (StringUtils.equalsIgnoreCase(type, "I")) {
-				final NumberMeta m = format.attributesFormat.typeNumber.get(name);
-				if (m!=null) {
-					final String s = m.compose(format, meta.getNumber(name));
-					if (s!=null)
-						stb.append(format.valueprefix).append(name).append(s).append(format.valuesuffix);
-				}
-			} else if (StringUtils.equalsIgnoreCase(type, "S")) {
-				final TextMeta m = format.attributesFormat.typeText.get(name);
-				if (m!=null) {
-					final String s = m.compose(format, meta.getText(name));
-					if (s!=null)
-						stb.append(format.valueprefix).append(name).append(s).append(format.valuesuffix);
-				}
-			}
-			return stb.toString();
 		}
 
 		@Override
@@ -273,27 +229,71 @@ public abstract class ItemLore {
 		}
 	}
 
-	public interface ItemLoreMeta {
+	public static abstract class ItemLoreMeta {
 
-		ItemLoreMetaImmutable toImmutable();
+		public abstract ItemLoreMetaImmutable toImmutable();
 
-		ItemLoreMetaEditable toEditable();
+		public abstract ItemLoreMetaEditable toEditable();
 
-		Integer getNumber(final String key);
+		public abstract Integer getNumber(final String key);
 
-		Integer getNumber(final String key, final Integer defaultValue);
+		public abstract Integer getNumber(final String key, final Integer defaultValue);
 
-		String getText(final String key);
+		public abstract String getText(final String key);
 
-		String getText(final String key, final String defaultValue);
+		public abstract String getText(final String key, final String defaultValue);
 
-		Boolean getFlag(final String key);
+		public abstract Boolean getFlag(final String key);
 
-		Boolean getFlag(final String key, final Boolean defaultValue);
+		public abstract Boolean getFlag(final String key, final Boolean defaultValue);
+
+		public String getAttributes(final ItemLoreDataFormat format, final String attributesbase) {
+			final StringBuilder stb = new StringBuilder();
+			String data = attributesbase;
+			String current;
+			while (true) {
+				stb.append(NestedStringUtils.substringBeforeNested(data, "${", "$"));
+				if (StringUtils.isEmpty(current = NestedStringUtils.substringNested(data, "${", "}", "$", null)))
+					break;
+				stb.append(getAttribute(format, current));
+				data = NestedStringUtils.substringAfterNested(data, "${", "}", "$", null);
+			}
+			return stb.toString();
+		}
+
+		public String getAttribute(final ItemLoreDataFormat format, final String attributebase) {
+			final StringBuilder stb = new StringBuilder();
+			final String type = StringUtils.substringBefore(attributebase, ":");
+			final String namevalue = StringUtils.substringAfter(attributebase, ":");
+			final String name = StringUtils.substringBefore(namevalue, "=");
+			if (StringUtils.equalsIgnoreCase(type, "B")) {
+				final FlagMeta m = format.attributesFormat.typeFlag.get(name);
+				if (m!=null) {
+					final String s = m.compose(format, getFlag(name));
+					if (s!=null)
+						stb.append(format.valueprefix).append(name).append(s).append(format.valuesuffix);
+				}
+			} else if (StringUtils.equalsIgnoreCase(type, "I")) {
+				final NumberMeta m = format.attributesFormat.typeNumber.get(name);
+				if (m!=null) {
+					final String s = m.compose(format, getNumber(name));
+					if (s!=null)
+						stb.append(format.valueprefix).append(name).append(s).append(format.valuesuffix);
+				}
+			} else if (StringUtils.equalsIgnoreCase(type, "S")) {
+				final TextMeta m = format.attributesFormat.typeText.get(name);
+				if (m!=null) {
+					final String s = m.compose(format, getText(name));
+					if (s!=null)
+						stb.append(format.valueprefix).append(name).append(s).append(format.valuesuffix);
+				}
+			}
+			return stb.toString();
+		}
 
 	}
 
-	public static class ItemLoreMetaImmutable implements ItemLoreMeta {
+	public static class ItemLoreMetaImmutable extends ItemLoreMeta {
 		private final ImmutableMap<String, Boolean> dataFlag;
 		private final ImmutableMap<String, Integer> dataNumber;
 		private final ImmutableMap<String, String> dataText;
@@ -304,18 +304,22 @@ public abstract class ItemLore {
 			this.dataText = dataText;
 		}
 
+		@Override
 		public ItemLoreMetaImmutable toImmutable() {
 			return this;
 		}
 
+		@Override
 		public ItemLoreMetaEditable toEditable() {
 			return new ItemLoreMetaEditable(Maps.newHashMap(this.dataFlag), Maps.newHashMap(this.dataNumber), Maps.newHashMap(this.dataText));
 		}
 
+		@Override
 		public @Nullable Integer getNumber(final String key) {
 			return this.dataNumber.get(key);
 		}
 
+		@Override
 		public Integer getNumber(final String key, final Integer defaultValue) {
 			final Integer value = getNumber(key);
 			if (value!=null)
@@ -323,10 +327,12 @@ public abstract class ItemLore {
 			return defaultValue;
 		}
 
+		@Override
 		public @Nullable String getText(final String key) {
 			return this.dataText.get(key);
 		}
 
+		@Override
 		public String getText(final String key, final String defaultValue) {
 			final String value = getText(key);
 			if (value!=null)
@@ -334,10 +340,12 @@ public abstract class ItemLore {
 			return defaultValue;
 		}
 
+		@Override
 		public @Nullable Boolean getFlag(final String key) {
 			return this.dataFlag.get(key);
 		}
 
+		@Override
 		public Boolean getFlag(final String key, final Boolean defaultValue) {
 			final Boolean value = getFlag(key);
 			if (value!=null)
@@ -388,7 +396,7 @@ public abstract class ItemLore {
 		}
 	}
 
-	public static class ItemLoreMetaEditable implements ItemLoreMeta, Cloneable {
+	public static class ItemLoreMetaEditable extends ItemLoreMeta implements Cloneable {
 		private final Map<String, Boolean> dataFlag;
 		private final Map<String, Integer> dataNumber;
 		private final Map<String, String> dataText;
@@ -408,10 +416,12 @@ public abstract class ItemLore {
 			return this.modcount;
 		}
 
+		@Override
 		public ItemLoreMetaImmutable toImmutable() {
 			return new ItemLoreMetaImmutable(ImmutableMap.copyOf(this.dataFlag), ImmutableMap.copyOf(this.dataNumber), ImmutableMap.copyOf(this.dataText));
 		}
 
+		@Override
 		public ItemLoreMetaEditable toEditable() {
 			return this;
 		}
@@ -481,10 +491,12 @@ public abstract class ItemLore {
 				setText(key, format.attributesFormat.typeText.get(key).parse(format, value));
 		}
 
+		@Override
 		public @Nullable Integer getNumber(final String key) {
 			return this.dataNumber.get(key);
 		}
 
+		@Override
 		public Integer getNumber(final String key, final Integer defaultValue) {
 			final Integer value = getNumber(key);
 			if (value!=null)
@@ -500,10 +512,12 @@ public abstract class ItemLore {
 				this.dataNumber.remove(key);
 		}
 
+		@Override
 		public @Nullable String getText(final String key) {
 			return this.dataText.get(key);
 		}
 
+		@Override
 		public String getText(final String key, final String defaultValue) {
 			final String value = getText(key);
 			if (value!=null)
@@ -519,10 +533,12 @@ public abstract class ItemLore {
 				this.dataText.remove(key);
 		}
 
+		@Override
 		public @Nullable Boolean getFlag(final String key) {
 			return this.dataFlag.get(key);
 		}
 
+		@Override
 		public Boolean getFlag(final String key, final Boolean defaultValue) {
 			final Boolean value = getFlag(key);
 			if (value!=null)
