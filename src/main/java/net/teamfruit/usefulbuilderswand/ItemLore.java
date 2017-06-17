@@ -574,7 +574,7 @@ public abstract class ItemLore {
 			this.prefix = prefix;
 			this.valueprefix = valueprefix;
 			this.valuesuffix = valueend;
-			final AttributesFormat.Builder attrbuilder = new AttributesFormat.Builder();
+			final AttributesFormat.Builder attrbuilder = new AttributesFormat.Builder(this);
 			for (final String line : metaFormat)
 				attrbuilder.addAttributes(line);
 			this.attributesFormat = attrbuilder.build();
@@ -635,9 +635,14 @@ public abstract class ItemLore {
 			}
 
 			public static class Builder {
+				private final ItemLoreDataFormat format;
 				public final Map<String, FlagMeta> typeFlag = Maps.newHashMap();
 				public final Map<String, NumberMeta> typeNumber = Maps.newHashMap();
 				public final Map<String, TextMeta> typeText = Maps.newHashMap();
+
+				public Builder(final ItemLoreDataFormat format) {
+					this.format = format;
+				}
 
 				public Builder addAttributes(final String attributes) {
 					String data = attributes;
@@ -660,11 +665,11 @@ public abstract class ItemLore {
 
 				public Builder addAttribute(final String type, final String name, final String constant) {
 					if (StringUtils.equals(type, "B"))
-						this.typeFlag.put(name, FlagMeta.Factory.create(constant));
+						this.typeFlag.put(name, FlagMeta.Factory.create(this.format, constant));
 					else if (StringUtils.equals(type, "I"))
-						this.typeNumber.put(name, NumberMeta.Factory.create(constant));
+						this.typeNumber.put(name, NumberMeta.Factory.create(this.format, constant));
 					else if (StringUtils.equals(type, "S"))
-						this.typeText.put(name, TextMeta.Factory.create(constant));
+						this.typeText.put(name, TextMeta.Factory.create(this.format, constant));
 					return this;
 				}
 
@@ -736,7 +741,7 @@ public abstract class ItemLore {
 			public static class HiddenFlagMeta implements FlagMeta {
 				private final Boolean defaultValue;
 
-				public HiddenFlagMeta(final Boolean defaultValue) {
+				public HiddenFlagMeta(final ItemLoreDataFormat format, final Boolean defaultValue) {
 					this.defaultValue = defaultValue;
 				}
 
@@ -787,11 +792,16 @@ public abstract class ItemLore {
 			public static class TextFlagMeta implements FlagMeta {
 				private final Boolean defaultValue;
 
+				private AttributesFormat attributesFormat;
 				private final String strTrue;
 				private final String strFalse;
 
-				public TextFlagMeta(final Boolean defaultValue, final String strTrue, final String strFalse) {
+				public TextFlagMeta(final ItemLoreDataFormat format, final Boolean defaultValue, final String strTrue, final String strFalse) {
 					this.defaultValue = defaultValue;
+					this.attributesFormat = new AttributesFormat.Builder(format)
+							.addAttributes(strTrue)
+							.addAttributes(strFalse)
+							.build();
 					this.strTrue = strTrue;
 					this.strFalse = strFalse;
 				}
@@ -853,25 +863,25 @@ public abstract class ItemLore {
 			}
 
 			public static class Factory {
-				public static FlagMeta create(final String format) {
-					if (!StringUtils.isEmpty(format)) {
+				public static FlagMeta create(final ItemLoreDataFormat format, final String constant) {
+					if (!StringUtils.isEmpty(constant)) {
 						final String defaultStr;
 						final String format1;
-						if (StringUtils.contains(format, "?")) {
-							defaultStr = StringUtils.substringBefore(format, "?");
-							format1 = StringUtils.substringAfter(format, "?");
+						if (StringUtils.contains(constant, "?")) {
+							defaultStr = StringUtils.substringBefore(constant, "?");
+							format1 = StringUtils.substringAfter(constant, "?");
 						} else {
 							defaultStr = null;
-							format1 = format;
+							format1 = constant;
 						}
-						if (StringUtils.contains(format, ":")) {
+						if (StringUtils.contains(constant, ":")) {
 							final String trueStr = StringUtils.substringBefore(format1, ":");
 							final String falseStr = StringUtils.substringAfter(format1, ":");
-							return new TextFlagMeta(BooleanUtils.toBooleanObject(defaultStr), trueStr, falseStr);
+							return new TextFlagMeta(format, BooleanUtils.toBooleanObject(defaultStr), trueStr, falseStr);
 						} else
-							return new HiddenFlagMeta(BooleanUtils.toBooleanObject(defaultStr));
+							return new HiddenFlagMeta(format, BooleanUtils.toBooleanObject(defaultStr));
 					}
-					return new HiddenFlagMeta(false);
+					return new HiddenFlagMeta(format, false);
 				}
 			}
 		}
@@ -884,7 +894,7 @@ public abstract class ItemLore {
 			public static class HiddenNumberMeta implements NumberMeta {
 				private final @Nullable Integer defaultValue;
 
-				public HiddenNumberMeta(final @Nullable Integer defaultValue) {
+				public HiddenNumberMeta(final ItemLoreDataFormat format, final @Nullable Integer defaultValue) {
 					this.defaultValue = defaultValue;
 				}
 
@@ -941,7 +951,7 @@ public abstract class ItemLore {
 			public static class TextNumberMeta implements NumberMeta {
 				private final @Nullable Integer defaultValue;
 
-				public TextNumberMeta(final @Nullable Integer defaultValue) {
+				public TextNumberMeta(final ItemLoreDataFormat format, final @Nullable Integer defaultValue) {
 					this.defaultValue = defaultValue;
 				}
 
@@ -992,12 +1002,12 @@ public abstract class ItemLore {
 			}
 
 			public static class Factory {
-				public static NumberMeta create(final String format) {
-					if (StringUtils.startsWith(format, "\u00A7")) {
-						final String numstr = StringUtils.substringAfter(format, "\u00A7");
-						return new HiddenNumberMeta(NumberUtils.isNumber(numstr) ? NumberUtils.toInt(numstr) : null);
+				public static NumberMeta create(final ItemLoreDataFormat format, final String constant) {
+					if (StringUtils.startsWith(constant, "\u00A7")) {
+						final String numstr = StringUtils.substringAfter(constant, "\u00A7");
+						return new HiddenNumberMeta(format, NumberUtils.isNumber(numstr) ? NumberUtils.toInt(numstr) : null);
 					}
-					return new TextNumberMeta(NumberUtils.isNumber(format) ? NumberUtils.toInt(format) : null);
+					return new TextNumberMeta(format, NumberUtils.isNumber(constant) ? NumberUtils.toInt(constant) : null);
 				}
 			}
 		}
@@ -1010,7 +1020,7 @@ public abstract class ItemLore {
 			public static class TextTextMeta implements TextMeta {
 				private final @Nullable String defaultValue;
 
-				public TextTextMeta(final @Nullable String defaultValue) {
+				public TextTextMeta(final ItemLoreDataFormat format, final @Nullable String defaultValue) {
 					this.defaultValue = defaultValue;
 				}
 
@@ -1058,8 +1068,8 @@ public abstract class ItemLore {
 			}
 
 			public static class Factory {
-				public static TextMeta create(final String format) {
-					return new TextTextMeta(format);
+				public static TextMeta create(final ItemLoreDataFormat format, final String constant) {
+					return new TextTextMeta(format, constant);
 				}
 			}
 		}
