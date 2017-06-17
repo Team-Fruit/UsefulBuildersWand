@@ -419,8 +419,9 @@ public abstract class ItemLore {
 			for (final ListIterator<String> itr = input.listIterator(); itr.hasNext();) {
 				final String line = itr.next();
 				String data = line;
-				readvalue: while (!StringUtils.isEmpty(data = StringUtils.substringAfter(data, format.valueprefix))) {
-					final String current = StringUtils.substringBefore(data, format.valuesuffix);
+				String current;
+				readvalue: while (!StringUtils.isEmpty(current = NestedStringUtils.substringNested(data, format.valueprefix, format.valuesuffix))) {
+					data = NestedStringUtils.substringAfterNested(data, format.valueprefix, format.valuesuffix);
 					for (final Entry<String, FlagMeta> entry : format.attributesFormat.typeFlag.entrySet()) {
 						final String typeFlag = entry.getKey();
 						if (StringUtils.startsWith(current, typeFlag)) {
