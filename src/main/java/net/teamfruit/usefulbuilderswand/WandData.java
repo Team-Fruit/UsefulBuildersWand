@@ -67,9 +67,9 @@ public class WandData {
 		// features.put(FEATURE_DISPLAY_PARTICLE, "§4§4§f§r");
 
 		final List<String> format = Lists.newArrayList(new String[] {
-				"§eBuilder's Wand §7x${i:"+ft(FEATURE_META_SIZE)+"=0} §7[${b:"+ft(FEATURE_META_VERTICALMODE)+"=┃:━}§7](${i:"+ft(FEATURE_META_DURABILITY)+"=0}/${i:"+ft(FEATURE_META_DURABILITY_MAX)+"=0}${b:"+ft(FEATURE_DISPLAY_UNBREAKABLE)+"= (Infinity):}§7)",
+				"§eBuilder's Wand §7x${i:"+ft(FEATURE_META_SIZE)+"=0} §7[${b:"+ft(FEATURE_META_VERTICALMODE)+"=┃:━}§7] (${b:"+ft(FEATURE_DISPLAY_UNBREAKABLE)+"=Infinity:${i:"+ft(FEATURE_META_DURABILITY)+"=0}/${i:"+ft(FEATURE_META_DURABILITY_MAX)+"=0}}§7)",
 				"§3 - Mode §7: ${B:"+ft(FEATURE_META_VERTICALMODE)+"=Vertical:Horizonal}",
-				"§3 - Durability §7: ${I:"+ft(FEATURE_META_DURABILITY)+"=0} of ${I:"+ft(FEATURE_META_DURABILITY_MAX)+"=0} ${B:"+ft(FEATURE_DISPLAY_UNBREAKABLE)+"=(Infinity):}",
+				"§3 - Durability §7: ${I:"+ft(FEATURE_META_DURABILITY)+"=§0}${I:"+ft(FEATURE_META_DURABILITY_MAX)+"=§0}${B:"+ft(FEATURE_DISPLAY_UNBREAKABLE)+"=(Infinity):${i:"+ft(FEATURE_META_DURABILITY)+"=0} of ${i:"+ft(FEATURE_META_DURABILITY_MAX)+"=0}}",
 				"§3 - Size §7: ${I:"+ft(FEATURE_META_SIZE)+"=0}${I:"+ft(FEATURE_META_PARTICLE_COLOR_R)+"=§255}${I:"+ft(FEATURE_META_PARTICLE_COLOR_G)+"=§255}${I:"+ft(FEATURE_META_PARTICLE_COLOR_B)+"=§255}",
 				"§3 - UseCount §7: ${I:"+ft(FEATURE_META_COUNT_USE)+"=0}",
 				"§3 - PlaceCount §7: ${I:"+ft(FEATURE_META_COUNT_PLACE)+"=0}",

@@ -458,7 +458,7 @@ public abstract class ItemLore {
 		}
 
 		public ItemLoreMetaEditable fromContents(final ItemLoreDataFormat format, final ItemLoreContent contents) {
-			System.out.print("parsed");
+			// System.out.print("parsed");
 			final List<String> input = contents.get();
 			for (final ListIterator<String> itr = input.listIterator(); itr.hasNext();) {
 				final String line = itr.next();
