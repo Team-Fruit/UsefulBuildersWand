@@ -270,36 +270,48 @@ public abstract class ItemLore {
 			final String value = StringUtils.substringAfter(namevalue, "=");
 			if (StringUtils.equalsIgnoreCase(type, "B")) {
 				final FlagMeta m;
-				if (StringUtils.equals(type, "B"))
+				final boolean isMeta = StringUtils.equals(type, "B");
+				if (isMeta)
 					m = format.attributesFormat.typeFlag.get(name);
 				else
 					m = FlagMeta.Factory.create(value);
 				if (m!=null) {
 					final String s = m instanceof FlagMetaAccess ? ((FlagMetaAccess) m).compose(format, this, getFlag(name)) : m.compose(format, getFlag(name));
 					if (s!=null)
-						stb.append(format.valueprefix).append(name).append(s).append(format.valuesuffix);
+						if (isMeta)
+							stb.append(format.valueprefix).append(name).append(s).append(format.valuesuffix);
+						else
+							stb.append(s);
 				}
 			} else if (StringUtils.equalsIgnoreCase(type, "I")) {
 				final NumberMeta m;
-				if (StringUtils.equals(type, "I"))
+				final boolean isMeta = StringUtils.equals(type, "I");
+				if (isMeta)
 					m = format.attributesFormat.typeNumber.get(name);
 				else
 					m = NumberMeta.Factory.create(value);
 				if (m!=null) {
 					final String s = m.compose(format, getNumber(name));
 					if (s!=null)
-						stb.append(format.valueprefix).append(name).append(s).append(format.valuesuffix);
+						if (isMeta)
+							stb.append(format.valueprefix).append(name).append(s).append(format.valuesuffix);
+						else
+							stb.append(s);
 				}
 			} else if (StringUtils.equalsIgnoreCase(type, "S")) {
 				final TextMeta m;
-				if (StringUtils.equals(type, "S"))
+				final boolean isMeta = StringUtils.equals(type, "S");
+				if (isMeta)
 					m = format.attributesFormat.typeText.get(name);
 				else
 					m = TextMeta.Factory.create(value);
 				if (m!=null) {
 					final String s = m.compose(format, getText(name));
 					if (s!=null)
-						stb.append(format.valueprefix).append(name).append(s).append(format.valuesuffix);
+						if (isMeta)
+							stb.append(format.valueprefix).append(name).append(s).append(format.valuesuffix);
+						else
+							stb.append(s);
 				}
 			}
 			return stb.toString();
@@ -570,7 +582,7 @@ public abstract class ItemLore {
 
 		@Override
 		public String toString() {
-			return String.format("ItemLoreMetaMutable [dataFlag=%s, dataNumber=%s, dataText=%s, modcount=%s]", this.dataFlag, this.dataNumber, this.dataText, this.modCount);
+			return String.format("ItemLoreMetaEditable [dataFlag=%s, dataNumber=%s, dataText=%s, modcount=%s]", this.dataFlag, this.dataNumber, this.dataText, this.modCount);
 		}
 
 		@Override
@@ -954,8 +966,18 @@ public abstract class ItemLore {
 							format1 = constant;
 						}
 						if (StringUtils.contains(constant, ":")) {
-							final String trueStr = StringUtils.substringBefore(format1, ":");
-							final String falseStr = StringUtils.substringAfter(format1, ":");
+							final String nested = NestedStringUtils.substringNested(constant, "${", "}", "$", null);
+							String trueStr = StringUtils.substringBefore(format1, ":");
+							String falseStr = StringUtils.substringAfter(format1, ":");
+							if (!StringUtils.isEmpty(nested)) {
+								final String before = NestedStringUtils.substringBeforeNested(constant, "${", "$");
+								final String after = NestedStringUtils.substringAfterNested(constant, "${", "}", "$", null);
+								if (!StringUtils.contains(before, ":")&&StringUtils.contains(after, ":")) {
+									trueStr = before+"${"+nested+"}"+StringUtils.substringBefore(after, ":");
+									falseStr = StringUtils.substringAfter(after, ":");
+								}
+							}
+
 							return new TextFlagMeta(BooleanUtils.toBooleanObject(defaultStr), trueStr, falseStr);
 						} else
 							return new HiddenFlagMeta(BooleanUtils.toBooleanObject(defaultStr));

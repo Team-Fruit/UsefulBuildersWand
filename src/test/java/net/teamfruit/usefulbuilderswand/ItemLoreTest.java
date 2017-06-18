@@ -66,4 +66,37 @@ public class ItemLoreTest {
 		assertEquals(dataSrc, dataDst);
 		assertEquals(loreSrc, loreDst);
 	}
+
+	@Test
+	public void testLore2() {
+		final String prefix = "*PRE+";
+		final String begin = "{{";
+		final String end = "}}";
+
+		final List<String> descFormat = Lists.newArrayList();
+		descFormat.add("HI=_${S:HI!}_");
+		descFormat.add("SUSHI=_${b:SUSHI=${s:HI!}:${i:JOHN}}${B:SUSHI=§}_");
+		descFormat.add("JOHN=_${I:JOHN}_");
+		descFormat.add("JOHN2=_${i:JOHN=§}_");
+
+		final ItemLoreDataFormat format = new ItemLoreDataFormat(prefix, begin, end, descFormat);
+
+		final ItemLoreMetaEditable dataSrc = new ItemLoreMetaEditable();
+		dataSrc.setText("HI!", "hi");
+		dataSrc.setFlag("SUSHI", true);
+		dataSrc.setNumber("JOHN", 12);
+
+		final List<String> loreSrc = new ArrayList<String>();
+		loreSrc.add(prefix+"HI=_"+begin+"HI!"+"hi"+end+"_");
+		loreSrc.add(prefix+"SUSHI=_"+"hi"+begin+"SUSHI"+end+"_");
+		loreSrc.add(prefix+"JOHN=_"+begin+"JOHN"+"12"+end+"_");
+		loreSrc.add(prefix+"JOHN2=_"+"§1§2"+"_");
+
+		final ItemLoreMeta dataDst = new ItemLoreMetaEditable().fromContents(format, new ItemLoreContent().fromRaw(format, ItemLoreRaw.create().read(loreSrc)));
+
+		final List<String> loreDst = ItemLoreRaw.create().read(Lists.newArrayList(loreSrc)).updateContents(format, new ItemLoreContent().fromMeta(format, dataSrc)).get();
+
+		assertEquals(dataSrc, dataDst);
+		assertEquals(loreSrc, loreDst);
+	}
 }
