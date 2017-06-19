@@ -1,6 +1,7 @@
 package net.teamfruit.usefulbuilderswand;
 
 import java.util.List;
+import java.util.logging.Logger;
 
 import javax.annotation.Nonnull;
 
@@ -10,6 +11,13 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public class UsefulBuildersWand extends JavaPlugin {
+	private static Logger log;
+
+	public static Logger log() {
+		if (log==null)
+			log = Logger.getLogger(UsefulBuildersWand.class.getSimpleName());
+		return log;
+	}
 
 	@Override
 	public boolean onCommand(final CommandSender sender, final Command command, final String label, final String[] args) {
@@ -40,6 +48,7 @@ public class UsefulBuildersWand extends JavaPlugin {
 
 	@Override
 	public void onEnable() {
+		log = getLogger();
 		final FileConfiguration config = getConfig();
 		this.data.initConfig(config);
 		config.options().copyDefaults(true);

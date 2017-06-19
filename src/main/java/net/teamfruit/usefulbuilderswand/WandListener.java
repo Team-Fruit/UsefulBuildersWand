@@ -3,6 +3,7 @@ package net.teamfruit.usefulbuilderswand;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
 
 import javax.annotation.Nullable;
 
@@ -40,6 +41,7 @@ import net.teamfruit.usefulbuilderswand.ItemLore.ItemLoreMeta;
 import net.teamfruit.usefulbuilderswand.ItemLore.ItemLoreMetaEditable;
 import net.teamfruit.usefulbuilderswand.ItemLore.ItemLoreMetaImmutable;
 import net.teamfruit.usefulbuilderswand.ItemLore.ItemLoreRaw;
+import net.teamfruit.usefulbuilderswand.WorldGuardHandler.WorldGuardHandleException;
 
 public class WandListener implements Listener, CommandExecutor, UsefulBuildersWandAPI {
 	private final Plugin plugin;
@@ -148,9 +150,8 @@ public class WandListener implements Listener, CommandExecutor, UsefulBuildersWa
 		try {
 			final RayTraceResult res = this.nativemc.rayTrace(player);
 			if (res!=null)
-				blocks = getCandidateBlocks(meta, player, player.getWorld(), res.location.getBlock(), res.face);
+				blocks = getPotentialBlocks(meta, player, player.getWorld(), res.location.getBlock(), res.face);
 		} catch (final Exception e) {
-			e.printStackTrace();
 		}
 
 		if (blocks!=null) {
@@ -240,7 +241,15 @@ public class WandListener implements Listener, CommandExecutor, UsefulBuildersWa
 			final int maxdurability = meta.getNumber(this.wanddata.keyData(WandData.FEATURE_META_DURABILITY_MAX), 0);
 			meta.setFlag(this.wanddata.keyData(WandData.FEATURE_DISPLAY_UNBREAKABLE), maxdurability<=0);
 
-			final List<Location> blocks = getCandidateBlocks(meta, player, world, target, face);
+			List<Location> blocks;
+			try {
+				blocks = getPotentialBlocks(meta, player, world, target, face);
+			} catch (final WorldGuardHandleException e) {
+				final String errorcode = Long.toHexString(System.currentTimeMillis());
+				player.sendMessage(String.format("§c[Useful Builder's Wand] A fatal error has occured. Please report to server administrator. [errorcode=%s]", errorcode));
+				UsefulBuildersWand.log().log(Level.SEVERE, String.format("[player=%s, errorcode=%s]: A fatal error has occured: World Guard Error:", player.getDisplayName(), errorcode), e.getCause());
+				return false;
+			}
 
 			if (blocks.isEmpty())
 				return false;
@@ -306,6 +315,14 @@ public class WandListener implements Listener, CommandExecutor, UsefulBuildersWa
 	}
 
 	public List<Location> getCandidateBlocks(final ItemLoreMeta meta, final Player player, final @Nullable World world, final @Nullable Block target, final BlockFace face) {
+		try {
+			return getPotentialBlocks(meta, player, world, target, face);
+		} catch (final WorldGuardHandleException e) {
+			return Lists.newArrayList();
+		}
+	}
+
+	public List<Location> getPotentialBlocks(final ItemLoreMeta meta, final Player player, final @Nullable World world, final @Nullable Block target, final BlockFace face) throws WorldGuardHandleException {
 		final List<Location> blocks = Lists.newArrayList();
 
 		final int maxdurability = meta.getNumber(this.wanddata.keyData(WandData.FEATURE_META_DURABILITY_MAX), 0);

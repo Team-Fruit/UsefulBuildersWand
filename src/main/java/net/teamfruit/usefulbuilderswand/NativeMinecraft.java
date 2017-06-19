@@ -49,18 +49,21 @@ public interface NativeMinecraft {
 			final Logger logger = plugin.getLogger();
 
 			try {
-				if (StringUtils.startsWith(vername, "v1_8")) {
-					logger.info("applying v1_8_R3 -> ["+vername+"]");
-					return new NativeMinecraft_v1_8_R3(vername);
-				} else if (StringUtils.startsWith(vername, "v1_9")) {
-					logger.info("applying v1_10_R1 -> ["+vername+"]");
-					return new NativeMinecraft_v1_10_R1(vername);
-				} else if (StringUtils.startsWith(vername, "v1_10")) {
-					logger.info("applying v1_10_R1 -> ["+vername+"]");
-					return new NativeMinecraft_v1_10_R1(vername);
+				if (StringUtils.startsWith(vername, "v1_12")) {
+					logger.info("applying v1_12_R1 -> ["+vername+"]");
+					return new NativeMinecraft_v1_12_R1(vername);
 				} else if (StringUtils.startsWith(vername, "v1_11")) {
 					logger.info("applying v1_11_R1 -> ["+vername+"]");
 					return new NativeMinecraft_v1_11_R1(vername);
+				} else if (StringUtils.startsWith(vername, "v1_10")) {
+					logger.info("applying v1_10_R1 -> ["+vername+"]");
+					return new NativeMinecraft_v1_10_R1(vername);
+				} else if (StringUtils.startsWith(vername, "v1_9")) {
+					logger.info("applying v1_10_R1 -> ["+vername+"]");
+					return new NativeMinecraft_v1_10_R1(vername);
+				} else if (StringUtils.startsWith(vername, "v1_8")) {
+					logger.info("applying v1_8_R3 -> ["+vername+"]");
+					return new NativeMinecraft_v1_8_R3(vername);
 				} else {
 					logger.warning("###### UNSUPPORTED MINECRAFT VERSION ######");
 					logger.warning("# Internal Version: "+StringUtils.rightPad(vername, "INECRAFT VERSION ####".length())+" #");
@@ -73,7 +76,6 @@ public interface NativeMinecraft {
 					logger.warning("###########################################");
 				}
 			} catch (final Exception e) {
-				logger.log(Level.FINEST, e.getMessage(), e);
 				logger.warning("********** Problem has occurred. **********");
 				logger.warning("  Internal Version: "+vername);
 				logger.warning("  About Error: "+e.getMessage());
@@ -92,14 +94,15 @@ public interface NativeMinecraft {
 				logger.warning("  Please report 'Internal Version' and     ");
 				logger.warning("    'About Error' to us!                   ");
 				logger.warning("*******************************************");
+				logger.log(Level.WARNING, e.getMessage(), e);
 			}
 
 			try {
-				logger.warning("trying to apply v1_8_R3 -> ["+vername+"]");
-				return new NativeMinecraft_v1_8_R3(vername);
+				logger.warning("trying to apply v1_11_R1 -> ["+vername+"]");
+				return new NativeMinecraft_v1_11_R1(vername);
 			} catch (final Exception e) {
 				logger.log(Level.FINEST, e.getMessage(), e);
-				logger.warning("failed to apply v1_8_R3");
+				logger.warning("failed to apply v1_11_R1");
 			}
 			try {
 				logger.warning("trying to apply v1_10_R1 -> ["+vername+"]");
@@ -109,11 +112,11 @@ public interface NativeMinecraft {
 				logger.warning("failed to apply v1_10_R1");
 			}
 			try {
-				logger.warning("trying to apply v1_11_R1 -> ["+vername+"]");
-				return new NativeMinecraft_v1_11_R1(vername);
+				logger.warning("trying to apply v1_8_R3 -> ["+vername+"]");
+				return new NativeMinecraft_v1_8_R3(vername);
 			} catch (final Exception e) {
 				logger.log(Level.FINEST, e.getMessage(), e);
-				logger.warning("failed to apply v1_11_R1");
+				logger.warning("failed to apply v1_8_R3");
 			}
 			logger.log(Level.SEVERE, "FATAL ERROR: Sorry this plugin doesn't work with this enviroment.");
 			throw new RuntimeException("FATAL ERROR: UNSUPPORTED");
