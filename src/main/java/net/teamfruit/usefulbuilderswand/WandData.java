@@ -15,14 +15,17 @@ import com.google.common.collect.Maps;
 import net.teamfruit.usefulbuilderswand.ItemLore.ItemLoreDataFormat;
 
 public class WandData {
+	public static final String SETTING_EFFECT_RANGE = "setting.effect.range";
+
 	public static final String META_PREFIX = "itemdata.prefix";
 	public static final String META_VALUE_PREFIX = "itemdata.value.prefix";
 	public static final String META_VALUE_SUFFIX = "itemdata.value.suffix";
 	public static final String META_FORMAT = "itemdata.format";
 
 	public static final String FEATURE = "feature";
+	public static final String FEATURE_META = "feature.meta";
 	public static final String FEATURE_META_SIZE = "feature.meta.size";
-	public static final String FEATURE_META_VERTICALMODE = "feature.meta.verticalmode";
+	public static final String FEATURE_META_MODE = "feature.meta.mode";
 	// public static final String FEATURE_META_EXP = "feature.meta.exp.data";
 	// public static final String FEATURE_META_EXP_MAX = "feature.meta.exp.max";
 	public static final String FEATURE_META_DURABILITY = "feature.meta.durability.data";
@@ -33,6 +36,7 @@ public class WandData {
 	public static final String FEATURE_META_PARTICLE_COLOR_R = "feature.meta.particle.color.r";
 	public static final String FEATURE_META_PARTICLE_COLOR_G = "feature.meta.particle.color.g";
 	public static final String FEATURE_META_PARTICLE_COLOR_B = "feature.meta.particle.color.b";
+	public static final String FEATURE_META_PARTICLE_SHARE = "feature.meta.particle.share";
 	public static final String FEATURE_DISPLAY_UNBREAKABLE = "feature.display.unbreakable";
 	// public static final String FEATURE_DISPLAY_LEVEL = "feature.display.level";
 	// public static final String FEATURE_DISPLAY_PARTICLE = "feature.display.particle";
@@ -45,13 +49,15 @@ public class WandData {
 	public void initConfig(final FileConfiguration cfg) {
 		this.cfg = cfg;
 
+		cfg.addDefault(SETTING_EFFECT_RANGE, 48);
+
 		cfg.addDefault(META_PREFIX, "§3§e§8§r");
 		cfg.addDefault(META_VALUE_PREFIX, "§5§2§c§r");
 		cfg.addDefault(META_VALUE_SUFFIX, "§a§6§3§r");
 
 		final Map<String, Object> features = Maps.newHashMap();
 		features.put(FEATURE_META_SIZE, "§2§f§c§r");
-		features.put(FEATURE_META_VERTICALMODE, "§1§d§3§r");
+		features.put(FEATURE_META_MODE, "§1§d§3§r");
 		// features.put(FEATURE_META_EXP, "§e§9§8§r");
 		// features.put(FEATURE_META_EXP_MAX, "§d§3§8§r");
 		features.put(FEATURE_META_DURABILITY, "§5§b§4§r");
@@ -62,15 +68,16 @@ public class WandData {
 		features.put(FEATURE_META_PARTICLE_COLOR_R, "§4§3§4§r");
 		features.put(FEATURE_META_PARTICLE_COLOR_G, "§c§a§d§r");
 		features.put(FEATURE_META_PARTICLE_COLOR_B, "§f§8§e§r");
+		features.put(FEATURE_META_PARTICLE_SHARE, "§a§f§4§r");
 		features.put(FEATURE_DISPLAY_UNBREAKABLE, "§3§a§c§r");
 		// features.put(FEATURE_DISPLAY_LEVEL, "§2§a§b§r");
 		// features.put(FEATURE_DISPLAY_PARTICLE, "§4§4§f§r");
 
 		final List<String> format = Lists.newArrayList(new String[] {
-				"§eBuilder's Wand §7x${i:"+ft(FEATURE_META_SIZE)+"=0} §7[${b:"+ft(FEATURE_META_VERTICALMODE)+"=┃:━}§7] (${b:"+ft(FEATURE_DISPLAY_UNBREAKABLE)+"=Infinity:${i:"+ft(FEATURE_META_DURABILITY)+"=0}/${i:"+ft(FEATURE_META_DURABILITY_MAX)+"=0}}§7)",
-				"§3 - Mode §7: ${B:"+ft(FEATURE_META_VERTICALMODE)+"=Vertical:Horizonal}",
-				"§3 - Durability §7: ${I:"+ft(FEATURE_META_DURABILITY)+"=§0}${I:"+ft(FEATURE_META_DURABILITY_MAX)+"=§0}${B:"+ft(FEATURE_DISPLAY_UNBREAKABLE)+"=(Infinity):${i:"+ft(FEATURE_META_DURABILITY)+"=0} of ${i:"+ft(FEATURE_META_DURABILITY_MAX)+"=0}}",
-				"§3 - Size §7: ${I:"+ft(FEATURE_META_SIZE)+"=0}${I:"+ft(FEATURE_META_PARTICLE_COLOR_R)+"=§255}${I:"+ft(FEATURE_META_PARTICLE_COLOR_G)+"=§255}${I:"+ft(FEATURE_META_PARTICLE_COLOR_B)+"=§255}",
+				"§eBuilder's Wand §7x${i:"+ft(FEATURE_META_SIZE)+"=0} §7[${b:"+ft(FEATURE_META_MODE)+"=┃:━}§7] (${b:"+ft(FEATURE_DISPLAY_UNBREAKABLE)+"=Infinity:${i:"+ft(FEATURE_META_DURABILITY)+"=0}/${i:"+ft(FEATURE_META_DURABILITY_MAX)+"=0}}§7)",
+				"§3 - Mode §7: ${B:"+ft(FEATURE_META_MODE)+"=Vertical:Horizonal}",
+				"§3 - Durability §7: ${i:"+ft(FEATURE_META_DURABILITY)+"=§0}${I:"+ft(FEATURE_META_DURABILITY_MAX)+"=§0}${B:"+ft(FEATURE_DISPLAY_UNBREAKABLE)+"=(Infinity):${i:"+ft(FEATURE_META_DURABILITY)+"=0} of ${i:"+ft(FEATURE_META_DURABILITY_MAX)+"=0}}",
+				"§3 - Size §7: ${I:"+ft(FEATURE_META_SIZE)+"=0}${I:"+ft(FEATURE_META_PARTICLE_COLOR_R)+"=§255}${I:"+ft(FEATURE_META_PARTICLE_COLOR_G)+"=§255}${I:"+ft(FEATURE_META_PARTICLE_COLOR_B)+"=§255}${B:"+ft(FEATURE_META_PARTICLE_SHARE)+"=true}",
 				"§3 - UseCount §7: ${I:"+ft(FEATURE_META_COUNT_USE)+"=0}",
 				"§3 - PlaceCount §7: ${I:"+ft(FEATURE_META_COUNT_PLACE)+"=0}",
 				// "§3 - Level §7: ${I:"+ft(FEATURE_DISPLAY_LEVEL)+"=0}",

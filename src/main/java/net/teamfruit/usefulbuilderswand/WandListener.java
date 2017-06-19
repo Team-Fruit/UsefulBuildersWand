@@ -5,6 +5,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.lang.StringUtils;
+import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -77,16 +78,24 @@ public class WandListener implements Listener, CommandExecutor {
 				final ItemLoreRaw raw = ItemLoreRaw.create().readItemStack(format, itemStack);
 				try {
 					final ItemLoreMetaEditable meta = this.cache.get(raw).toEditable();
+					// final int modCount = meta.getModCount();
 					for (final String arg : args)
 						if (StringUtils.contains(arg, "=")) {
 							final String key = StringUtils.substringBefore(arg, "=");
 							final String value = StringUtils.substringAfter(arg, "=");
-							final String key1 = this.wanddata.keyData(WandData.FEATURE+"."+key);
-							meta.addAttribute(format, key1!=null ? key1 : key, value);
+							final String key1 = this.wanddata.keyData(WandData.FEATURE_META+"."+key);
+							meta.setRaw(format, key1!=null ? key1 : key, value);
+						} else {
+							final String key = this.wanddata.keyData(WandData.FEATURE_META+"."+arg);
+							final Object value = meta.getRaw(format, key!=null ? key : arg);
+							if (value!=null)
+								player.chat(String.valueOf(value));
 						}
+					// if (modCount!=meta.getModCount())
 					raw.updateContents(format, new ItemLoreContent().fromMeta(format, meta)).writeItemStack(format, itemStack);
 				} catch (final ExecutionException e) {
 				}
+				return true;
 			}
 		}
 		return false;
@@ -127,8 +136,15 @@ public class WandListener implements Listener, CommandExecutor {
 			final int color_r = meta.getNumber(this.wanddata.keyData(WandData.FEATURE_META_PARTICLE_COLOR_R), 255);
 			final int color_g = meta.getNumber(this.wanddata.keyData(WandData.FEATURE_META_PARTICLE_COLOR_G), 255);
 			final int color_b = meta.getNumber(this.wanddata.keyData(WandData.FEATURE_META_PARTICLE_COLOR_B), 255);
-			for (final Location block : blocks)
-				this.nativemc.spawnParticles(player, block, color_r/255f, color_g/255f, color_b/255f);
+			final int range = this.wanddata.getConfig().getInt(WandData.SETTING_EFFECT_RANGE);
+			if (range>0&&meta.getFlag(this.wanddata.keyData(WandData.FEATURE_META_PARTICLE_SHARE), true)) {
+				for (final Player other : Bukkit.getOnlinePlayers())
+					if (other.getLocation().distance(player.getLocation())<=range)
+						for (final Location block : blocks)
+							this.nativemc.spawnParticles(other, block, color_r/255f, color_g/255f, color_b/255f);
+			} else
+				for (final Location block : blocks)
+					this.nativemc.spawnParticles(player, block, color_r/255f, color_g/255f, color_b/255f);
 		}
 	}
 
@@ -182,7 +198,7 @@ public class WandListener implements Listener, CommandExecutor {
 					if (onItemUse(itemStackHolder, meta, player, player.getWorld(), block, face))
 						event.setCancelled(true);
 			} else if (player.isSneaking()&&(action==Action.LEFT_CLICK_AIR||action==Action.LEFT_CLICK_BLOCK)) {
-				final String key = this.wanddata.key(WandData.FEATURE_META_VERTICALMODE);
+				final String key = this.wanddata.key(WandData.FEATURE_META_MODE);
 				meta.setFlag(key, !meta.getFlag(key, false));
 				event.setCancelled(true);
 			}
@@ -321,7 +337,7 @@ public class WandListener implements Listener, CommandExecutor {
 		int mz = dz==0 ? 1 : 0;
 
 		if (player.isSneaking()) {
-			final boolean isVertical = meta.getFlag(this.wanddata.keyData(WandData.FEATURE_META_VERTICALMODE), false);
+			final boolean isVertical = meta.getFlag(this.wanddata.keyData(WandData.FEATURE_META_MODE), false);
 			;
 			if (face!=BlockFace.UP&&face!=BlockFace.DOWN)
 				if (isVertical) {

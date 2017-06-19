@@ -130,7 +130,7 @@ public abstract class ItemLore {
 					}
 				}
 				if (first!=null)
-					output.add(0, format.prefix+first);
+					output.set(0, format.prefix+first);
 			} else
 				for (final String content : input)
 					output.add(format.prefix+content);
@@ -317,6 +317,29 @@ public abstract class ItemLore {
 			return stb.toString();
 		}
 
+		public String get(final ItemLoreDataFormat format, final String key) {
+			if (format.attributesFormat.typeFlag.containsKey(key)) {
+				final FlagMeta m = format.attributesFormat.typeFlag.get(key);
+				return m instanceof FlagMetaAccess ? ((FlagMetaAccess) m).compose(format, this, getFlag(key)) : m.compose(format, getFlag(key));
+			} else if (format.attributesFormat.typeNumber.containsKey(key)) {
+				final NumberMeta m = format.attributesFormat.typeNumber.get(key);
+				return m.compose(format, getNumber(key));
+			} else if (format.attributesFormat.typeText.containsKey(key)) {
+				final TextMeta m = format.attributesFormat.typeText.get(key);
+				return m.compose(format, getText(key));
+			}
+			return null;
+		}
+
+		public Object getRaw(final ItemLoreDataFormat format, final String key) {
+			if (format.attributesFormat.typeFlag.containsKey(key))
+				return getFlag(key);
+			else if (format.attributesFormat.typeNumber.containsKey(key))
+				return getNumber(key);
+			else if (format.attributesFormat.typeText.containsKey(key))
+				return getText(key);
+			return null;
+		}
 	}
 
 	public static class ItemLoreMetaImmutable extends ItemLoreMeta {
@@ -508,13 +531,22 @@ public abstract class ItemLore {
 			return this;
 		}
 
-		public void addAttribute(final ItemLoreDataFormat format, final String key, final String value) {
+		public void set(final ItemLoreDataFormat format, final String key, final String value) {
 			if (format.attributesFormat.typeFlag.containsKey(key))
 				setFlag(key, format.attributesFormat.typeFlag.get(key).parse(format, value));
 			else if (format.attributesFormat.typeNumber.containsKey(key))
 				setNumber(key, format.attributesFormat.typeNumber.get(key).parse(format, value));
 			else if (format.attributesFormat.typeText.containsKey(key))
 				setText(key, format.attributesFormat.typeText.get(key).parse(format, value));
+		}
+
+		public void setRaw(final ItemLoreDataFormat format, final String key, final String value) {
+			if (format.attributesFormat.typeFlag.containsKey(key))
+				setFlag(key, BooleanUtils.toBoolean(value));
+			else if (format.attributesFormat.typeNumber.containsKey(key))
+				setNumber(key, NumberUtils.toInt(value));
+			else if (format.attributesFormat.typeText.containsKey(key))
+				setText(key, value);
 		}
 
 		@Override
@@ -820,6 +852,7 @@ public abstract class ItemLore {
 
 			String compose(ItemLoreDataFormat format, Boolean data);
 
+			@Deprecated
 			public static class HiddenFlagMeta implements FlagMeta {
 				private final Boolean defaultValue;
 
@@ -961,6 +994,9 @@ public abstract class ItemLore {
 						if (StringUtils.contains(constant, "?")) {
 							defaultStr = StringUtils.substringBefore(constant, "?");
 							format1 = StringUtils.substringAfter(constant, "?");
+						} else if (!StringUtils.contains(constant, ":")) {
+							defaultStr = constant;
+							format1 = "";
 						} else {
 							defaultStr = null;
 							format1 = constant;
@@ -980,9 +1016,11 @@ public abstract class ItemLore {
 
 							return new TextFlagMeta(BooleanUtils.toBooleanObject(defaultStr), trueStr, falseStr);
 						} else
-							return new HiddenFlagMeta(BooleanUtils.toBooleanObject(defaultStr));
+							// return new HiddenFlagMeta(BooleanUtils.toBooleanObject(defaultStr));
+							return new TextFlagMeta(BooleanUtils.toBooleanObject(defaultStr), "§1", "§0");
 					}
-					return new HiddenFlagMeta(false);
+					// return new HiddenFlagMeta(false);
+					return new TextFlagMeta(false, "§1", "§0");
 				}
 			}
 		}
