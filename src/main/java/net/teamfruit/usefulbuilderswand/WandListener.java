@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
+import javax.annotation.Nullable;
+
 import org.apache.commons.lang.StringUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
@@ -38,9 +40,8 @@ import net.teamfruit.usefulbuilderswand.ItemLore.ItemLoreMeta;
 import net.teamfruit.usefulbuilderswand.ItemLore.ItemLoreMetaEditable;
 import net.teamfruit.usefulbuilderswand.ItemLore.ItemLoreMetaImmutable;
 import net.teamfruit.usefulbuilderswand.ItemLore.ItemLoreRaw;
-import net.teamfruit.usefulbuilderswand.NativeMinecraft.RayTraceResult;
 
-public class WandListener implements Listener, CommandExecutor {
+public class WandListener implements Listener, CommandExecutor, UsefulBuildersWandAPI {
 	private final Plugin plugin;
 	private final WandData wanddata;
 	private NativeMinecraft nativemc;
@@ -69,6 +70,26 @@ public class WandListener implements Listener, CommandExecutor {
 		}.runTaskTimer(this.plugin, 3, 3);
 	}
 
+	public ItemLoreDataFormat getFormat() {
+		return this.wanddata.getFormat();
+	}
+
+	public ItemLoreMeta readMeta(final ItemStack itemStack) {
+		final ItemLoreDataFormat format = this.wanddata.getFormat();
+		final ItemLoreRaw raw = ItemLoreRaw.create().readItemStack(format, itemStack);
+		return this.cache.getUnchecked(raw);
+	}
+
+	public void writeMeta(final ItemStack itemStack, final ItemLoreMeta meta) {
+		final ItemLoreDataFormat format = this.wanddata.getFormat();
+		final ItemLoreRaw raw = ItemLoreRaw.create().readItemStack(format, itemStack);
+		raw.updateContents(format, new ItemLoreContent().fromMeta(format, meta)).writeItemStack(format, itemStack);
+	}
+
+	public @Nullable RayTraceResult rayTrace(final Player player) {
+		return this.nativemc.rayTrace(player);
+	}
+
 	public boolean onCommand(final CommandSender sender, final Command cmd, final String label, final String[] args) {
 		if (sender instanceof Player) {
 			final Player player = (Player) sender;
@@ -89,7 +110,7 @@ public class WandListener implements Listener, CommandExecutor {
 							final String key = this.wanddata.keyData(WandData.FEATURE_META+"."+arg);
 							final Object value = meta.getRaw(format, key!=null ? key : arg);
 							if (value!=null)
-								player.chat(String.valueOf(value));
+								sender.sendMessage(String.valueOf(value));
 						}
 					// if (modCount!=meta.getModCount())
 					raw.updateContents(format, new ItemLoreContent().fromMeta(format, meta)).writeItemStack(format, itemStack);
@@ -127,7 +148,7 @@ public class WandListener implements Listener, CommandExecutor {
 		try {
 			final RayTraceResult res = this.nativemc.rayTrace(player);
 			if (res!=null)
-				blocks = getPotentialBlocks(itemStack, meta, player, player.getWorld(), res.location.getBlock(), res.face);
+				blocks = getCandidateBlocks(meta, player, player.getWorld(), res.location.getBlock(), res.face);
 		} catch (final Exception e) {
 			e.printStackTrace();
 		}
@@ -219,7 +240,7 @@ public class WandListener implements Listener, CommandExecutor {
 			final int maxdurability = meta.getNumber(this.wanddata.keyData(WandData.FEATURE_META_DURABILITY_MAX), 0);
 			meta.setFlag(this.wanddata.keyData(WandData.FEATURE_DISPLAY_UNBREAKABLE), maxdurability<=0);
 
-			final List<Location> blocks = getPotentialBlocks(itemStack, meta, player, world, target, face);
+			final List<Location> blocks = getCandidateBlocks(meta, player, world, target, face);
 
 			if (blocks.isEmpty())
 				return false;
@@ -284,7 +305,7 @@ public class WandListener implements Listener, CommandExecutor {
 		}
 	}
 
-	public List<Location> getPotentialBlocks(final ItemStackHolder itemStack, final ItemLoreMeta meta, final Player player, final World world, final Block target, final BlockFace face) {
+	public List<Location> getCandidateBlocks(final ItemLoreMeta meta, final Player player, final @Nullable World world, final @Nullable Block target, final BlockFace face) {
 		final List<Location> blocks = Lists.newArrayList();
 
 		final int maxdurability = meta.getNumber(this.wanddata.keyData(WandData.FEATURE_META_DURABILITY_MAX), 0);

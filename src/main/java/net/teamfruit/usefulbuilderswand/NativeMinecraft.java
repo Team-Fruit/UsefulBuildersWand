@@ -40,16 +40,6 @@ public interface NativeMinecraft {
 
 	void setItemInHand(final PlayerInventory inventory, final ItemStack itemStack);
 
-	class RayTraceResult {
-		public final Location location;
-		public final BlockFace face;
-
-		public RayTraceResult(final Location location, final BlockFace face) {
-			this.location = location;
-			this.face = face;
-		}
-	}
-
 	class NativeMinecraftFactory {
 		// Tested Versions: "v1_8_R3", "v1_9_R2", "v1_10_R1", "v1_11_R1"
 		public static NativeMinecraft create(final Plugin plugin) {
