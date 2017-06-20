@@ -41,7 +41,7 @@ public interface NativeMinecraft {
 	void setItemInHand(final PlayerInventory inventory, final ItemStack itemStack);
 
 	class NativeMinecraftFactory {
-		// Tested Versions: "v1_8_R3", "v1_9_R2", "v1_10_R1", "v1_11_R1"
+		// Tested Versions: "v1_8_R3", "v1_9_R2", "v1_10_R1", "v1_11_R1", "v1_12_R1"
 		public static NativeMinecraft create(final Plugin plugin) {
 			final Class<?> $class = plugin.getServer().getClass();
 			final String fullname = $class.getPackage().getName();
@@ -71,8 +71,8 @@ public interface NativeMinecraft {
 					logger.warning("# I will do my best to work, but          #");
 					logger.warning("#  there is a fear that it will not work. #");
 					logger.warning("#                                         #");
-					logger.warning("# 1.8.x 1.9.x 1.10.x 1.11.x is Supported. #");
-					logger.warning("# 1.8.9 1.9.4 1.10.2 1.11.2 is Verified.  #");
+					logger.warning("# 1.8.x 1.9.x 1.10.x 1.11.x 1.12.x is Supported. #");
+					logger.warning("# 1.8.9 1.9.4 1.10.2 1.11.2 1.12 is Verified.  #");
 					logger.warning("###########################################");
 				}
 			} catch (final Exception e) {
@@ -88,8 +88,8 @@ public interface NativeMinecraft {
 				logger.warning("    the structure we imagined, it can not  ");
 				logger.warning("    be operated normally.                  ");
 				logger.warning("                                           ");
-				logger.warning("  1.8.x 1.9.x 1.10.x 1.11.x is Supported.  ");
-				logger.warning("  1.8.9 1.9.4 1.10.2 1.11.2 is Verified.   ");
+				logger.warning("  1.8.x 1.9.x 1.10.x 1.11.x 1.12.x is Supported.  ");
+				logger.warning("  1.8.9 1.9.4 1.10.2 1.11.2 1.12 is Verified.   ");
 				logger.warning("                                           ");
 				logger.warning("  Please report 'Internal Version' and     ");
 				logger.warning("    'About Error' to us!                   ");
@@ -97,6 +97,13 @@ public interface NativeMinecraft {
 				logger.log(Level.WARNING, e.getMessage(), e);
 			}
 
+			try {
+				logger.warning("trying to apply v1_12_R1 -> ["+vername+"]");
+				return new NativeMinecraft_v1_12_R1(vername);
+			} catch (final Exception e) {
+				logger.log(Level.FINEST, e.getMessage(), e);
+				logger.warning("failed to apply v1_12_R1");
+			}
 			try {
 				logger.warning("trying to apply v1_11_R1 -> ["+vername+"]");
 				return new NativeMinecraft_v1_11_R1(vername);

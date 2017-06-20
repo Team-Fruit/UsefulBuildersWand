@@ -185,7 +185,7 @@ public class WandListener implements Listener, CommandExecutor, UsefulBuildersWa
 				return;
 
 			if (itemStack.getAmount()>1) {
-				final ItemStack[] stacks = inventory.getStorageContents();
+				final ItemStack[] stacks = inventory.getContents();
 				final int heldslot = inventory.getHeldItemSlot();
 				stackbreak: {
 					final ItemStack newItemStack = itemStack.clone();
@@ -232,85 +232,79 @@ public class WandListener implements Listener, CommandExecutor, UsefulBuildersWa
 	}
 
 	public boolean onItemUse(final ItemStackHolder itemStack, final ItemLoreMetaEditable meta, final Player player, final World world, final Block target, final BlockFace face) {
-		/*if (!player.capabilities.allowEdit)
-			return false;
-		else*/ {
+		try {
 			if (target.isEmpty())
 				return false;
 
 			final int maxdurability = meta.getNumber(this.wanddata.keyData(WandData.FEATURE_META_DURABILITY_MAX), 0);
 			meta.setFlag(this.wanddata.keyData(WandData.FEATURE_DISPLAY_UNBREAKABLE), maxdurability<=0);
 
-			List<Location> blocks;
-			try {
-				blocks = getPotentialBlocks(meta, player, world, target, face);
-			} catch (final WorldGuardHandleException e) {
-				final String errorcode = Long.toHexString(System.currentTimeMillis());
-				player.sendMessage(String.format("§c[Useful Builder's Wand] A fatal error has occured. Please report to server administrator. [errorcode=%s]", errorcode));
-				UsefulBuildersWand.log().log(Level.SEVERE, String.format("[player=%s, errorcode=%s]: A fatal error has occured: World Guard Error:", player.getDisplayName(), errorcode), e.getCause());
-				return false;
-			}
+			final List<Location> blocks = getPotentialBlocks(meta, player, world, target, face);
 
 			if (blocks.isEmpty())
 				return false;
-			else {
-				final String keydurability = this.wanddata.keyData(WandData.FEATURE_META_DURABILITY);
-				final int durability = meta.getNumber(keydurability, 0);
 
-				if (maxdurability>0&&durability<=0)
-					return false;
+			final String keydurability = this.wanddata.keyData(WandData.FEATURE_META_DURABILITY);
+			final int durability = meta.getNumber(keydurability, 0);
 
-				int data = -1;
+			if (maxdurability>0&&durability<=0)
+				return false;
 
-				final ItemStack item1 = this.nativemc.getItemFromBlock(target);
+			int data = -1;
 
-				if (this.nativemc.hasSubType(item1))
-					data = this.nativemc.getDropData(target);
+			final ItemStack item1 = this.nativemc.getItemFromBlock(target);
 
-				int slot = 0;
-				final PlayerInventory inventory = player.getInventory();
-				int placecount = 0;
-				for (final Location temp : blocks) {
-					for (slot = 0; slot<inventory.getSize(); ++slot) {
-						final ItemStack item = inventory.getItem(slot);
-						if (item==null||!item.getType().equals(item1.getType()))
-							continue;
-						if (data==-1||data==item.getDurability())
-							break;
-					}
+			if (this.nativemc.hasSubType(item1))
+				data = this.nativemc.getDropData(target);
 
-					if (slot>=inventory.getSize())
-						break;
-
+			int slot = 0;
+			final PlayerInventory inventory = player.getInventory();
+			int placecount = 0;
+			for (final Location temp : blocks) {
+				for (slot = 0; slot<inventory.getSize(); ++slot) {
 					final ItemStack item = inventory.getItem(slot);
-					ItemStack objitem = item;
-					if (player.getGameMode()==GameMode.CREATIVE) {
-						objitem = objitem.clone();
-						objitem.setAmount(1);
-					}
-
-					final Block block = temp.getBlock().getRelative(face.getOppositeFace());
-
-					if (this.nativemc.placeItem(player, block, itemStack, objitem, EquipmentSlot.HAND, face, player.getEyeLocation())) {
-						objitem.setAmount(objitem.getAmount()-1);
-						if (item.getAmount()<=0)
-							inventory.setItem(slot, null);
-						else
-							inventory.setItem(slot, item);
-
-						this.nativemc.playSound(player, temp, target, .25f, 1f);
-						placecount++;
-					}
+					if (item==null||!item.getType().equals(item1.getType()))
+						continue;
+					if (data==-1||data==item.getDurability())
+						break;
 				}
-				final String keyplace = this.wanddata.keyData(WandData.FEATURE_META_COUNT_PLACE);
-				meta.setNumber(keyplace, meta.getNumber(keyplace, 0)+placecount);
-				final String keyuse = this.wanddata.keyData(WandData.FEATURE_META_COUNT_USE);
-				meta.setNumber(keyuse, meta.getNumber(keyuse, 0)+1);
-				if (maxdurability>0)
-					meta.setNumber(keydurability, durability-1);
 
-				return true;
+				if (slot>=inventory.getSize())
+					break;
+
+				final ItemStack item = inventory.getItem(slot);
+				ItemStack objitem = item;
+				if (player.getGameMode()==GameMode.CREATIVE) {
+					objitem = objitem.clone();
+					objitem.setAmount(1);
+				}
+
+				final Block block = temp.getBlock().getRelative(face.getOppositeFace());
+
+				if (this.nativemc.placeItem(player, block, itemStack, objitem, EquipmentSlot.HAND, face, player.getEyeLocation())) {
+					objitem.setAmount(objitem.getAmount()-1);
+					if (item.getAmount()<=0)
+						inventory.setItem(slot, null);
+					else
+						inventory.setItem(slot, item);
+
+					this.nativemc.playSound(player, temp, target, .25f, 1f);
+					placecount++;
+				}
 			}
+			final String keyplace = this.wanddata.keyData(WandData.FEATURE_META_COUNT_PLACE);
+			meta.setNumber(keyplace, meta.getNumber(keyplace, 0)+placecount);
+			final String keyuse = this.wanddata.keyData(WandData.FEATURE_META_COUNT_USE);
+			meta.setNumber(keyuse, meta.getNumber(keyuse, 0)+1);
+			if (maxdurability>0)
+				meta.setNumber(keydurability, durability-1);
+
+			return true;
+		} catch (final Throwable e) {
+			final String errorcode = Long.toHexString(System.currentTimeMillis());
+			player.sendMessage(String.format("§c[Useful Builder's Wand] A fatal error has occured. Please report to server administrator. [errorcode=%s]", errorcode));
+			UsefulBuildersWand.log().log(Level.SEVERE, String.format("[player=%s, errorcode=%s]: A fatal error has occured: ", player.getDisplayName(), errorcode), e.getCause());
+			return false;
 		}
 	}
 
