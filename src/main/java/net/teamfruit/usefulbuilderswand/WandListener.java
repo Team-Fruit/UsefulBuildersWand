@@ -132,7 +132,7 @@ public class WandListener implements Listener, CommandExecutor, UsefulBuildersWa
 			{
 				final ItemStack itemStack = itemStackHolder.get();
 				if (itemStack==null||itemStack.getAmount()==0)
-					return;
+					continue;
 			}
 
 			try {
