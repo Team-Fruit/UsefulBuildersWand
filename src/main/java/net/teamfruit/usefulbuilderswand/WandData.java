@@ -30,6 +30,7 @@ public class WandData {
 	// public static final String FEATURE_META_EXP_MAX = "feature.meta.exp.max";
 	public static final String FEATURE_META_DURABILITY = "feature.meta.durability.data";
 	public static final String FEATURE_META_DURABILITY_MAX = "feature.meta.durability.max";
+	public static final String FEATURE_META_DURABILITY_UNBREAKABLE = "feature.meta.durability.unbreakable";
 	public static final String FEATURE_META_COUNT_PLACE = "feature.meta.count.place";
 	public static final String FEATURE_META_COUNT_USE = "feature.meta.count.use";
 	// public static final String FEATURE_META_PARTICLE = "feature.meta.particle";
@@ -37,7 +38,9 @@ public class WandData {
 	public static final String FEATURE_META_PARTICLE_COLOR_G = "feature.meta.particle.color.g";
 	public static final String FEATURE_META_PARTICLE_COLOR_B = "feature.meta.particle.color.b";
 	public static final String FEATURE_META_PARTICLE_SHARE = "feature.meta.particle.share";
-	public static final String FEATURE_DISPLAY_UNBREAKABLE = "feature.display.unbreakable";
+	public static final String FEATURE_META_OWNER = "feature.meta.owner.data";
+	public static final String FEATURE_META_OWNER_ID = "feature.meta.owner.id";
+	public static final String FEATURE_META_OWNER_NAME = "feature.meta.owner.name";
 	// public static final String FEATURE_DISPLAY_LEVEL = "feature.display.level";
 	// public static final String FEATURE_DISPLAY_PARTICLE = "feature.display.particle";
 
@@ -62,6 +65,7 @@ public class WandData {
 		// features.put(FEATURE_META_EXP_MAX, "§d§3§8§r");
 		features.put(FEATURE_META_DURABILITY, "§5§b§4§r");
 		features.put(FEATURE_META_DURABILITY_MAX, "§7§f§c§r");
+		features.put(FEATURE_META_DURABILITY_UNBREAKABLE, "§3§a§c§r");
 		features.put(FEATURE_META_COUNT_PLACE, "§6§8§e§r");
 		features.put(FEATURE_META_COUNT_USE, "§2§7§b§r");
 		// features.put(FEATURE_META_PARTICLE, "§3§4§b§r");
@@ -69,17 +73,20 @@ public class WandData {
 		features.put(FEATURE_META_PARTICLE_COLOR_G, "§c§a§d§r");
 		features.put(FEATURE_META_PARTICLE_COLOR_B, "§f§8§e§r");
 		features.put(FEATURE_META_PARTICLE_SHARE, "§a§f§4§r");
-		features.put(FEATURE_DISPLAY_UNBREAKABLE, "§3§a§c§r");
+		features.put(FEATURE_META_OWNER, "§e§6§d§r");
+		features.put(FEATURE_META_OWNER_ID, "§d§4§2§r");
+		features.put(FEATURE_META_OWNER_NAME, "§6§c§8§r");
 		// features.put(FEATURE_DISPLAY_LEVEL, "§2§a§b§r");
 		// features.put(FEATURE_DISPLAY_PARTICLE, "§4§4§f§r");
 
 		final List<String> format = Lists.newArrayList(new String[] {
-				"§eBuilder's Wand §7x${i:"+ft(FEATURE_META_SIZE)+"=0} §7[${b:"+ft(FEATURE_META_MODE)+"=┃:━}§7] (${b:"+ft(FEATURE_DISPLAY_UNBREAKABLE)+"=Infinity:${i:"+ft(FEATURE_META_DURABILITY)+"=0}/${i:"+ft(FEATURE_META_DURABILITY_MAX)+"=0}}§7)",
+				"§eBuilder's Wand §7x${i:"+ft(FEATURE_META_SIZE)+"=0} §7[${b:"+ft(FEATURE_META_MODE)+"=┃:━}§7] (${b:"+ft(FEATURE_META_DURABILITY_UNBREAKABLE)+"=Infinity:${i:"+ft(FEATURE_META_DURABILITY)+"=0}/${i:"+ft(FEATURE_META_DURABILITY_MAX)+"=0}}§7)",
 				"§3 - Mode §7: ${B:"+ft(FEATURE_META_MODE)+"=Vertical:Horizonal}",
-				"§3 - Durability §7: ${i:"+ft(FEATURE_META_DURABILITY)+"=§0}${I:"+ft(FEATURE_META_DURABILITY_MAX)+"=§0}${B:"+ft(FEATURE_DISPLAY_UNBREAKABLE)+"=(Infinity):${i:"+ft(FEATURE_META_DURABILITY)+"=0} of ${i:"+ft(FEATURE_META_DURABILITY_MAX)+"=0}}",
+				"§3 - Durability §7: ${i:"+ft(FEATURE_META_DURABILITY)+"=§0}${I:"+ft(FEATURE_META_DURABILITY_MAX)+"=§0}${B:"+ft(FEATURE_META_DURABILITY_UNBREAKABLE)+"=(Infinity):${i:"+ft(FEATURE_META_DURABILITY)+"=0} of ${i:"+ft(FEATURE_META_DURABILITY_MAX)+"=0}}",
 				"§3 - Size §7: ${I:"+ft(FEATURE_META_SIZE)+"=0}${I:"+ft(FEATURE_META_PARTICLE_COLOR_R)+"=§255}${I:"+ft(FEATURE_META_PARTICLE_COLOR_G)+"=§255}${I:"+ft(FEATURE_META_PARTICLE_COLOR_B)+"=§255}${B:"+ft(FEATURE_META_PARTICLE_SHARE)+"=true}",
 				"§3 - UseCount §7: ${I:"+ft(FEATURE_META_COUNT_USE)+"=0}",
 				"§3 - PlaceCount §7: ${I:"+ft(FEATURE_META_COUNT_PLACE)+"=0}",
+				"${B:"+ft(FEATURE_META_OWNER)+"=§3 - Owner §7: ${S:"+ft(FEATURE_META_OWNER_NAME)+"=}${I:"+ft(FEATURE_META_OWNER_ID)+"=§}:}",
 				// "§3 - Level §7: ${I:"+ft(FEATURE_DISPLAY_LEVEL)+"=0}",
 				// "§e - Exp : ${I:"+ft(FEATURE_META_EXP+")=0} of ${I:"+ft(FEATURE_META_EXP_MAX)+"=0}",
 				// "§e - Particle   : ${I:"+ft(FEATURE_META_PARTICLE)+"=§}${S:"+ft(FEATURE_DISPLAY_PARTICLE)+"}",

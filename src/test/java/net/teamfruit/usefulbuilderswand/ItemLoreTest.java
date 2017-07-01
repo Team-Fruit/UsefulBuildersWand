@@ -15,6 +15,9 @@ import com.google.common.collect.Lists;
 
 import net.teamfruit.usefulbuilderswand.ItemLore.ItemLoreContent;
 import net.teamfruit.usefulbuilderswand.ItemLore.ItemLoreDataFormat;
+import net.teamfruit.usefulbuilderswand.ItemLore.ItemLoreDataFormat.FlagMeta;
+import net.teamfruit.usefulbuilderswand.ItemLore.ItemLoreDataFormat.FlagMeta.TextFlagMeta;
+import net.teamfruit.usefulbuilderswand.ItemLore.ItemLoreDataFormat.FlagMeta.TextFlagMeta.TestAccess;
 import net.teamfruit.usefulbuilderswand.ItemLore.ItemLoreMeta;
 import net.teamfruit.usefulbuilderswand.ItemLore.ItemLoreMetaEditable;
 import net.teamfruit.usefulbuilderswand.ItemLore.ItemLoreRaw;
@@ -36,7 +39,6 @@ public class ItemLoreTest {
 	public void tearDown() throws Exception {
 	}
 
-	@Test
 	public void testLore() {
 		final String prefix = "*PRE+";
 		final String begin = "{{";
@@ -67,7 +69,6 @@ public class ItemLoreTest {
 		assertEquals(loreSrc, loreDst);
 	}
 
-	@Test
 	public void testLore2() {
 		final String prefix = "*PRE+";
 		final String begin = "{{";
@@ -98,5 +99,55 @@ public class ItemLoreTest {
 
 		assertEquals(dataSrc, dataDst);
 		assertEquals(loreSrc, loreDst);
+	}
+
+	@Test
+	public void testSplit1() {
+		final FlagMeta meta = FlagMeta.Factory.create("§3 - Owner §7： ${S:meta.owner.name=}${I:meta.owner.id=§}:");
+		if (!(meta instanceof TextFlagMeta))
+			fail();
+		final TestAccess debug = ((TextFlagMeta) meta).new TestAccess();
+		assertEquals("§3 - Owner §7： ${S:meta.owner.name=}${I:meta.owner.id=§}", debug.getTrue());
+		assertEquals("", debug.getFalse());
+	}
+
+	@Test
+	public void testSplit2() {
+		final FlagMeta meta = FlagMeta.Factory.create("§3 - Owner §7： ${S:meta.owner.name=}${I:meta.owner.id=§}:ab${I:meta.owner.id=§}");
+		if (!(meta instanceof TextFlagMeta))
+			fail();
+		final TestAccess debug = ((TextFlagMeta) meta).new TestAccess();
+		assertEquals("§3 - Owner §7： ${S:meta.owner.name=}${I:meta.owner.id=§}", debug.getTrue());
+		assertEquals("ab${I:meta.owner.id=§}", debug.getFalse());
+	}
+
+	@Test
+	public void testSplit3() {
+		final FlagMeta meta = FlagMeta.Factory.create("§3 - Owner §7： :${S:meta.owner.name=}${I:meta.owner.id=§}");
+		if (!(meta instanceof TextFlagMeta))
+			fail();
+		final TestAccess debug = ((TextFlagMeta) meta).new TestAccess();
+		assertEquals("§3 - Owner §7： ", debug.getTrue());
+		assertEquals("${S:meta.owner.name=}${I:meta.owner.id=§}", debug.getFalse());
+	}
+
+	@Test
+	public void testSplit4() {
+		final FlagMeta meta = FlagMeta.Factory.create("§3 - Owner §7： ${S:meta.owner.name=}${I:meta.owner.id=§}");
+		if (!(meta instanceof TextFlagMeta))
+			fail();
+		final TestAccess debug = ((TextFlagMeta) meta).new TestAccess();
+		assertEquals("§1", debug.getTrue());
+		assertEquals("§0", debug.getFalse());
+	}
+
+	@Test
+	public void testSplit5() {
+		final FlagMeta meta = FlagMeta.Factory.create("§3 - Owner §7： :${S:meta.owner.name=}:${I:meta.owner.id=§}:");
+		if (!(meta instanceof TextFlagMeta))
+			fail();
+		final TestAccess debug = ((TextFlagMeta) meta).new TestAccess();
+		assertEquals("§3 - Owner §7： ", debug.getTrue());
+		assertEquals("${S:meta.owner.name=}:${I:meta.owner.id=§}:", debug.getFalse());
 	}
 }

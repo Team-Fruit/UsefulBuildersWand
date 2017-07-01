@@ -144,6 +144,41 @@ public class NestedStringUtilsTest {
 		assertEquals(b, a);
 	}
 
+	@Test
+	public void testD4() {
+		final String a = substringAfterNested("\\}\\({\\}({({({({\\({a\\}=b}:,\\({({\\}}}#:\\({c=d\\({}\\}}\\({", "({", "}", "\\", "\\");
+		final String b = "\\({";
+		assertEquals(b, a);
+	}
+
+	@Test
+	public void testE1() {
+		final String[] a = splitOutsideNested("\\}\\({\\}:({({({({\\({a\\}=b}:,\\({({\\}}}#:\\({c=d\\({}\\}}#:\\({", "({", "}", "\\", "\\", ":", "#");
+		final String[] b = new String[] { "\\}\\({\\}", "({({({({\\({a\\}=b}:,\\({({\\}}}#:\\({c=d\\({}\\}}#:\\({" };
+		assertArrayEquals(b, a);
+	}
+
+	@Test
+	public void testE2() {
+		final String[] a = splitOutsideNested("\\}::\\({\\}:({({({({\\({a\\}=b}:,\\({({\\}}}::\\({c=d\\({}\\}}:\\({", "({", "}", "\\", "\\", ":", ":");
+		final String[] b = new String[] { "\\}::\\({\\}", "({({({({\\({a\\}=b}:,\\({({\\}}}::\\({c=d\\({}\\}}", "\\({" };
+		assertArrayEquals(b, a);
+	}
+
+	@Test
+	public void testE3() {
+		final String[] a = splitOutsideNested("\\}\\({\\}:({({({({\\({a\\}=b}:,\\({({\\}}}#:\\({c=d\\({}\\}}#:\\({", "({", "}", "\\", "\\", ":", "#");
+		final String[] b = new String[] { "\\}\\({\\}", "({({({({\\({a\\}=b}:,\\({({\\}}}#:\\({c=d\\({}\\}}#:\\({" };
+		assertArrayEquals(b, a);
+	}
+
+	@Test
+	public void testE4() {
+		final String[] a = splitOutsideNested("\\}::\\({\\}:::({({({({\\({a\\}=b}:,\\({({\\}}}::\\({c=d\\({}\\}}:\\({", "({", "}", "\\", "\\", ":", ":");
+		final String[] b = new String[] { "\\}::\\({\\}::", "({({({({\\({a\\}=b}:,\\({({\\}}}::\\({c=d\\({}\\}}", "\\({" };
+		assertArrayEquals(b, a);
+	}
+
 	public void testInteractive() {
 		Scanner sc = null;
 		try {

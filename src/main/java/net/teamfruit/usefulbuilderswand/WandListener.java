@@ -1,5 +1,6 @@
 package net.teamfruit.usefulbuilderswand;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -11,10 +12,12 @@ import org.apache.commons.lang.StringUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.command.Command;
+import org.bukkit.command.CommandException;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -92,36 +95,96 @@ public class WandListener implements Listener, CommandExecutor, UsefulBuildersWa
 		return this.nativemc.rayTrace(player);
 	}
 
-	public boolean onCommand(final CommandSender sender, final Command cmd, final String label, final String[] args) {
-		if (sender instanceof Player) {
-			final Player player = (Player) sender;
-			final ItemStack itemStack = this.nativemc.getItemInHand(player.getInventory());
-			if (itemStack!=null) {
-				final ItemLoreDataFormat format = this.wanddata.getFormat();
-				final ItemLoreRaw raw = ItemLoreRaw.create().readItemStack(format, itemStack);
-				try {
-					final ItemLoreMetaEditable meta = this.cache.get(raw).toEditable();
-					// final int modCount = meta.getModCount();
-					for (final String arg : args)
-						if (StringUtils.contains(arg, "=")) {
-							final String key = StringUtils.substringBefore(arg, "=");
-							final String value = StringUtils.substringAfter(arg, "=");
-							final String key1 = this.wanddata.keyData(WandData.FEATURE_META+"."+key);
-							meta.setRaw(format, key1!=null ? key1 : key, value);
-						} else {
-							final String key = this.wanddata.keyData(WandData.FEATURE_META+"."+arg);
-							final Object value = meta.getRaw(format, key!=null ? key : arg);
-							if (value!=null)
-								sender.sendMessage(String.valueOf(value));
-						}
-					// if (modCount!=meta.getModCount())
-					raw.updateContents(format, new ItemLoreContent().fromMeta(format, meta)).writeItemStack(format, itemStack);
-				} catch (final ExecutionException e) {
-				}
-				return true;
-			}
+	public static int parseInt(final String p_71526_1_) {
+		try {
+			return Integer.parseInt(p_71526_1_);
+		} catch (final NumberFormatException numberformatexception) {
+			throw new CommandException("commands.generic.num.invalid"/*, new Object[] {p_71526_1_}*/);
 		}
+	}
+
+	public static int parseIntWithMin(final String p_71528_1_, final int p_71528_2_) {
+		return parseIntBounded(p_71528_1_, p_71528_2_, Integer.MAX_VALUE);
+	}
+
+	public static int parseIntBounded(final String p_71532_1_, final int p_71532_2_, final int p_71532_3_) {
+		final int k = parseInt(p_71532_1_);
+
+		if (k<p_71532_2_)
+			throw new CommandException("commands.generic.num.tooSmall"/*, new Object[] {Integer.valueOf(k), Integer.valueOf(p_71532_2_)}*/);
+		else if (k>p_71532_3_)
+			throw new CommandException("commands.generic.num.tooBig"/*, new Object[] {Integer.valueOf(k), Integer.valueOf(p_71532_3_)}*/);
+		else
+			return k;
+	}
+
+	public boolean onCommand(final CommandSender sender, final Command cmd, final String label, final String[] args) {
+		if (args.length>=1)
+			if (StringUtils.equalsIgnoreCase(args[0], "give")) {
+				final Player player = Bukkit.getPlayer(args[1]);
+				if (player==null) {
+					sender.sendMessage("missing player");
+					return true;
+				}
+				final Material item = Material.matchMaterial(args[2]);
+				if (item==null) {
+					sender.sendMessage("missing item");
+					return true;
+				}
+
+				int i = 1;
+				int j = 0;
+
+				if (args.length>3)
+					i = parseIntBounded(args[3], 1, 64);
+
+				if (args.length>4)
+					j = parseInt(args[4]);
+
+				final ItemStack itemstack = new ItemStack(item, i, (short) j);
+
+				updateItemMeta(sender, itemstack, Lists.newArrayList(Arrays.copyOfRange(args, 5, args.length)));
+
+				player.getWorld().dropItem(player.getEyeLocation(), itemstack);
+
+				player.chat("commands.successful");
+			} else if (StringUtils.equalsIgnoreCase(args[0], "hand")) {
+				if (sender instanceof Player) {
+					final Player player = (Player) sender;
+					final ItemStack itemStack = this.nativemc.getItemInHand(player.getInventory());
+					if (itemStack!=null) {
+						updateItemMeta(sender, itemStack, Lists.newArrayList(args));
+						return true;
+					}
+				}
+			} else
+				return false;
+
 		return false;
+	}
+
+	public void updateItemMeta(final CommandSender sender, final ItemStack itemStack, final List<String> args) {
+		final ItemLoreDataFormat format = this.wanddata.getFormat();
+		final ItemLoreRaw raw = ItemLoreRaw.create().readItemStack(format, itemStack);
+		try {
+			final ItemLoreMetaEditable meta = this.cache.get(raw).toEditable();
+			// final int modCount = meta.getModCount();
+			for (final String arg : args)
+				if (StringUtils.contains(arg, "=")) {
+					final String key = StringUtils.substringBefore(arg, "=");
+					final String value = StringUtils.substringAfter(arg, "=");
+					final String key1 = this.wanddata.keyData(WandData.FEATURE_META+"."+key);
+					meta.setRaw(format, key1!=null ? key1 : key, value);
+				} else {
+					final String key = this.wanddata.keyData(WandData.FEATURE_META+"."+arg);
+					final Object value = meta.getRaw(format, key!=null ? key : arg);
+					if (value!=null)
+						sender.sendMessage(String.valueOf(value));
+				}
+			// if (modCount!=meta.getModCount())
+			raw.updateContents(format, new ItemLoreContent().fromMeta(format, meta)).writeItemStack(format, itemStack);
+		} catch (final ExecutionException e) {
+		}
 	}
 
 	public void onEffect() {
@@ -153,6 +216,11 @@ public class WandListener implements Listener, CommandExecutor, UsefulBuildersWa
 				blocks = getPotentialBlocks(meta, player, player.getWorld(), res.location.getBlock(), res.face);
 		} catch (final Exception e) {
 		}
+
+		final Boolean ownerenabled = meta.getFlag(this.wanddata.keyData(WandData.FEATURE_META_OWNER));
+		if (ownerenabled!=null&&ownerenabled)
+			if (!((Integer) player.getUniqueId().hashCode()).equals(meta.getNumber(this.wanddata.keyData(WandData.FEATURE_META_OWNER_ID))))
+				return;
 
 		if (blocks!=null) {
 			final int color_r = meta.getNumber(this.wanddata.keyData(WandData.FEATURE_META_PARTICLE_COLOR_R), 255);
@@ -208,8 +276,26 @@ public class WandListener implements Listener, CommandExecutor, UsefulBuildersWa
 			return;
 
 		try {
-			final ItemLoreMetaEditable meta = this.cache.get(raw).toEditable();
+			final ItemLoreMetaEditable meta = this.cache.getUnchecked(raw).toEditable();
 			final int modcount = meta.getModCount();
+
+			final Boolean ownerenabled = meta.getFlag(this.wanddata.keyData(WandData.FEATURE_META_OWNER));
+			final String featureid = this.wanddata.keyData(WandData.FEATURE_META_OWNER_ID);
+			final String featurename = this.wanddata.keyData(WandData.FEATURE_META_OWNER_NAME);
+			if (ownerenabled!=null&&ownerenabled) {
+
+				final int uuidhash = player.getUniqueId().hashCode();
+				final Integer metaid = meta.getNumber(featureid);
+				if (metaid!=null&&uuidhash!=metaid)
+					return;
+				else {
+					meta.setNumber(featureid, uuidhash);
+					meta.setText(featurename, player.getDisplayName());
+				}
+			} else {
+				meta.setNumber(featureid, null);
+				meta.setText(featurename, null);
+			}
 
 			final Action action = event.getAction();
 			final Block block = event.getClickedBlock();
@@ -227,85 +313,81 @@ public class WandListener implements Listener, CommandExecutor, UsefulBuildersWa
 
 			if (modcount!=meta.getModCount())
 				raw.updateContents(format, new ItemLoreContent().fromMeta(format, meta)).writeItemStack(format, itemStackHolder.get());
-		} catch (final ExecutionException e) {
-		}
-	}
-
-	public boolean onItemUse(final ItemStackHolder itemStack, final ItemLoreMetaEditable meta, final Player player, final World world, final Block target, final BlockFace face) {
-		try {
-			if (target.isEmpty())
-				return false;
-
-			final int maxdurability = meta.getNumber(this.wanddata.keyData(WandData.FEATURE_META_DURABILITY_MAX), 0);
-			meta.setFlag(this.wanddata.keyData(WandData.FEATURE_DISPLAY_UNBREAKABLE), maxdurability<=0);
-
-			final List<Location> blocks = getPotentialBlocks(meta, player, world, target, face);
-
-			if (blocks.isEmpty())
-				return false;
-
-			final String keydurability = this.wanddata.keyData(WandData.FEATURE_META_DURABILITY);
-			final int durability = meta.getNumber(keydurability, 0);
-
-			if (maxdurability>0&&durability<=0)
-				return false;
-
-			int data = -1;
-
-			final ItemStack item1 = this.nativemc.getItemFromBlock(target);
-
-			if (this.nativemc.hasSubType(item1))
-				data = this.nativemc.getDropData(target);
-
-			int slot = 0;
-			final PlayerInventory inventory = player.getInventory();
-			int placecount = 0;
-			for (final Location temp : blocks) {
-				for (slot = 0; slot<inventory.getSize(); ++slot) {
-					final ItemStack item = inventory.getItem(slot);
-					if (item==null||!item.getType().equals(item1.getType()))
-						continue;
-					if (data==-1||data==item.getDurability())
-						break;
-				}
-
-				if (slot>=inventory.getSize())
-					break;
-
-				final ItemStack item = inventory.getItem(slot);
-				ItemStack objitem = item;
-				if (player.getGameMode()==GameMode.CREATIVE) {
-					objitem = objitem.clone();
-					objitem.setAmount(1);
-				}
-
-				final Block block = temp.getBlock().getRelative(face.getOppositeFace());
-
-				if (this.nativemc.placeItem(player, block, itemStack, objitem, EquipmentSlot.HAND, face, player.getEyeLocation())) {
-					objitem.setAmount(objitem.getAmount()-1);
-					if (item.getAmount()<=0)
-						inventory.setItem(slot, null);
-					else
-						inventory.setItem(slot, item);
-
-					this.nativemc.playSound(player, temp, target, .25f, 1f);
-					placecount++;
-				}
-			}
-			final String keyplace = this.wanddata.keyData(WandData.FEATURE_META_COUNT_PLACE);
-			meta.setNumber(keyplace, meta.getNumber(keyplace, 0)+placecount);
-			final String keyuse = this.wanddata.keyData(WandData.FEATURE_META_COUNT_USE);
-			meta.setNumber(keyuse, meta.getNumber(keyuse, 0)+1);
-			if (maxdurability>0)
-				meta.setNumber(keydurability, durability-1);
-
-			return true;
 		} catch (final Throwable e) {
 			final String errorcode = Long.toHexString(System.currentTimeMillis());
 			player.sendMessage(String.format("§c[Useful Builder's Wand] A fatal error has occured. Please report to server administrator. [errorcode=%s]", errorcode));
 			UsefulBuildersWand.log().log(Level.SEVERE, String.format("[player=%s, errorcode=%s]: A fatal error has occured: ", player.getDisplayName(), errorcode), e.getCause());
-			return false;
 		}
+	}
+
+	public boolean onItemUse(final ItemStackHolder itemStack, final ItemLoreMetaEditable meta, final Player player, final World world, final Block target, final BlockFace face) throws WorldGuardHandleException {
+		if (target.isEmpty())
+			return false;
+
+		final int maxdurability = meta.getNumber(this.wanddata.keyData(WandData.FEATURE_META_DURABILITY_MAX), 0);
+		meta.setFlag(this.wanddata.keyData(WandData.FEATURE_META_DURABILITY_UNBREAKABLE), maxdurability<=0);
+
+		final List<Location> blocks = getPotentialBlocks(meta, player, world, target, face);
+
+		if (blocks.isEmpty())
+			return false;
+
+		final String keydurability = this.wanddata.keyData(WandData.FEATURE_META_DURABILITY);
+		final int durability = meta.getNumber(keydurability, 0);
+
+		if (maxdurability>0&&durability<=0)
+			return false;
+
+		int data = -1;
+
+		final ItemStack item1 = this.nativemc.getItemFromBlock(target);
+
+		if (this.nativemc.hasSubType(item1))
+			data = this.nativemc.getDropData(target);
+
+		int slot = 0;
+		final PlayerInventory inventory = player.getInventory();
+		int placecount = 0;
+		for (final Location temp : blocks) {
+			for (slot = 0; slot<inventory.getSize(); ++slot) {
+				final ItemStack item = inventory.getItem(slot);
+				if (item==null||!item.getType().equals(item1.getType()))
+					continue;
+				if (data==-1||data==item.getDurability())
+					break;
+			}
+
+			if (slot>=inventory.getSize())
+				break;
+
+			final ItemStack item = inventory.getItem(slot);
+			ItemStack objitem = item;
+			if (player.getGameMode()==GameMode.CREATIVE) {
+				objitem = objitem.clone();
+				objitem.setAmount(1);
+			}
+
+			final Block block = temp.getBlock().getRelative(face.getOppositeFace());
+
+			if (this.nativemc.placeItem(player, block, itemStack, objitem, EquipmentSlot.HAND, face, player.getEyeLocation())) {
+				objitem.setAmount(objitem.getAmount()-1);
+				if (item.getAmount()<=0)
+					inventory.setItem(slot, null);
+				else
+					inventory.setItem(slot, item);
+
+				this.nativemc.playSound(player, temp, target, .25f, 1f);
+				placecount++;
+			}
+		}
+		final String keyplace = this.wanddata.keyData(WandData.FEATURE_META_COUNT_PLACE);
+		meta.setNumber(keyplace, meta.getNumber(keyplace, 0)+placecount);
+		final String keyuse = this.wanddata.keyData(WandData.FEATURE_META_COUNT_USE);
+		meta.setNumber(keyuse, meta.getNumber(keyuse, 0)+1);
+		if (maxdurability>0)
+			meta.setNumber(keydurability, durability-1);
+
+		return true;
 	}
 
 	public List<Location> getCandidateBlocks(final ItemLoreMeta meta, final Player player, final @Nullable World world, final @Nullable Block target, final BlockFace face) {

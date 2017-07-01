@@ -1,6 +1,10 @@
 package net.teamfruit.usefulbuilderswand;
 
+import java.util.List;
+
 import org.apache.commons.lang.StringUtils;
+
+import com.google.common.collect.Lists;
 
 public class NestedStringUtils {
 	/**
@@ -91,12 +95,12 @@ public class NestedStringUtils {
 			if (currentend==StringUtils.INDEX_NOT_FOUND)
 				return null;
 			else if (currentstart==StringUtils.INDEX_NOT_FOUND||currentstart>currentend) {
+				current = currentend+closelength;
 				if (closeesclength<=0||!str.startsWith(closeesc, currentend-closeesclength))
 					if (stack>0)
 						stack--;
-				current = currentend+closelength;
 			} else {
-				;
+				current = currentstart+openlength;
 				if (openesclength<=0||!str.startsWith(openesc, currentstart-openesclength))
 					if (stack>0)
 						stack++;
@@ -104,7 +108,6 @@ public class NestedStringUtils {
 						stack = 1;
 						start = currentstart;
 					}
-				current = currentstart+openlength;
 			}
 		} while (stack>0||start==StringUtils.INDEX_NOT_FOUND);
 		return str.substring(start+openlength, current-closelength);
@@ -124,11 +127,11 @@ public class NestedStringUtils {
 		int current = 0;
 		while (true) {
 			final int currentstart = str.indexOf(open, current);
+			current = currentstart+openlength;
 			if (currentstart==StringUtils.INDEX_NOT_FOUND)
 				return str;
 			else if (openesclength<=0||!str.startsWith(openesc, currentstart-openesclength))
 				return str.substring(0, currentstart);
-			current = currentstart+openlength;
 		}
 	}
 
@@ -156,12 +159,12 @@ public class NestedStringUtils {
 			if (currentend==StringUtils.INDEX_NOT_FOUND)
 				return "";
 			else if (currentstart==StringUtils.INDEX_NOT_FOUND||currentstart>currentend) {
+				current = currentend+closelength;
 				if (closeesclength<=0||!str.startsWith(closeesc, currentend-closeesclength))
 					if (stack>0)
 						stack--;
-				current = currentend+closelength;
 			} else {
-				;
+				current = currentstart+openlength;
 				if (openesclength<=0||!str.startsWith(openesc, currentstart-openesclength))
 					if (stack>0)
 						stack++;
@@ -169,9 +172,64 @@ public class NestedStringUtils {
 						stack = 1;
 						start = currentstart;
 					}
-				current = currentstart+openlength;
 			}
 		} while (stack>0||start==StringUtils.INDEX_NOT_FOUND);
 		return str.substring(current);
+	}
+
+	public static String[] splitOutsideNested(final String str, final String open, final String close, String openesc, String closeesc, final String seperate, String seperateesc) {
+		if (str==null||open==null||close==null||seperate==null)
+			return null;
+		if (openesc==null)
+			openesc = "";
+		if (closeesc==null)
+			closeesc = "";
+		if (seperateesc==null)
+			seperateesc = "";
+		final int openlength = open.length();
+		final int openesclength = openesc.length();
+		final int closelength = close.length();
+		final int closeesclength = closeesc.length();
+		final int seperatelength = seperate.length();
+		final int seperateesclength = seperateesc.length();
+		int stack = 0;
+		int current = 0;
+		final List<String> seps = Lists.newArrayList();
+		int lastsep = 0;
+		boolean flag = false;
+		while (true) {
+			final int currentstart = str.indexOf(open, current);
+			final int currentend = str.indexOf(close, current);
+			final int currentseperate = str.indexOf(seperate, current);
+			if (currentseperate==StringUtils.INDEX_NOT_FOUND)
+				break;
+			else if (currentend==StringUtils.INDEX_NOT_FOUND||currentend>currentseperate) {
+				current = currentseperate+seperatelength;
+				if (str.startsWith(seperate, currentseperate)&&str.startsWith(seperateesc, currentseperate+seperatelength))
+					flag = true;
+				else if (flag)
+					flag = false;
+				if (seperateesclength<=0||!str.startsWith(seperateesc, currentseperate-seperateesclength))
+					if (stack<=0) {
+						seps.add(str.substring(lastsep, currentseperate));
+						lastsep = current;
+					}
+			} else if (currentstart==StringUtils.INDEX_NOT_FOUND||currentstart>currentend) {
+				current = currentend+closelength;
+				if (closeesclength<=0||!str.startsWith(closeesc, currentend-closeesclength))
+					if (stack>0)
+						stack--;
+			} else if (currentstart!=StringUtils.INDEX_NOT_FOUND) {
+				current = currentstart+openlength;
+				if (openesclength<=0||!str.startsWith(openesc, currentstart-openesclength))
+					if (stack>0)
+						stack++;
+					else
+						stack = 1;
+			} else
+				break;
+		}
+		seps.add(str.substring(lastsep));
+		return seps.toArray(new String[seps.size()]);
 	}
 }

@@ -28,13 +28,13 @@ public abstract class ItemLore {
 	public static class ItemLoreRaw {
 		private static final ItemLoreRaw instance = new ItemLoreRaw(ImmutableList.<String> of());
 
-		public static final ItemLoreRaw create() {
+		public static ItemLoreRaw create() {
 			return instance;
 		}
 
 		private final @Nonnull ImmutableList<String> lore;
 
-		private ItemLoreRaw(final @Nonnull ImmutableList<String> lore) {
+		ItemLoreRaw(final @Nonnull ImmutableList<String> lore) {
 			this.lore = lore;
 		}
 
@@ -165,6 +165,23 @@ public abstract class ItemLore {
 		}
 	}
 
+	public static class ItemLoreRawMeta extends ItemLoreRaw {
+		private static final ItemLoreRawMeta instance = new ItemLoreRawMeta(ImmutableList.<String> of());
+
+		public static ItemLoreRawMeta create() {
+			return instance;
+		}
+
+		ItemLoreRawMeta(final @Nonnull ImmutableList<String> lore) {
+			super(lore);
+		}
+
+		@Override
+		public ItemLoreRaw readItemStack(final ItemLoreDataFormat format, final ItemStack itemStack) {
+			return super.readItemStack(format, itemStack);
+		}
+	}
+
 	public static class ItemLoreContent {
 		private List<String> contents;
 
@@ -194,8 +211,11 @@ public abstract class ItemLore {
 
 		public ItemLoreContent fromMeta(final ItemLoreDataFormat format, final ItemLoreMeta meta) {
 			final List<String> output = get();
-			for (final String line : format.metaFormat)
-				output.add(meta.getAttributes(format, line));
+			for (final String line : format.metaFormat) {
+				final String attr = meta.getAttributes(format, line);
+				if (!StringUtils.isEmpty(attr))
+					output.add(attr);
+			}
 			return this;
 		}
 
@@ -984,38 +1004,61 @@ public abstract class ItemLore {
 						return false;
 					return true;
 				}
+
+				class TestAccess {
+					public String getTrue() {
+						return strTrue;
+					}
+
+					public String getFalse() {
+						return strFalse;
+					}
+				}
 			}
 
 			public static class Factory {
 				public static FlagMeta create(final String constant) {
 					if (!StringUtils.isEmpty(constant)) {
 						final String defaultStr;
-						final String format1;
+						final String trueOrFalse;
 						if (StringUtils.contains(constant, "?")) {
 							defaultStr = StringUtils.substringBefore(constant, "?");
-							format1 = StringUtils.substringAfter(constant, "?");
+							trueOrFalse = StringUtils.substringAfter(constant, "?");
 						} else if (!StringUtils.contains(constant, ":")) {
 							defaultStr = constant;
-							format1 = "";
+							trueOrFalse = "";
 						} else {
 							defaultStr = null;
-							format1 = constant;
+							trueOrFalse = constant;
 						}
-						if (StringUtils.contains(constant, ":")) {
-							final String nested = NestedStringUtils.substringNested(constant, "${", "}", "$", null);
-							String trueStr = StringUtils.substringBefore(format1, ":");
-							String falseStr = StringUtils.substringAfter(format1, ":");
-							if (!StringUtils.isEmpty(nested)) {
-								final String before = NestedStringUtils.substringBeforeNested(constant, "${", "$");
-								final String after = NestedStringUtils.substringAfterNested(constant, "${", "}", "$", null);
-								if (!StringUtils.contains(before, ":")&&StringUtils.contains(after, ":")) {
-									trueStr = before+"${"+nested+"}"+StringUtils.substringBefore(after, ":");
-									falseStr = StringUtils.substringAfter(after, ":");
-								}
-							}
 
-							return new TextFlagMeta(BooleanUtils.toBooleanObject(defaultStr), trueStr, falseStr);
-						} else
+						String current = trueOrFalse;
+						String before = null;
+						String after = null;
+						final StringBuilder done = new StringBuilder();
+						String b;
+						String c;
+						String a;
+						if (!StringUtils.isEmpty(NestedStringUtils.substringNested(current, "${", "}", "$", null)))
+							while (true) {
+								c = NestedStringUtils.substringNested(current, "${", "}", "$", null);
+								b = NestedStringUtils.substringBeforeNested(current, "${", "$");
+								a = NestedStringUtils.substringAfterNested(current, "${", "}", "$", null);
+								if (StringUtils.isEmpty(c)||StringUtils.contains(b, ":")||!StringUtils.contains(a, ":")) {
+									before = done.toString()+StringUtils.substringBefore(b, ":");
+									after = StringUtils.substringAfter(b, ":")+(c!=null ? "${"+c+"}" : "")+a;
+									break;
+								}
+								current = a;
+								done.append(b).append("${").append(c).append("}");
+							}
+						else if (StringUtils.contains(current, ":")) {
+							before = StringUtils.substringBefore(current, ":");
+							after = StringUtils.substringAfter(current, ":");
+						}
+						if (before!=null&&after!=null)
+							return new TextFlagMeta(BooleanUtils.toBooleanObject(defaultStr), before, after);
+						else
 							// return new HiddenFlagMeta(BooleanUtils.toBooleanObject(defaultStr));
 							return new TextFlagMeta(BooleanUtils.toBooleanObject(defaultStr), "§1", "§0");
 					}
