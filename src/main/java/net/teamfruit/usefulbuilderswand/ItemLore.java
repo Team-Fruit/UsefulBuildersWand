@@ -24,6 +24,7 @@ import net.teamfruit.usefulbuilderswand.ItemLore.ItemLoreDataFormat.FlagMeta.Fla
 import net.teamfruit.usefulbuilderswand.ItemLore.ItemLoreDataFormat.NumberMeta;
 import net.teamfruit.usefulbuilderswand.ItemLore.ItemLoreDataFormat.TextMeta;
 
+@Deprecated
 public abstract class ItemLore {
 	public static class ItemLoreRaw {
 		private static final ItemLoreRaw instance = new ItemLoreRaw(ImmutableList.<String> of());
@@ -880,10 +881,12 @@ public abstract class ItemLore {
 					this.defaultValue = defaultValue;
 				}
 
+				@Override
 				public boolean parse(final ItemLoreDataFormat format, final String src) {
 					return true;
 				}
 
+				@Override
 				public @Nullable String compose(final ItemLoreDataFormat format, Boolean data) {
 					if (data==null)
 						if (defaultValue!=null)
@@ -941,10 +944,12 @@ public abstract class ItemLore {
 					this.strFalse = strFalse;
 				}
 
+				@Override
 				public boolean parse(final ItemLoreDataFormat format, final String src) {
 					return StringUtils.equalsIgnoreCase(src, strTrue);
 				}
 
+				@Override
 				public @Nullable String compose(final ItemLoreDataFormat format, Boolean data) {
 					if (data==null)
 						if (defaultValue!=null)
@@ -954,6 +959,7 @@ public abstract class ItemLore {
 					return data ? strTrue : strFalse;
 				}
 
+				@Override
 				public @Nullable String compose(final ItemLoreDataFormat format, final ItemLoreMeta meta, Boolean data) {
 					if (data==null)
 						if (defaultValue!=null)
@@ -1080,12 +1086,14 @@ public abstract class ItemLore {
 					this.defaultValue = defaultValue;
 				}
 
+				@Override
 				public int parse(final ItemLoreDataFormat format, final String src) {
 					final String numstr = StringUtils.replace(src, "\u00A7", "");
 					final int num = NumberUtils.toInt(numstr, defaultValue!=null ? defaultValue : 0);
 					return num;
 				}
 
+				@Override
 				public @Nullable String compose(final ItemLoreDataFormat format, Integer data) {
 					if (data==null)
 						if (defaultValue!=null)
@@ -1137,11 +1145,13 @@ public abstract class ItemLore {
 					this.defaultValue = defaultValue;
 				}
 
+				@Override
 				public int parse(final ItemLoreDataFormat format, final String src) {
 					final int num = NumberUtils.toInt(src, defaultValue!=null ? defaultValue : 0);
 					return num;
 				}
 
+				@Override
 				public @Nullable String compose(final ItemLoreDataFormat format, Integer data) {
 					if (data==null)
 						if (defaultValue!=null)
@@ -1206,12 +1216,14 @@ public abstract class ItemLore {
 					this.defaultValue = defaultValue;
 				}
 
+				@Override
 				public String parse(final ItemLoreDataFormat format, String src) {
 					if (defaultValue!=null&&src==null)
 						src = defaultValue;
 					return src;
 				}
 
+				@Override
 				public @Nullable String compose(final ItemLoreDataFormat format, String data) {
 					if (defaultValue!=null&&data==null)
 						data = defaultValue;
