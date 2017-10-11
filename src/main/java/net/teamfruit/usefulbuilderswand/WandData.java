@@ -86,7 +86,7 @@ public class WandData {
 				"§3 - Size §7: ${I:"+ft(FEATURE_META_SIZE)+"=0}${I:"+ft(FEATURE_META_PARTICLE_COLOR_R)+"=§255}${I:"+ft(FEATURE_META_PARTICLE_COLOR_G)+"=§255}${I:"+ft(FEATURE_META_PARTICLE_COLOR_B)+"=§255}${B:"+ft(FEATURE_META_PARTICLE_SHARE)+"=true}",
 				"§3 - UseCount §7: ${I:"+ft(FEATURE_META_COUNT_USE)+"=0}",
 				"§3 - PlaceCount §7: ${I:"+ft(FEATURE_META_COUNT_PLACE)+"=0}",
-				"${B:"+ft(FEATURE_META_OWNER)+"=§3 - Owner §7: ${S:"+ft(FEATURE_META_OWNER_NAME)+"=}${I:"+ft(FEATURE_META_OWNER_ID)+"=§}:}",
+				"${B:"+ft(FEATURE_META_OWNER)+"=§3 - Owner §7： ${S:"+ft(FEATURE_META_OWNER_NAME)+"=}${I:"+ft(FEATURE_META_OWNER_ID)+"=§}:}",
 				// "§3 - Level §7: ${I:"+ft(FEATURE_DISPLAY_LEVEL)+"=0}",
 				// "§e - Exp : ${I:"+ft(FEATURE_META_EXP+")=0} of ${I:"+ft(FEATURE_META_EXP_MAX)+"=0}",
 				// "§e - Particle   : ${I:"+ft(FEATURE_META_PARTICLE)+"=§}${S:"+ft(FEATURE_DISPLAY_PARTICLE)+"}",

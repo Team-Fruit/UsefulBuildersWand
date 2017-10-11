@@ -1,0 +1,41 @@
+language: java
+jdk: oraclejdk8
+branches:
+  except:
+    - /^build@.*/
+before_install:
+  - "VERSIONVAL=unknown; if [ -n \"${TRAVIS_TAG}\" ]; then VERSIONVAL=${TRAVIS_TAG}; elif [ -n \"${TRAVIS_BUILD_NUMBER}\" ]; then VERSIONVAL=r${TRAVIS_BUILD_NUMBER}; fi; sed -e s%@VERSION@%${VERSIONVAL}% pom.tmp > pom.xml"
+install:
+  - mvn clean install
+cache:
+  directories:
+    - .autoconf
+    - $HOME/.m2
+notifications:
+  email: false
+  webhooks:
+    urls:
+      secure: "o6Kr8Ueah21xgfNjPrP6s4OzVdeb32jqkZ6NOURxL72vb/2evw4MAS+40Pu4vw3n7GIP2m8Wf9yn0gF3rIwiSQAyepTJG02v0auaaSMc0JmN4HDGxf+vmrHxhJcBjz9Jt59nw80ZowH1SldSZHCyVSxz2p/VyY6kT8o3XTqYlrXpQ5Qsj61JH7eQh7tEhLFz7tGlvuPC83Oa65Rw7IiJt7FOey5dVp47eykdNaL6eBusf29PltjsPu0DKas59i4VFulWdpOYeDrYSp+2QXXKVnrd9NdH3XyCJVM5ISsV9cNAHeZHK7jL2IZ4RNa9oYZ1l0xm2AxSJcMKtXEmGmNFfb+yBZdogpzTO53RitpJ9WV1v+xHQy6YdMStvKM3qlD3+032oPTKlaDrRdN/2Skn9I/qY7FUd7baKtRWkB895jfguUcWGy3FUhUEDM9CgVOVCpsL1qIB5lYo/wfYIwG0sA3I4R5iwBTgjdm+8hCYvKDcFs4pZSaVg8nZm1HupNOx9Vlpk2HljFe2V21ay4w99u5H91lDMm68BHN4Ga9Oz2IZTvmSlnHr21N8MRhPfrvMhQMsfN8Wbf4tafmKWaQu6Vt1SHh+mmKBYMfDJJzpWZD5JOrd/pm3rOi6C/qfrAC4MD2FhjbEoP3Gr60+mfwRorfMH5BRd3BKkpgJ6EMDZKg="
+before_deploy:
+  - git config --global user.email "builds@travis-ci.com"
+  - git config --global user.name "Travis CI"
+  - export GIT_TAG=build@${TRAVIS_BRANCH}#${TRAVIS_BUILD_NUMBER}
+  - git tag ${GIT_TAG} -a -m "Generated tag from TravisCI build ${TRAVIS_BUILD_NUMBER}"
+  - git push --quiet https://${GITHUB_TOKEN}@github.com/Team-Fruit/FMLLegacyDependency ${GIT_TAG} > /dev/null 2>&1
+deploy:
+  - provider: releases
+    prerelease: true
+    api_key: ${GITHUB_TOKEN}
+    file_glob: true
+    file: target/*.jar
+    skip_cleanup: true
+    on:
+      all_branches: true
+      tags: false
+      condition: '! "$TRAVIS_BRANCH" =~ ^(dev\\-|feature\\/).*$'
+  - provider: script
+    skip_cleanup: true
+    script: "mvn deploy -Dmy.version=${TRAVIS_TAG} --settings settings.xml"
+    on:
+      all_branches: true
+      tags: true
