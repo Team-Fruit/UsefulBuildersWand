@@ -1,4 +1,4 @@
-package net.teamfruit.usefulbuilderswand;
+package net.teamfruit.usefulbuilderswand.meta;
 
 import java.util.List;
 import java.util.ListIterator;
@@ -19,10 +19,11 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
-import net.teamfruit.usefulbuilderswand.ItemLore.ItemLoreDataFormat.FlagMeta;
-import net.teamfruit.usefulbuilderswand.ItemLore.ItemLoreDataFormat.FlagMeta.FlagMetaAccess;
-import net.teamfruit.usefulbuilderswand.ItemLore.ItemLoreDataFormat.NumberMeta;
-import net.teamfruit.usefulbuilderswand.ItemLore.ItemLoreDataFormat.TextMeta;
+import net.teamfruit.usefulbuilderswand.NestedStringUtils;
+import net.teamfruit.usefulbuilderswand.meta.ItemLore.ItemLoreDataFormat.FlagMeta;
+import net.teamfruit.usefulbuilderswand.meta.ItemLore.ItemLoreDataFormat.FlagMeta.FlagMetaAccess;
+import net.teamfruit.usefulbuilderswand.meta.ItemLore.ItemLoreDataFormat.NumberMeta;
+import net.teamfruit.usefulbuilderswand.meta.ItemLore.ItemLoreDataFormat.TextMeta;
 
 @Deprecated
 public abstract class ItemLore {
@@ -1011,7 +1012,7 @@ public abstract class ItemLore {
 					return true;
 				}
 
-				class TestAccess {
+				public class TestAccess {
 					public String getTrue() {
 						return strTrue;
 					}

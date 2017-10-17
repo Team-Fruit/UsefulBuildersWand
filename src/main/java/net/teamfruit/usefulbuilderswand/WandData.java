@@ -1,5 +1,7 @@
 package net.teamfruit.usefulbuilderswand;
 
+import static net.teamfruit.usefulbuilderswand.meta.Features.*;
+
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.List;
@@ -17,8 +19,8 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 import net.teamfruit.usefulbuilderswand.lib.de.tr7zw.itemnbtapi.NBTCompound;
-import net.teamfruit.usefulbuilderswand.lib.de.tr7zw.itemnbtapi.NBTItem;
 import net.teamfruit.usefulbuilderswand.lib.de.tr7zw.itemnbtapi.NBTType;
+import net.teamfruit.usefulbuilderswand.meta.Features;
 
 public class WandData {
 	public static final String SETTING_EFFECT_RANGE = "setting.effect.range";
@@ -27,22 +29,6 @@ public class WandData {
 
 	public static final String FEATURE_META = "feature.meta";
 
-	public static final String FEATURE_META_SIZE = "feature.meta.size";
-	public static final String FEATURE_META_MODE = "feature.meta.mode";
-	public static final String FEATURE_META_DURABILITY = "feature.meta.durability.data";
-	public static final String FEATURE_META_DURABILITY_MAX = "feature.meta.durability.max";
-	public static final String FEATURE_META_DURABILITY_BLOCKCOUNT = "feature.meta.durability.blockcount";
-	public static final String FEATURE_META_DURABILITY_UNBREAKABLE = "feature.meta.durability.unbreakable";
-	public static final String FEATURE_META_COUNT_PLACE = "feature.meta.count.place";
-	public static final String FEATURE_META_COUNT_USE = "feature.meta.count.use";
-	public static final String FEATURE_META_PARTICLE_COLOR_R = "feature.meta.particle.color.r";
-	public static final String FEATURE_META_PARTICLE_COLOR_G = "feature.meta.particle.color.g";
-	public static final String FEATURE_META_PARTICLE_COLOR_B = "feature.meta.particle.color.b";
-	public static final String FEATURE_META_PARTICLE_SHARE = "feature.meta.particle.share";
-	public static final String FEATURE_META_OWNER = "feature.meta.owner.data";
-	public static final String FEATURE_META_OWNER_ID = "feature.meta.owner.id";
-	public static final String FEATURE_META_OWNER_NAME = "feature.meta.owner.name";
-
 	public static final String ITEM_TITLE = "item.title";
 	public static final String ITEM_LORE = "item.lore";
 
@@ -50,21 +36,8 @@ public class WandData {
 	static {
 		it.put(SETTING_EFFECT_RANGE, 48);
 
-		it.put(FEATURE_META_SIZE, 9);
-		it.put(FEATURE_META_MODE, false);
-		it.put(FEATURE_META_DURABILITY, 27);
-		it.put(FEATURE_META_DURABILITY_MAX, 27);
-		it.put(FEATURE_META_DURABILITY_BLOCKCOUNT, false);
-		it.put(FEATURE_META_DURABILITY_UNBREAKABLE, false);
-		it.put(FEATURE_META_COUNT_PLACE, 0);
-		it.put(FEATURE_META_COUNT_USE, 0);
-		it.put(FEATURE_META_PARTICLE_COLOR_R, 255);
-		it.put(FEATURE_META_PARTICLE_COLOR_G, 255);
-		it.put(FEATURE_META_PARTICLE_COLOR_B, 255);
-		it.put(FEATURE_META_PARTICLE_SHARE, true);
-		it.put(FEATURE_META_OWNER, false);
-		it.put(FEATURE_META_OWNER_ID, "");
-		it.put(FEATURE_META_OWNER_NAME, "");
+		for (final Features ft : values())
+			it.put(ft.key, ft.defaultValue);
 
 		it.put("custom.title.mode.if", "${"+FEATURE_META_MODE+"}");
 		it.put("custom.title.mode.true", "┃");
@@ -132,10 +105,6 @@ public class WandData {
 					newlore.add(settings.resolve(data, (String) obj));
 			meta.setLore(newlore);
 		}
-	}
-
-	public NBTCompound getNBT(final ItemStack itemStack) {
-		return new NBTItem(itemStack).getCompound(USEFUL_BUILDERS_WAND_NBT);
 	}
 
 	public static abstract class AbstractSettings {
@@ -267,11 +236,11 @@ public class WandData {
 					case NBTTagDouble:
 						return String.valueOf(this.nbt.getDouble(path));
 					case NBTTagLong:
-						return String.valueOf(this.nbt.getInteger(path));
+						return String.valueOf(this.nbt.getLong(path));
 					case NBTTagShort:
 						return String.valueOf(this.nbt.getShort(path));
 					case NBTTagByte:
-						return String.valueOf(this.nbt.getByte(path));
+						return String.valueOf(this.nbt.getBoolean(path));
 					default:
 						return null;
 				}

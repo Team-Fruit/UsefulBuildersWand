@@ -13,14 +13,14 @@ import org.junit.Test;
 
 import com.google.common.collect.Lists;
 
-import net.teamfruit.usefulbuilderswand.ItemLore.ItemLoreContent;
-import net.teamfruit.usefulbuilderswand.ItemLore.ItemLoreDataFormat;
-import net.teamfruit.usefulbuilderswand.ItemLore.ItemLoreDataFormat.FlagMeta;
-import net.teamfruit.usefulbuilderswand.ItemLore.ItemLoreDataFormat.FlagMeta.TextFlagMeta;
-import net.teamfruit.usefulbuilderswand.ItemLore.ItemLoreDataFormat.FlagMeta.TextFlagMeta.TestAccess;
-import net.teamfruit.usefulbuilderswand.ItemLore.ItemLoreMeta;
-import net.teamfruit.usefulbuilderswand.ItemLore.ItemLoreMetaEditable;
-import net.teamfruit.usefulbuilderswand.ItemLore.ItemLoreRaw;
+import net.teamfruit.usefulbuilderswand.meta.ItemLore.ItemLoreContent;
+import net.teamfruit.usefulbuilderswand.meta.ItemLore.ItemLoreDataFormat;
+import net.teamfruit.usefulbuilderswand.meta.ItemLore.ItemLoreMeta;
+import net.teamfruit.usefulbuilderswand.meta.ItemLore.ItemLoreMetaEditable;
+import net.teamfruit.usefulbuilderswand.meta.ItemLore.ItemLoreRaw;
+import net.teamfruit.usefulbuilderswand.meta.ItemLore.ItemLoreDataFormat.FlagMeta;
+import net.teamfruit.usefulbuilderswand.meta.ItemLore.ItemLoreDataFormat.FlagMeta.TextFlagMeta;
+import net.teamfruit.usefulbuilderswand.meta.ItemLore.ItemLoreDataFormat.FlagMeta.TextFlagMeta.TestAccess;
 
 public class ItemLoreTest {
 	@BeforeClass

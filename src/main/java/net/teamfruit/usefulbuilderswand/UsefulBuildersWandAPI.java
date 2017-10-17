@@ -10,21 +10,12 @@ import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.ItemStack;
 
-import net.teamfruit.usefulbuilderswand.ItemLore.ItemLoreDataFormat;
-import net.teamfruit.usefulbuilderswand.ItemLore.ItemLoreMeta;
+import net.teamfruit.usefulbuilderswand.meta.WandItemMeta;
 
 public interface UsefulBuildersWandAPI {
-	@Nonnull
-	ItemLoreDataFormat getFormat();
-
-	ItemLoreMeta readMeta(@Nonnull ItemStack itemStack);
-
-	void writeMeta(@Nonnull ItemStack itemStack, @Nonnull ItemLoreMeta meta);
-
 	@Nullable
 	RayTraceResult rayTrace(final @Nonnull Player player);
 
-	public List<Location> getCandidateBlocks(final @Nonnull ItemLoreMeta meta, final @Nonnull Player player, final @Nullable World world, final @Nullable Block target, final @Nonnull BlockFace face);
+	List<Location> getCandidateBlocks(final @Nonnull WandItemMeta meta, final @Nonnull Player player, final @Nullable World world, final @Nullable Block target, final @Nonnull BlockFace face);
 }

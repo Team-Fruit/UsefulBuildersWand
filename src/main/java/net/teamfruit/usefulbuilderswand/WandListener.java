@@ -1,9 +1,9 @@
 package net.teamfruit.usefulbuilderswand;
 
+import static net.teamfruit.usefulbuilderswand.meta.Features.*;
+
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
 import javax.annotation.Nullable;
@@ -33,35 +33,17 @@ import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitRunnable;
 
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
 import com.google.common.collect.Lists;
 
-import net.teamfruit.usefulbuilderswand.ItemLore.ItemLoreContent;
-import net.teamfruit.usefulbuilderswand.ItemLore.ItemLoreDataFormat;
-import net.teamfruit.usefulbuilderswand.ItemLore.ItemLoreMeta;
-import net.teamfruit.usefulbuilderswand.ItemLore.ItemLoreMetaEditable;
-import net.teamfruit.usefulbuilderswand.ItemLore.ItemLoreMetaImmutable;
-import net.teamfruit.usefulbuilderswand.ItemLore.ItemLoreRaw;
 import net.teamfruit.usefulbuilderswand.WorldGuardHandler.WorldGuardHandleException;
+import net.teamfruit.usefulbuilderswand.meta.Features;
+import net.teamfruit.usefulbuilderswand.meta.WandItemMeta;
 
 public class WandListener implements Listener, CommandExecutor, UsefulBuildersWandAPI {
 	private final Plugin plugin;
 	private final WandData wanddata;
 	private NativeMinecraft nativemc;
 	private final WorldGuardHandler worldguard;
-	private LoadingCache<ItemLoreRaw, ItemLoreMetaImmutable> cache = CacheBuilder.newBuilder()
-			.maximumSize(100)
-			.expireAfterAccess(6, TimeUnit.SECONDS)
-			.expireAfterWrite(12, TimeUnit.SECONDS)
-			.build(new CacheLoader<ItemLoreRaw, ItemLoreMetaImmutable>() {
-				@Override
-				public ItemLoreMetaImmutable load(final ItemLoreRaw key) throws Exception {
-					final ItemLoreDataFormat format = WandListener.this.wanddata.getFormat();
-					return new ItemLoreMetaEditable().fromContents(format, new ItemLoreContent().fromRaw(format, key)).toImmutable();
-				}
-			});
 
 	public WandListener(final Plugin plugin, final WandData data) {
 		this.plugin = plugin;
@@ -69,28 +51,14 @@ public class WandListener implements Listener, CommandExecutor, UsefulBuildersWa
 		this.nativemc = NativeMinecraft.NativeMinecraftFactory.create(plugin);
 		this.worldguard = WorldGuardHandler.Factory.create(plugin);
 		new BukkitRunnable() {
+			@Override
 			public void run() {
 				onEffect();
 			}
 		}.runTaskTimer(this.plugin, 3, 3);
 	}
 
-	public ItemLoreDataFormat getFormat() {
-		return this.wanddata.getFormat();
-	}
-
-	public ItemLoreMeta readMeta(final ItemStack itemStack) {
-		final ItemLoreDataFormat format = this.wanddata.getFormat();
-		final ItemLoreRaw raw = ItemLoreRaw.create().readItemStack(format, itemStack);
-		return this.cache.getUnchecked(raw);
-	}
-
-	public void writeMeta(final ItemStack itemStack, final ItemLoreMeta meta) {
-		final ItemLoreDataFormat format = this.wanddata.getFormat();
-		final ItemLoreRaw raw = ItemLoreRaw.create().readItemStack(format, itemStack);
-		raw.updateContents(format, new ItemLoreContent().fromMeta(format, meta)).writeItemStack(format, itemStack);
-	}
-
+	@Override
 	public @Nullable RayTraceResult rayTrace(final Player player) {
 		return this.nativemc.rayTrace(player);
 	}
@@ -118,6 +86,7 @@ public class WandListener implements Listener, CommandExecutor, UsefulBuildersWa
 			return k;
 	}
 
+	@Override
 	public boolean onCommand(final CommandSender sender, final Command cmd, final String label, final String[] args) {
 		if (args.length>=1)
 			if (StringUtils.equalsIgnoreCase(args[0], "give")) {
@@ -164,31 +133,31 @@ public class WandListener implements Listener, CommandExecutor, UsefulBuildersWa
 	}
 
 	public void updateItemMeta(final CommandSender sender, final ItemStack itemStack, final List<String> args) {
-		final ItemLoreDataFormat format = this.wanddata.getFormat();
-		final ItemLoreRaw raw = ItemLoreRaw.create().readItemStack(format, itemStack);
-		try {
-			final ItemLoreMetaEditable meta = this.cache.get(raw).toEditable();
-			// final int modCount = meta.getModCount();
-			for (final String arg : args)
-				if (StringUtils.contains(arg, "=")) {
-					final String key = StringUtils.substringBefore(arg, "=");
-					final String value = StringUtils.substringAfter(arg, "=");
-					final String key1 = this.wanddata.keyData(WandData.FEATURE_META+"."+key);
-					meta.setRaw(format, key1!=null ? key1 : key, value);
-				} else {
-					final String key = this.wanddata.keyData(WandData.FEATURE_META+"."+arg);
-					final Object value = meta.getRaw(format, key!=null ? key : arg);
+		final WandItemMeta meta = new WandItemMeta(itemStack);
+		for (final String arg : args)
+			if (StringUtils.contains(arg, "=")) {
+				meta.activate();
+				final String key = StringUtils.substringBefore(arg, "=");
+				final String value = StringUtils.substringAfter(arg, "=");
+				Features key1 = getFeature(WandData.FEATURE_META+"."+key);
+				if (key1==null)
+					key1 = getFeature(key);
+				if (key1!=null)
+					meta.set(key1, value);
+			} else {
+				Features key1 = getFeature(WandData.FEATURE_META+"."+arg);
+				if (key1==null)
+					key1 = getFeature(arg);
+				if (key1!=null) {
+					final Object value = meta.get(key1);
 					if (value!=null)
 						sender.sendMessage(String.valueOf(value));
 				}
-			// if (modCount!=meta.getModCount())
-			raw.updateContents(format, new ItemLoreContent().fromMeta(format, meta)).writeItemStack(format, itemStack);
-		} catch (final ExecutionException e) {
-		}
+			}
+		meta.updateItem(this.wanddata);
 	}
 
 	public void onEffect() {
-		final ItemLoreDataFormat format = this.wanddata.getFormat();
 		for (final Player player : this.plugin.getServer().getOnlinePlayers()) {
 			final ItemStackHolder itemStackHolder = new ItemStackHolder(this.nativemc.getItemInHand(player.getInventory()));
 
@@ -198,17 +167,12 @@ public class WandListener implements Listener, CommandExecutor, UsefulBuildersWa
 					continue;
 			}
 
-			try {
-				final ItemLoreRaw raw = ItemLoreRaw.create().readItemStack(format, itemStackHolder.get());
-				final ItemLoreMeta meta = this.cache.get(raw);
-				if (meta!=null)
-					onEffect(player, itemStackHolder, meta);
-			} catch (final ExecutionException e) {
-			}
+			final WandItemMeta meta = new WandItemMeta(itemStackHolder.get());
+			onEffect(player, itemStackHolder, meta);
 		}
 	}
 
-	public void onEffect(final Player player, final ItemStackHolder itemStack, final ItemLoreMeta meta) {
+	public void onEffect(final Player player, final ItemStackHolder itemStack, final WandItemMeta meta) {
 		List<Location> blocks = null;
 		try {
 			final RayTraceResult res = this.nativemc.rayTrace(player);
@@ -217,17 +181,17 @@ public class WandListener implements Listener, CommandExecutor, UsefulBuildersWa
 		} catch (final Exception e) {
 		}
 
-		final Boolean ownerenabled = meta.getFlag(this.wanddata.keyData(WandData.FEATURE_META_OWNER));
+		final Boolean ownerenabled = meta.getFlag(FEATURE_META_OWNER.key);
 		if (ownerenabled!=null&&ownerenabled)
-			if (!((Integer) player.getUniqueId().hashCode()).equals(meta.getNumber(this.wanddata.keyData(WandData.FEATURE_META_OWNER_ID))))
+			if (!StringUtils.equals(player.getUniqueId().toString(), meta.getText(FEATURE_META_OWNER_ID.key)))
 				return;
 
 		if (blocks!=null) {
-			final int color_r = meta.getNumber(this.wanddata.keyData(WandData.FEATURE_META_PARTICLE_COLOR_R), 255);
-			final int color_g = meta.getNumber(this.wanddata.keyData(WandData.FEATURE_META_PARTICLE_COLOR_G), 255);
-			final int color_b = meta.getNumber(this.wanddata.keyData(WandData.FEATURE_META_PARTICLE_COLOR_B), 255);
+			final int color_r = meta.getNumber(FEATURE_META_PARTICLE_COLOR_R.key, 255);
+			final int color_g = meta.getNumber(FEATURE_META_PARTICLE_COLOR_G.key, 255);
+			final int color_b = meta.getNumber(FEATURE_META_PARTICLE_COLOR_B.key, 255);
 			final int range = this.wanddata.getConfig().getInt(WandData.SETTING_EFFECT_RANGE);
-			if (range>0&&meta.getFlag(this.wanddata.keyData(WandData.FEATURE_META_PARTICLE_SHARE), true)) {
+			if (range>0&&meta.getFlag(FEATURE_META_PARTICLE_SHARE.key, true)) {
 				for (final Player other : Bukkit.getOnlinePlayers())
 					if (other.getLocation().distance(player.getLocation())<=range)
 						for (final Location block : blocks)
@@ -269,32 +233,25 @@ public class WandListener implements Listener, CommandExecutor, UsefulBuildersWa
 			}
 		}
 
-		final ItemLoreDataFormat format = this.wanddata.getFormat();
-		final ItemLoreRaw raw = ItemLoreRaw.create().readItemStack(format, itemStackHolder.get());
+		final WandItemMeta meta = new WandItemMeta(itemStackHolder.get());
 
-		if (!raw.hasContent(format))
+		if (!meta.hasContent())
 			return;
 
 		try {
-			final ItemLoreMetaEditable meta = this.cache.getUnchecked(raw).toEditable();
-			final int modcount = meta.getModCount();
-
-			final Boolean ownerenabled = meta.getFlag(this.wanddata.keyData(WandData.FEATURE_META_OWNER));
-			final String featureid = this.wanddata.keyData(WandData.FEATURE_META_OWNER_ID);
-			final String featurename = this.wanddata.keyData(WandData.FEATURE_META_OWNER_NAME);
+			final Boolean ownerenabled = meta.getFlag(FEATURE_META_OWNER.key);
 			if (ownerenabled!=null&&ownerenabled) {
-
-				final int uuidhash = player.getUniqueId().hashCode();
-				final Integer metaid = meta.getNumber(featureid);
-				if (metaid!=null&&uuidhash!=metaid)
+				final String uuidhash = player.getUniqueId().toString();
+				final String metaid = meta.getText(FEATURE_META_OWNER_ID.key);
+				if (!StringUtils.isEmpty(metaid)&&!StringUtils.equals(uuidhash, metaid))
 					return;
 				else {
-					meta.setNumber(featureid, uuidhash);
-					meta.setText(featurename, player.getDisplayName());
+					meta.setText(FEATURE_META_OWNER_ID.key, uuidhash);
+					meta.setText(FEATURE_META_OWNER_NAME.key, player.getDisplayName());
 				}
 			} else {
-				meta.setNumber(featureid, null);
-				meta.setText(featurename, null);
+				meta.setText(FEATURE_META_OWNER_ID.key, null);
+				meta.setText(FEATURE_META_OWNER_NAME.key, null);
 			}
 
 			final Action action = event.getAction();
@@ -306,13 +263,11 @@ public class WandListener implements Listener, CommandExecutor, UsefulBuildersWa
 					if (onItemUse(itemStackHolder, meta, player, player.getWorld(), block, face))
 						event.setCancelled(true);
 			} else if (player.isSneaking()&&(action==Action.LEFT_CLICK_AIR||action==Action.LEFT_CLICK_BLOCK)) {
-				final String key = this.wanddata.key(WandData.FEATURE_META_MODE);
-				meta.setFlag(key, !meta.getFlag(key, false));
+				meta.setFlag(FEATURE_META_MODE.key, !meta.getFlag(FEATURE_META_MODE.key, false));
 				event.setCancelled(true);
 			}
 
-			if (modcount!=meta.getModCount())
-				raw.updateContents(format, new ItemLoreContent().fromMeta(format, meta)).writeItemStack(format, itemStackHolder.get());
+			meta.updateItem(this.wanddata);
 		} catch (final Throwable e) {
 			final String errorcode = Long.toHexString(System.currentTimeMillis());
 			player.sendMessage(String.format("§c[Useful Builder's Wand] A fatal error has occured. Please report to server administrator. [errorcode=%s]", errorcode));
@@ -320,20 +275,19 @@ public class WandListener implements Listener, CommandExecutor, UsefulBuildersWa
 		}
 	}
 
-	public boolean onItemUse(final ItemStackHolder itemStack, final ItemLoreMetaEditable meta, final Player player, final World world, final Block target, final BlockFace face) throws WorldGuardHandleException {
+	public boolean onItemUse(final ItemStackHolder itemStack, final WandItemMeta meta, final Player player, final World world, final Block target, final BlockFace face) throws WorldGuardHandleException {
 		if (target.isEmpty())
 			return false;
 
-		final int maxdurability = meta.getNumber(this.wanddata.keyData(WandData.FEATURE_META_DURABILITY_MAX), 0);
-		meta.setFlag(this.wanddata.keyData(WandData.FEATURE_META_DURABILITY_UNBREAKABLE), maxdurability<=0);
+		final int maxdurability = meta.getNumber(FEATURE_META_DURABILITY_MAX.key, 0);
+		meta.setFlag(FEATURE_META_DURABILITY_UNBREAKABLE.key, maxdurability<=0);
 
 		final List<Location> blocks = getPotentialBlocks(meta, player, world, target, face);
 
 		if (blocks.isEmpty())
 			return false;
 
-		final String keydurability = this.wanddata.keyData(WandData.FEATURE_META_DURABILITY);
-		final int durability = meta.getNumber(keydurability, 0);
+		final int durability = meta.getNumber(FEATURE_META_DURABILITY.key, 0);
 
 		if (maxdurability>0&&durability<=0)
 			return false;
@@ -380,17 +334,16 @@ public class WandListener implements Listener, CommandExecutor, UsefulBuildersWa
 				placecount++;
 			}
 		}
-		final String keyplace = this.wanddata.keyData(WandData.FEATURE_META_COUNT_PLACE);
-		meta.setNumber(keyplace, meta.getNumber(keyplace, 0)+placecount);
-		final String keyuse = this.wanddata.keyData(WandData.FEATURE_META_COUNT_USE);
-		meta.setNumber(keyuse, meta.getNumber(keyuse, 0)+1);
+		meta.setNumber(FEATURE_META_COUNT_PLACE.key, meta.getNumber(FEATURE_META_COUNT_PLACE.key, 0)+placecount);
+		meta.setNumber(FEATURE_META_COUNT_USE.key, meta.getNumber(FEATURE_META_COUNT_USE.key, 0)+1);
 		if (maxdurability>0)
-			meta.setNumber(keydurability, durability-1);
+			meta.setNumber(FEATURE_META_DURABILITY.key, durability-1);
 
 		return true;
 	}
 
-	public List<Location> getCandidateBlocks(final ItemLoreMeta meta, final Player player, final @Nullable World world, final @Nullable Block target, final BlockFace face) {
+	@Override
+	public List<Location> getCandidateBlocks(final WandItemMeta meta, final Player player, final @Nullable World world, final @Nullable Block target, final BlockFace face) {
 		try {
 			return getPotentialBlocks(meta, player, world, target, face);
 		} catch (final WorldGuardHandleException e) {
@@ -398,16 +351,16 @@ public class WandListener implements Listener, CommandExecutor, UsefulBuildersWa
 		}
 	}
 
-	public List<Location> getPotentialBlocks(final ItemLoreMeta meta, final Player player, final @Nullable World world, final @Nullable Block target, final BlockFace face) throws WorldGuardHandleException {
+	public List<Location> getPotentialBlocks(final WandItemMeta meta, final Player player, final @Nullable World world, final @Nullable Block target, final BlockFace face) throws WorldGuardHandleException {
 		final List<Location> blocks = Lists.newArrayList();
 
-		final int maxdurability = meta.getNumber(this.wanddata.keyData(WandData.FEATURE_META_DURABILITY_MAX), 0);
-		final int durability = meta.getNumber(this.wanddata.keyData(WandData.FEATURE_META_DURABILITY), 0);
+		final int maxdurability = meta.getNumber(FEATURE_META_DURABILITY_MAX.key, 0);
+		final int durability = meta.getNumber(FEATURE_META_DURABILITY.key, 0);
 
 		if (maxdurability>0&&durability<=0)
 			return blocks;
 
-		final int maxBlocks = meta.getNumber(this.wanddata.keyData(WandData.FEATURE_META_SIZE), 0);
+		final int maxBlocks = meta.getNumber(FEATURE_META_SIZE.key, 0);
 
 		if (world==null)
 			return blocks;
@@ -451,7 +404,7 @@ public class WandListener implements Listener, CommandExecutor, UsefulBuildersWa
 		int mz = dz==0 ? 1 : 0;
 
 		if (player.isSneaking()) {
-			final boolean isVertical = meta.getFlag(this.wanddata.keyData(WandData.FEATURE_META_MODE), false);
+			final boolean isVertical = meta.getFlag(FEATURE_META_MODE.key, false);
 			;
 			if (face!=BlockFace.UP&&face!=BlockFace.DOWN)
 				if (isVertical) {
