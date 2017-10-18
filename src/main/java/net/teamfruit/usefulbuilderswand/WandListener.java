@@ -292,7 +292,8 @@ public class WandListener implements Listener, CommandExecutor, UsefulBuildersWa
 		if (blocks.isEmpty())
 			return false;
 
-		final int durability = meta.getNumber(FEATURE_META_DURABILITY.key, 0);
+		int durability = meta.getNumber(FEATURE_META_DURABILITY.key, 0);
+		final boolean blockcount = meta.getFlag(FEATURE_META_DURABILITY_BLOCKCOUNT.key, false);
 
 		if (maxdurability>0&&durability<=0)
 			return false;
@@ -308,6 +309,8 @@ public class WandListener implements Listener, CommandExecutor, UsefulBuildersWa
 		final PlayerInventory inventory = player.getInventory();
 		int placecount = 0;
 		for (final Location temp : blocks) {
+			if (maxdurability>0&&durability<=0)
+				return false;
 			for (slot = 0; slot<inventory.getSize(); ++slot) {
 				final ItemStack item = inventory.getItem(slot);
 				if (item==null||!item.getType().equals(item1.getType()))
@@ -337,12 +340,16 @@ public class WandListener implements Listener, CommandExecutor, UsefulBuildersWa
 
 				this.nativemc.playSound(player, temp, target, .25f, 1f);
 				placecount++;
+				if (blockcount)
+					durability--;
 			}
 		}
+		if (!blockcount)
+			durability--;
 		meta.setNumber(FEATURE_META_COUNT_PLACE.key, meta.getNumber(FEATURE_META_COUNT_PLACE.key, 0)+placecount);
 		meta.setNumber(FEATURE_META_COUNT_USE.key, meta.getNumber(FEATURE_META_COUNT_USE.key, 0)+1);
 		if (maxdurability>0)
-			meta.setNumber(FEATURE_META_DURABILITY.key, durability-1);
+			meta.setNumber(FEATURE_META_DURABILITY.key, durability);
 
 		return true;
 	}
@@ -361,6 +368,7 @@ public class WandListener implements Listener, CommandExecutor, UsefulBuildersWa
 
 		final int maxdurability = meta.getNumber(FEATURE_META_DURABILITY_MAX.key, 0);
 		final int durability = meta.getNumber(FEATURE_META_DURABILITY.key, 0);
+		final boolean blockcount = meta.getFlag(FEATURE_META_DURABILITY_BLOCKCOUNT.key, false);
 
 		if (maxdurability>0&&durability<=0)
 			return blocks;
@@ -450,8 +458,10 @@ public class WandListener implements Listener, CommandExecutor, UsefulBuildersWa
 						final Location targetloc = invblock.clone().add(ax, ay, az);
 						final Location baseloc = targetloc.clone().subtract(dx, dy, dz);
 
+						final int count = blocks.size();
 						if (
-							blocks.size()>=numBlocks||
+							count>=numBlocks||
+									blockcount&&maxdurability>0&&durability-count<=0||
 									blocks.contains(targetloc)||
 									!this.nativemc.canPlace(targetloc.getBlock())||
 									!this.worldguard.canBuild(player, targetloc)||
