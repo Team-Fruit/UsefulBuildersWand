@@ -4,51 +4,49 @@ import java.util.List;
 
 import javax.annotation.Nullable;
 
+import org.apache.commons.lang.StringUtils;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
 import com.google.common.collect.Lists;
 
+import net.teamfruit.usefulbuilderswand.ItemStackHolder;
 import net.teamfruit.usefulbuilderswand.WandData;
 import net.teamfruit.usefulbuilderswand.WandData.AbstractData;
 import net.teamfruit.usefulbuilderswand.WandData.AbstractSettings;
 import net.teamfruit.usefulbuilderswand.lib.de.tr7zw.itemnbtapi.NBTItem;
 
-public class WandItemMeta {
-	private final ItemStack item;
+public class WandItemMeta implements ItemStackHolder {
+	private NBTItem nbtItem;
 	private WandItemMetaData data;
 
 	public WandItemMeta(final ItemStack item) {
 		super();
-		this.item = item;
+		this.nbtItem = new NBTItem(item);
 	}
 
 	public void activate() {
-		final NBTItem nbtItem = new NBTItem(this.item);
-		if (!nbtItem.hasKey(WandData.USEFUL_BUILDERS_WAND_NBT)) {
-			nbtItem.addCompound(WandData.USEFUL_BUILDERS_WAND_NBT);
+		if (!hasContent()) {
+			this.nbtItem.addCompound(WandData.USEFUL_BUILDERS_WAND_NBT);
 			init();
 		}
 	}
 
 	public boolean hasContent() {
-		final NBTItem nbtItem = new NBTItem(this.item);
-		return nbtItem.hasKey(WandData.USEFUL_BUILDERS_WAND_NBT);
+		return this.nbtItem.hasKey(WandData.USEFUL_BUILDERS_WAND_NBT);
 	}
 
 	public boolean init() {
-		if (this.data==null) {
-			final NBTItem nbtItem = new NBTItem(this.item);
-			if (nbtItem.hasKey(WandData.USEFUL_BUILDERS_WAND_NBT))
-				this.data = new WandItemMetaData(nbtItem.getCompound(WandData.USEFUL_BUILDERS_WAND_NBT));
-		}
+		if (this.data==null)
+			this.data = new WandItemMetaData(this.nbtItem.getCompound(WandData.USEFUL_BUILDERS_WAND_NBT));
 		return this.data!=null;
 	}
 
 	public void updateItem(final WandData wanddata) {
 		if (init()) {
-			final ItemMeta meta = this.item.getItemMeta();
+			final ItemStack item = this.nbtItem.getItem();
+			final ItemMeta meta = item.getItemMeta();
 			final FileConfiguration cfg = wanddata.getConfig();
 			final AbstractData data = new AbstractData.ItemData(this.data.nbt);
 			final AbstractSettings settings = new AbstractSettings.ConfigSettings(cfg);
@@ -65,11 +63,26 @@ public class WandItemMeta {
 			if (itemlore instanceof List<?>) {
 				final List<String> newlore = Lists.newArrayList();
 				for (final Object obj : (List<?>) itemlore)
-					if (obj instanceof String)
-						newlore.add(settings.resolve(data, (String) obj));
+					if (obj instanceof String) {
+						final String res = settings.resolve(data, (String) obj);
+						if (!StringUtils.isEmpty(res))
+							newlore.add(res);
+					}
 				meta.setLore(newlore);
 			}
+			item.setItemMeta(meta);
 		}
+	}
+
+	@Override
+	public ItemStack getItem() {
+		return this.nbtItem.getItem();
+	}
+
+	@Override
+	public void setItem(final ItemStack itemStack) {
+		this.nbtItem = new NBTItem(itemStack);
+		this.data = null;
 	}
 
 	public @Nullable Integer getNumber(final String key) {

@@ -110,11 +110,10 @@ public class WandListener implements Listener, CommandExecutor, UsefulBuildersWa
 				if (args.length>4)
 					j = parseInt(args[4]);
 
-				final ItemStack itemstack = new ItemStack(item, i, (short) j);
+				final WandItemMeta meta = new WandItemMeta(new ItemStack(item, i, (short) j));
+				updateItemMeta(sender, meta, Lists.newArrayList(Arrays.copyOfRange(args, 5, args.length)));
 
-				updateItemMeta(sender, itemstack, Lists.newArrayList(Arrays.copyOfRange(args, 5, args.length)));
-
-				player.getWorld().dropItem(player.getEyeLocation(), itemstack);
+				player.getWorld().dropItem(player.getEyeLocation(), meta.getItem());
 
 				player.chat("commands.successful");
 			} else if (StringUtils.equalsIgnoreCase(args[0], "hand")) {
@@ -122,7 +121,9 @@ public class WandListener implements Listener, CommandExecutor, UsefulBuildersWa
 					final Player player = (Player) sender;
 					final ItemStack itemStack = this.nativemc.getItemInHand(player.getInventory());
 					if (itemStack!=null) {
-						updateItemMeta(sender, itemStack, Lists.newArrayList(args));
+						final WandItemMeta meta = new WandItemMeta(itemStack);
+						updateItemMeta(sender, meta, Lists.newArrayList(args));
+						this.nativemc.setItemInHand(player.getInventory(), meta.getItem());
 						return true;
 					}
 				}
@@ -132,22 +133,17 @@ public class WandListener implements Listener, CommandExecutor, UsefulBuildersWa
 		return false;
 	}
 
-	public void updateItemMeta(final CommandSender sender, final ItemStack itemStack, final List<String> args) {
-		final WandItemMeta meta = new WandItemMeta(itemStack);
+	public void updateItemMeta(final CommandSender sender, final WandItemMeta meta, final List<String> args) {
 		for (final String arg : args)
 			if (StringUtils.contains(arg, "=")) {
 				meta.activate();
 				final String key = StringUtils.substringBefore(arg, "=");
 				final String value = StringUtils.substringAfter(arg, "=");
-				Features key1 = getFeature(WandData.FEATURE_META+"."+key);
-				if (key1==null)
-					key1 = getFeature(key);
+				final Features key1 = getFt(key);
 				if (key1!=null)
 					meta.set(key1, value);
 			} else {
-				Features key1 = getFeature(WandData.FEATURE_META+"."+arg);
-				if (key1==null)
-					key1 = getFeature(arg);
+				final Features key1 = getFt(arg);
 				if (key1!=null) {
 					final Object value = meta.get(key1);
 					if (value!=null)
@@ -157,22 +153,32 @@ public class WandListener implements Listener, CommandExecutor, UsefulBuildersWa
 		meta.updateItem(this.wanddata);
 	}
 
+	private Features getFt(final String key) {
+		Features key1 = getFeature(WandData.FEATURE_META+"."+key);
+		if (key1==null)
+			key1 = getFeature(key);
+		if (key1==null)
+			key1 = getFeature(WandData.FEATURE_META+"."+key+".data");
+		if (key1==null)
+			key1 = getFeature(key+".data");
+		return key1;
+	}
+
 	public void onEffect() {
 		for (final Player player : this.plugin.getServer().getOnlinePlayers()) {
-			final ItemStackHolder itemStackHolder = new ItemStackHolder(this.nativemc.getItemInHand(player.getInventory()));
+			final WandItemMeta meta = new WandItemMeta(this.nativemc.getItemInHand(player.getInventory()));
 
 			{
-				final ItemStack itemStack = itemStackHolder.get();
+				final ItemStack itemStack = meta.getItem();
 				if (itemStack==null||itemStack.getAmount()==0)
 					continue;
 			}
 
-			final WandItemMeta meta = new WandItemMeta(itemStackHolder.get());
-			onEffect(player, itemStackHolder, meta);
+			onEffect(player, meta);
 		}
 	}
 
-	public void onEffect(final Player player, final ItemStackHolder itemStack, final WandItemMeta meta) {
+	public void onEffect(final Player player, final WandItemMeta meta) {
 		List<Location> blocks = null;
 		try {
 			final RayTraceResult res = this.nativemc.rayTrace(player);
@@ -209,10 +215,10 @@ public class WandListener implements Listener, CommandExecutor, UsefulBuildersWa
 
 		final Player player = event.getPlayer();
 		final PlayerInventory inventory = player.getInventory();
-		final ItemStackHolder itemStackHolder = new ItemStackHolder(this.nativemc.getItemInHand(inventory));
+		final WandItemMeta meta = new WandItemMeta(this.nativemc.getItemInHand(inventory));
 
 		{
-			final ItemStack itemStack = itemStackHolder.get();
+			final ItemStack itemStack = meta.getItem();
 			if (itemStack==null||itemStack.getAmount()==0)
 				return;
 
@@ -232,8 +238,6 @@ public class WandListener implements Listener, CommandExecutor, UsefulBuildersWa
 				}
 			}
 		}
-
-		final WandItemMeta meta = new WandItemMeta(itemStackHolder.get());
 
 		if (!meta.hasContent())
 			return;
@@ -260,7 +264,7 @@ public class WandListener implements Listener, CommandExecutor, UsefulBuildersWa
 			if (block!=null&&action==Action.RIGHT_CLICK_BLOCK) {
 				final BlockFace face = event.getBlockFace();
 				if (face!=null)
-					if (onItemUse(itemStackHolder, meta, player, player.getWorld(), block, face))
+					if (onItemUse(meta, player, player.getWorld(), block, face))
 						event.setCancelled(true);
 			} else if (player.isSneaking()&&(action==Action.LEFT_CLICK_AIR||action==Action.LEFT_CLICK_BLOCK)) {
 				meta.setFlag(FEATURE_META_MODE.key, !meta.getFlag(FEATURE_META_MODE.key, false));
@@ -268,14 +272,15 @@ public class WandListener implements Listener, CommandExecutor, UsefulBuildersWa
 			}
 
 			meta.updateItem(this.wanddata);
+			this.nativemc.setItemInHand(inventory, meta.getItem());
 		} catch (final Throwable e) {
 			final String errorcode = Long.toHexString(System.currentTimeMillis());
 			player.sendMessage(String.format("§c[Useful Builder's Wand] A fatal error has occured. Please report to server administrator. [errorcode=%s]", errorcode));
-			UsefulBuildersWand.log().log(Level.SEVERE, String.format("[player=%s, errorcode=%s]: A fatal error has occured: ", player.getDisplayName(), errorcode), e.getCause());
+			Log.log.log(Level.SEVERE, String.format("[player=%s, errorcode=%s]: A fatal error has occured: ", player.getDisplayName(), errorcode), e.getCause());
 		}
 	}
 
-	public boolean onItemUse(final ItemStackHolder itemStack, final WandItemMeta meta, final Player player, final World world, final Block target, final BlockFace face) throws WorldGuardHandleException {
+	public boolean onItemUse(final WandItemMeta meta, final Player player, final World world, final Block target, final BlockFace face) throws WorldGuardHandleException {
 		if (target.isEmpty())
 			return false;
 
@@ -323,7 +328,7 @@ public class WandListener implements Listener, CommandExecutor, UsefulBuildersWa
 
 			final Block block = temp.getBlock().getRelative(face.getOppositeFace());
 
-			if (this.nativemc.placeItem(player, block, itemStack, objitem, EquipmentSlot.HAND, face, player.getEyeLocation())) {
+			if (this.nativemc.placeItem(player, block, meta, objitem, EquipmentSlot.HAND, face, player.getEyeLocation())) {
 				objitem.setAmount(objitem.getAmount()-1);
 				if (item.getAmount()<=0)
 					inventory.setItem(slot, null);

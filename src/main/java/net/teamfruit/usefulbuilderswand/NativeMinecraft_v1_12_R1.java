@@ -269,10 +269,10 @@ public class NativeMinecraft_v1_12_R1 implements NativeMinecraft {
 					final Object nDirection = this.m$EnumDirection$valueOf.invoke(null, face.name());
 
 					final PlayerInventory inventory = player.getInventory();
-					final ItemStack itemhand = handItemStack.get().clone();
+					final ItemStack itemhand = handItemStack.getItem().clone();
 					final Object nResult = this.m$ItemStack$placeItem.invoke(nItemStack, nPlayer, nWorld, nBlockPosition, nHand, nDirection, (float) eyeLocation.getX(), (float) eyeLocation.getY(), (float) eyeLocation.getZ());
 					setItemInHand(inventory, itemhand);
-					handItemStack.set(getItemInHand(inventory));
+					handItemStack.setItem(getItemInHand(inventory));
 
 					return "SUCCESS".equals(((Enum<?>) nResult).name());
 				} catch (final Exception e) {

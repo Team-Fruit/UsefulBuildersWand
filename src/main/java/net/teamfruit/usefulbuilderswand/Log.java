@@ -1,8 +1,7 @@
 package net.teamfruit.usefulbuilderswand;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.util.logging.Logger;
 
 public class Log {
-	public static Logger log = LogManager.getLogger("UsefulBuildersWand");
+	public static Logger log = Logger.getLogger("UsefulBuildersWand");
 }

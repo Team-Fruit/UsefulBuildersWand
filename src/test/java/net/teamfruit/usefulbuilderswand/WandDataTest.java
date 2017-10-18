@@ -58,7 +58,7 @@ public class WandDataTest {
 		Log.log.info(settings.resolve(itemdata, title));
 		for (final String l : lore)
 			Log.log.info(settings.resolve(itemdata, l));
-		Log.log.info("time: {}", (System.nanoTime()-time)/1000000000.0);
+		Log.log.info(String.format("time: %s", (System.nanoTime()-time)/1000000000.0));
 	}
 
 }

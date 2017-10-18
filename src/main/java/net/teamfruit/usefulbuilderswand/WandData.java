@@ -4,7 +4,6 @@ import static net.teamfruit.usefulbuilderswand.meta.Features.*;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
-import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -12,14 +11,11 @@ import java.util.regex.Pattern;
 import org.apache.commons.lang.BooleanUtils;
 import org.apache.commons.lang.StringUtils;
 import org.bukkit.configuration.file.FileConfiguration;
-import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 import net.teamfruit.usefulbuilderswand.lib.de.tr7zw.itemnbtapi.NBTCompound;
-import net.teamfruit.usefulbuilderswand.lib.de.tr7zw.itemnbtapi.NBTType;
 import net.teamfruit.usefulbuilderswand.meta.Features;
 
 public class WandData {
@@ -39,31 +35,31 @@ public class WandData {
 		for (final Features ft : values())
 			it.put(ft.key, ft.defaultValue);
 
-		it.put("custom.title.mode.if", "${"+FEATURE_META_MODE+"}");
+		it.put("custom.title.mode.if", "${"+FEATURE_META_MODE.key+"}");
 		it.put("custom.title.mode.true", "┃");
 		it.put("custom.title.mode.false", "━");
-		it.put("custom.title.durability.if", "${"+FEATURE_META_DURABILITY_UNBREAKABLE+"}");
+		it.put("custom.title.durability.if", "${"+FEATURE_META_DURABILITY_UNBREAKABLE.key+"}");
 		it.put("custom.title.durability.true", "Infinity");
-		it.put("custom.title.durability.false", "${"+FEATURE_META_DURABILITY+"}/${"+FEATURE_META_DURABILITY_MAX+"}");
-		it.put("custom.lore.mode.if", "${"+FEATURE_META_MODE+"}");
+		it.put("custom.title.durability.false", "${"+FEATURE_META_DURABILITY.key+"}/${"+FEATURE_META_DURABILITY_MAX.key+"}");
+		it.put("custom.lore.mode.if", "${"+FEATURE_META_MODE.key+"}");
 		it.put("custom.lore.mode.true", "Vertical");
 		it.put("custom.lore.mode.false", "Horizonal");
-		it.put("custom.lore.blockcount.if", "${"+FEATURE_META_DURABILITY_BLOCKCOUNT+"}");
+		it.put("custom.lore.blockcount.if", "${"+FEATURE_META_DURABILITY_BLOCKCOUNT.key+"}");
 		it.put("custom.lore.blockcount.true", " blocks");
 		it.put("custom.lore.blockcount.false", " times");
-		it.put("custom.lore.durability.if", "${"+FEATURE_META_DURABILITY_UNBREAKABLE+"}");
+		it.put("custom.lore.durability.if", "${"+FEATURE_META_DURABILITY_UNBREAKABLE.key+"}");
 		it.put("custom.lore.durability.true", "(Infinity)");
-		it.put("custom.lore.durability.false", "${"+FEATURE_META_DURABILITY+"} of ${"+FEATURE_META_DURABILITY_MAX+"}${custom.lore.blockcount}");
-		it.put("custom.lore.owner.if", "${"+FEATURE_META_OWNER+"}");
-		it.put("custom.lore.owner.true", "§3 - Owner §7: ${"+FEATURE_META_OWNER_NAME+"}");
+		it.put("custom.lore.durability.false", "${"+FEATURE_META_DURABILITY.key+"} of ${"+FEATURE_META_DURABILITY_MAX.key+"}${custom.lore.blockcount}");
+		it.put("custom.lore.owner.if", "${"+FEATURE_META_OWNER.key+"}");
+		it.put("custom.lore.owner.true", "§3 - Owner §7: ${"+FEATURE_META_OWNER_NAME.key+"}");
 
-		it.put(ITEM_TITLE, "§eBuilder's Wand §7x${"+FEATURE_META_SIZE+"} [${custom.title.mode}] (${custom.title.durability})");
+		it.put(ITEM_TITLE, "§eBuilder's Wand §7x${"+FEATURE_META_SIZE.key+"} [${custom.title.mode}] (${custom.title.durability})");
 		it.put(ITEM_LORE, Lists.newArrayList(new String[] {
 				"§3 - Mode §7: ${custom.lore.mode}",
 				"§3 - Durability §7: ${custom.lore.durability}",
-				"§3 - Size §7: ${"+FEATURE_META_SIZE+"}",
-				"§3 - UseCount §7: ${"+FEATURE_META_COUNT_USE+"}",
-				"§3 - PlaceCount §7: ${"+FEATURE_META_COUNT_PLACE+"}",
+				"§3 - Size §7: ${"+FEATURE_META_SIZE.key+"}",
+				"§3 - UseCount §7: ${"+FEATURE_META_COUNT_USE.key+"}",
+				"§3 - PlaceCount §7: ${"+FEATURE_META_COUNT_PLACE.key+"}",
 				"${custom.lore.owner}",
 		}));
 	}
@@ -81,30 +77,6 @@ public class WandData {
 
 	public FileConfiguration getConfig() {
 		return this.cfg;
-	}
-
-	public void updateItem(final ItemStack item, final NBTCompound nbt) {
-		final ItemMeta meta = item.getItemMeta();
-		final FileConfiguration cfg = getConfig();
-		final AbstractData data = new AbstractData.ItemData(nbt);
-		final AbstractSettings settings = new AbstractSettings.ConfigSettings(cfg);
-
-		Object itemtitle = cfg.get(ITEM_TITLE);
-		if (itemtitle==null)
-			itemtitle = it.get(ITEM_TITLE);
-		if (itemtitle instanceof String)
-			meta.setDisplayName(settings.resolve(data, (String) itemtitle));
-
-		Object itemlore = cfg.get(ITEM_LORE);
-		if (itemlore==null)
-			itemlore = it.get(ITEM_LORE);
-		if (itemlore instanceof List<?>) {
-			final List<String> newlore = Lists.newArrayList();
-			for (final Object obj : (List<?>) itemlore)
-				if (obj instanceof String)
-					newlore.add(settings.resolve(data, (String) obj));
-			meta.setLore(newlore);
-		}
 	}
 
 	public static abstract class AbstractSettings {
@@ -184,10 +156,10 @@ public class WandData {
 
 			@Override
 			protected String getKeyFromSetting(final String path) {
-				final String key = this.cfg.getString(path);
-				if (key!=null)
-					if (!StringUtils.isEmpty(key))
-						return key;
+				final Object key = this.cfg.get(path);
+				if (key instanceof String)
+					if (!StringUtils.isEmpty((String) key))
+						return (String) key;
 				return null;
 			}
 		}
@@ -225,25 +197,27 @@ public class WandData {
 
 			@Override
 			public String get(final String path) {
-				final NBTType type = this.nbt.getType(path);
-				switch (type) {
-					case NBTTagString:
-						return this.nbt.getString(path);
-					case NBTTagInt:
-						return String.valueOf(this.nbt.getInteger(path));
-					case NBTTagFloat:
-						return String.valueOf(this.nbt.getFloat(path));
-					case NBTTagDouble:
-						return String.valueOf(this.nbt.getDouble(path));
-					case NBTTagLong:
-						return String.valueOf(this.nbt.getLong(path));
-					case NBTTagShort:
-						return String.valueOf(this.nbt.getShort(path));
-					case NBTTagByte:
-						return String.valueOf(this.nbt.getBoolean(path));
-					default:
-						return null;
-				}
+				final Features ft = Features.getFeature(path);
+				if (ft!=null)
+					switch (ft.type) {
+						case NUMBER:
+							final Integer num = this.nbt.getInteger(path);
+							if (num!=null)
+								return String.valueOf(num);
+							break;
+						default:
+						case TEXT:
+							final String str = this.nbt.getString(path);
+							if (str!=null)
+								return str;
+							break;
+						case FLAG:
+							final Boolean fla = this.nbt.getBoolean(path);
+							if (fla!=null)
+								return String.valueOf(fla);
+							break;
+					}
+				return null;
 			}
 		}
 
