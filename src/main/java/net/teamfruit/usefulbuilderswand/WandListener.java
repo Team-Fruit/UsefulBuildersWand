@@ -285,7 +285,6 @@ public class WandListener implements Listener, CommandExecutor, UsefulBuildersWa
 			return false;
 
 		final int maxdurability = meta.getNumber(FEATURE_META_DURABILITY_MAX.key, 0);
-		meta.setFlag(FEATURE_META_DURABILITY_UNBREAKABLE.key, maxdurability<=0);
 
 		final List<Location> blocks = getPotentialBlocks(meta, player, world, target, face);
 

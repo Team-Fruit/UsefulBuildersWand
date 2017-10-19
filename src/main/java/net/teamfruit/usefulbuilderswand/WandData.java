@@ -4,12 +4,15 @@ import static net.teamfruit.usefulbuilderswand.meta.Features.*;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.commons.lang.BooleanUtils;
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang.math.NumberUtils;
 import org.bukkit.configuration.file.FileConfiguration;
 
 import com.google.common.collect.Lists;
@@ -35,10 +38,13 @@ public class WandData {
 		for (final Features ft : values())
 			it.put(ft.key, ft.defaultValue);
 
+		it.put("custom.durability.unbreakable.eval", "<=");
+		it.put("custom.durability.unbreakable.arg0", "${"+FEATURE_META_DURABILITY_MAX.key+"}");
+		it.put("custom.durability.unbreakable.arg1", "0");
 		it.put("custom.title.mode.if", "${"+FEATURE_META_MODE.key+"}");
 		it.put("custom.title.mode.true", "┃");
 		it.put("custom.title.mode.false", "━");
-		it.put("custom.title.durability.if", "${"+FEATURE_META_DURABILITY_UNBREAKABLE.key+"}");
+		it.put("custom.title.durability.if", "${custom.durability.unbreakable}");
 		it.put("custom.title.durability.true", "Infinity");
 		it.put("custom.title.durability.false", "${"+FEATURE_META_DURABILITY.key+"}/${"+FEATURE_META_DURABILITY_MAX.key+"}");
 		it.put("custom.lore.mode.if", "${"+FEATURE_META_MODE.key+"}");
@@ -47,7 +53,7 @@ public class WandData {
 		it.put("custom.lore.blockcount.if", "${"+FEATURE_META_DURABILITY_BLOCKCOUNT.key+"}");
 		it.put("custom.lore.blockcount.true", " blocks");
 		it.put("custom.lore.blockcount.false", " times");
-		it.put("custom.lore.durability.if", "${"+FEATURE_META_DURABILITY_UNBREAKABLE.key+"}");
+		it.put("custom.lore.durability.if", "${custom.durability.unbreakable}");
 		it.put("custom.lore.durability.true", "(Infinity)");
 		it.put("custom.lore.durability.false", "${"+FEATURE_META_DURABILITY.key+"} of ${"+FEATURE_META_DURABILITY_MAX.key+"}${custom.lore.blockcount}");
 		it.put("custom.lore.owner.if", "${"+FEATURE_META_OWNER.key+"}");
@@ -79,13 +85,111 @@ public class WandData {
 		return this.cfg;
 	}
 
+	public static interface Evals {
+		public static Map<String, Evals> evals = new HashMap<String, Evals>() {
+			private void puts(final Evals o, final String... keys) {
+				for (final String key : keys)
+					put(key, o);
+			}
+
+			{
+				puts(new AbstractEvals<Boolean>() {
+					@Override
+					public Boolean eval(final int a, final int b) {
+						return a==b;
+					}
+				}, "eq", "==");
+				puts(new AbstractEvals<Boolean>() {
+					@Override
+					public Boolean eval(final int a, final int b) {
+						return a!=b;
+					}
+				}, "ne", "!=");
+				puts(new AbstractEvals<Boolean>() {
+					@Override
+					public Boolean eval(final int a, final int b) {
+						return a>b;
+					}
+				}, "gt", ">");
+				puts(new AbstractEvals<Boolean>() {
+					@Override
+					public Boolean eval(final int a, final int b) {
+						return a>=b;
+					}
+				}, "ge", ">=");
+				puts(new AbstractEvals<Boolean>() {
+					@Override
+					public Boolean eval(final int a, final int b) {
+						return a<b;
+					}
+				}, "lt", "<");
+				puts(new AbstractEvals<Boolean>() {
+					@Override
+					public Boolean eval(final int a, final int b) {
+						return a<=b;
+					}
+				}, "le", "<=");
+				puts(new AbstractEvals<Integer>() {
+					@Override
+					public Integer eval(final int a, final int b) {
+						return a+b;
+					}
+				}, "add", "+");
+				puts(new AbstractEvals<Integer>() {
+					@Override
+					public Integer eval(final int a, final int b) {
+						return a-b;
+					}
+				}, "sub", "-");
+				puts(new AbstractEvals<Integer>() {
+					@Override
+					public Integer eval(final int a, final int b) {
+						return a*b;
+					}
+				}, "mul", "*");
+				puts(new AbstractEvals<Integer>() {
+					@Override
+					public Integer eval(final int a, final int b) {
+						return a/b;
+					}
+				}, "div", "/");
+				puts(new AbstractEvals<Integer>() {
+					@Override
+					public Integer eval(final int a, final int b) {
+						return a%b;
+					}
+				}, "mod", "%");
+			}
+		};
+
+		public static abstract class AbstractEvals<T> implements Evals {
+			@Override
+			public String eval(final List<String> args) {
+				if (args.size()>=2) {
+					final String sa = args.get(0), sb = args.get(1);
+					if (NumberUtils.isNumber(sa)&&NumberUtils.isNumber(sb)) {
+						final int a = NumberUtils.toInt(sa);
+						final int b = NumberUtils.toInt(sb);
+						return String.valueOf(eval(a, b));
+					}
+				}
+				return null;
+			}
+
+			public abstract T eval(int a, int b);
+		}
+
+		String eval(List<String> args);
+	}
+
 	public static abstract class AbstractSettings {
+		private static Pattern p = Pattern.compile("\\$\\{(.*?)\\}");
+
 		protected String resolve(final Deque<String> stack, final AbstractData data, final String str) {
 			if (stack.contains(str))
 				return null;
 			stack.push(str);
 
-			final Pattern p = Pattern.compile("\\$\\{(.*?)\\}");
 			final Matcher m = p.matcher(str);
 
 			final StringBuffer sb = new StringBuffer();
@@ -110,6 +214,22 @@ public class WandData {
 							else
 								res = "";
 							break c;
+						}
+
+						final String valueeval = getKeyFromDataOrSetting(data, key+".eval");
+						if (valueeval!=null) {
+							final Evals evtype = Evals.evals.get(valueeval);
+							if (evtype!=null) {
+								final List<String> vargs = Lists.newArrayList();
+								String valuearg;
+								for (int i = 0; (valuearg = getKeyFromDataOrSetting(data, key+".arg"+i))!=null; i++) {
+									final String resarg = resolve(stack, data, valuearg);
+									if (resarg!=null)
+										vargs.add(resarg);
+								}
+								res = evtype.eval(vargs);
+								break c;
+							}
 						}
 					} else {
 						res = resolve(stack, data, value);

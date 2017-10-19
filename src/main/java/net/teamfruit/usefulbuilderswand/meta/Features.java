@@ -10,7 +10,6 @@ public enum Features {
 	FEATURE_META_DURABILITY("feature.meta.durability.data", NUMBER, 27),
 	FEATURE_META_DURABILITY_MAX("feature.meta.durability.max", NUMBER, 27),
 	FEATURE_META_DURABILITY_BLOCKCOUNT("feature.meta.durability.blockcount", FLAG, false),
-	FEATURE_META_DURABILITY_UNBREAKABLE("feature.meta.durability.unbreakable", FLAG, false),
 	FEATURE_META_COUNT_PLACE("feature.meta.count.place", NUMBER, 0),
 	FEATURE_META_COUNT_USE("feature.meta.count.use", NUMBER, 0),
 	FEATURE_META_PARTICLE_COLOR_R("feature.meta.particle.color.r", NUMBER, 255),
