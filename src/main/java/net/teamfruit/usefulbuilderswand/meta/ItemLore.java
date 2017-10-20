@@ -19,7 +19,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
-import net.teamfruit.usefulbuilderswand.NestedStringUtils;
 import net.teamfruit.usefulbuilderswand.meta.ItemLore.ItemLoreDataFormat.FlagMeta;
 import net.teamfruit.usefulbuilderswand.meta.ItemLore.ItemLoreDataFormat.FlagMeta.FlagMetaAccess;
 import net.teamfruit.usefulbuilderswand.meta.ItemLore.ItemLoreDataFormat.NumberMeta;

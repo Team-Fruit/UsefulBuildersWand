@@ -1,4 +1,4 @@
-package net.teamfruit.usefulbuilderswand;
+package net.teamfruit.usefulbuilderswand.meta;
 
 import java.util.List;
 
