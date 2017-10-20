@@ -178,10 +178,14 @@ public class WandData {
 
 			@Override
 			protected String getKeyFromSetting(final String path) {
-				final Object key = this.cfg.get(path);
-				if (key instanceof String)
-					if (!StringUtils.isEmpty((String) key))
-						return (String) key;
+				if (this.cfg.isConfigurationSection(path)) {
+					if (!StringUtils.endsWith(path, ".data"))
+						return getKeyFromSetting(path+".data");
+				} else {
+					final String key = this.cfg.getString(path);
+					if (!StringUtils.isEmpty(key))
+						return key;
+				}
 				return null;
 			}
 		}
@@ -219,6 +223,8 @@ public class WandData {
 
 			@Override
 			public String get(final String path) {
+				if (!this.nbt.hasKey(path))
+					return null;
 				final Features ft = Features.getFeature(path);
 				if (ft!=null)
 					switch (ft.type) {
