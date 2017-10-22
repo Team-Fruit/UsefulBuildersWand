@@ -2,23 +2,23 @@ package net.teamfruit.usefulbuilderswand;
 
 import static net.teamfruit.usefulbuilderswand.meta.Features.*;
 
-import java.util.ArrayDeque;
-import java.util.Deque;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
-import org.apache.commons.lang.BooleanUtils;
 import org.apache.commons.lang.StringUtils;
 import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
-import net.teamfruit.usefulbuilderswand.lib.de.tr7zw.itemnbtapi.NBTCompound;
-import net.teamfruit.usefulbuilderswand.meta.Evals;
+import net.teamfruit.usefulbuilderswand.meta.ConfigWandMeta;
 import net.teamfruit.usefulbuilderswand.meta.Features;
+import net.teamfruit.usefulbuilderswand.meta.IWandMeta;
+import net.teamfruit.usefulbuilderswand.meta.WandCompoundMeta;
+import net.teamfruit.usefulbuilderswand.meta.WandItem;
+import net.teamfruit.usefulbuilderswand.meta.WandTextUtils;
 
 public class WandData {
 	public static final String SETTING_EFFECT_RANGE = "setting.effect.range";
@@ -84,185 +84,37 @@ public class WandData {
 		return this.cfg;
 	}
 
-	public static abstract class AbstractSettings {
-		private static Pattern p = Pattern.compile("\\$\\{(.*?)\\}");
-
-		protected String resolve(final Deque<String> stack, final AbstractData data, final String str) {
-			if (stack.contains(str))
-				return null;
-			stack.push(str);
-
-			final Matcher m = p.matcher(str);
-
-			final StringBuffer sb = new StringBuffer();
-			while (m.find()) {
-				final String wrappedkey = m.group();
-				final String key = StringUtils.substringBetween(wrappedkey, "${", "}");
-				final String value = getKeyFromDataOrSetting(data, key);
-				String res = null;
-				c: {
-					if (value==null) {
-						final String valueif = getKeyFromDataOrSetting(data, key+".if");
-						if (valueif!=null) {
-							final String resif = resolve(stack, data, valueif);
-							final Boolean resifbool = BooleanUtils.toBooleanObject(resif);
-							if (resifbool==null) {
-								res = "(if:"+valueif+")";
-								break c;
-							}
-							final String valuebool = getKeyFromDataOrSetting(data, key+(resifbool ? ".true" : ".false"));
-							if (valuebool!=null)
-								res = resolve(stack, data, valuebool);
-							else
-								res = "";
-							break c;
-						}
-
-						final String valueeval = getKeyFromDataOrSetting(data, key+".eval");
-						if (valueeval!=null) {
-							final Evals evtype = Evals.evals.get(valueeval);
-							if (evtype!=null) {
-								final List<String> vargs = Lists.newArrayList();
-								String valuearg;
-								for (int i = 0; (valuearg = getKeyFromDataOrSetting(data, key+".arg"+i))!=null; i++) {
-									final String resarg = resolve(stack, data, valuearg);
-									if (resarg!=null)
-										vargs.add(resarg);
-								}
-								res = evtype.eval(vargs);
-								break c;
-							}
-						}
-					} else {
-						res = resolve(stack, data, value);
-						break c;
-					}
-				}
-				if (res==null)
-					res = "(err:"+key+")";
-				m.appendReplacement(sb, Matcher.quoteReplacement(res));
-			}
-			m.appendTail(sb);
-
-			stack.pop();
-			return sb.toString();
-		}
-
-		public String resolve(final AbstractData data, final String str) {
-			return resolve(new ArrayDeque<String>(), data, str);
-		}
-
-		@Deprecated
-		public String get(final AbstractData data, final String path) {
-			final String key = getKeyFromDataOrSetting(data, path);
-			if (key==null)
-				return null;
-			return resolve(data, key);
-		}
-
-		protected String getKeyFromDataOrSetting(final AbstractData data, final String path) {
-			String key = data.get(path);
-			if (key==null)
-				key = getKeyFromSetting(path);
-			return key;
-		}
-
-		protected abstract String getKeyFromSetting(String path);
-
-		public static class ConfigSettings extends AbstractSettings {
-			private final FileConfiguration cfg;
-
-			public ConfigSettings(final FileConfiguration cfg) {
-				this.cfg = cfg;
-			}
-
-			@Override
-			protected String getKeyFromSetting(final String path) {
-				if (this.cfg.isConfigurationSection(path)) {
-					if (!StringUtils.endsWith(path, ".data"))
-						return getKeyFromSetting(path+".data");
-				} else {
-					final String key = this.cfg.getString(path);
-					if (!StringUtils.isEmpty(key))
-						return key;
-				}
-				return null;
-			}
-		}
-
-		public static class TestSettings extends AbstractSettings {
-			private final Map<String, Object> map;
-
-			public TestSettings(final Map<String, Object> map) {
-				this.map = map;
-			}
-
-			@Override
-			protected String getKeyFromSetting(final String path) {
-				//Log.log.info(path);
-				final Object key = this.map.get(path);
-				if (key!=null) {
-					final String keystr = String.valueOf(key);
-					if (!StringUtils.isEmpty(keystr))
-						return keystr;
-				}
-				return null;
-			}
-		}
+	public IWandMeta wrapMeta(final IWandMeta meta) {
+		return WandCompoundMeta.of(meta, new ConfigWandMeta(getConfig()));
 	}
 
-	public static abstract class AbstractData {
-		public abstract String get(String path);
+	public void updateItem(final WandItem meta) {
+		if (meta.init()) {
+			final ItemStack item = meta.getItem();
+			final ItemMeta itemmeta = item.getItemMeta();
+			final FileConfiguration cfg = getConfig();
+			final IWandMeta wmeta = wrapMeta(meta.getMeta());
 
-		public static class ItemData extends AbstractData {
-			private final NBTCompound nbt;
+			Object itemtitle = cfg.get(WandData.ITEM_TITLE);
+			if (itemtitle==null)
+				itemtitle = WandData.it.get(WandData.ITEM_TITLE);
+			if (itemtitle instanceof String)
+				itemmeta.setDisplayName(WandTextUtils.resolve(wmeta, (String) itemtitle));
 
-			public ItemData(final NBTCompound nbt) {
-				this.nbt = nbt;
-			}
-
-			@Override
-			public String get(final String path) {
-				if (!this.nbt.hasKey(path))
-					return null;
-				final Features ft = Features.getFeature(path);
-				if (ft!=null)
-					switch (ft.type) {
-						case NUMBER:
-							final Integer num = this.nbt.getInteger(path);
-							if (num!=null)
-								return String.valueOf(num);
-							break;
-						default:
-						case TEXT:
-							final String str = this.nbt.getString(path);
-							if (str!=null)
-								return str;
-							break;
-						case FLAG:
-							final Boolean fla = this.nbt.getBoolean(path);
-							if (fla!=null)
-								return String.valueOf(fla);
-							break;
+			Object itemlore = cfg.get(WandData.ITEM_LORE);
+			if (itemlore==null)
+				itemlore = WandData.it.get(WandData.ITEM_LORE);
+			if (itemlore instanceof List<?>) {
+				final List<String> newlore = Lists.newArrayList();
+				for (final Object obj : (List<?>) itemlore)
+					if (obj instanceof String) {
+						final String res = WandTextUtils.resolve(wmeta, (String) obj);
+						if (!StringUtils.isEmpty(res))
+							newlore.add(res);
 					}
-				return null;
+				itemmeta.setLore(newlore);
 			}
-		}
-
-		public static class TestData extends AbstractData {
-			private final Map<String, Object> data;
-
-			public TestData(final Map<String, Object> data) {
-				this.data = data;
-			}
-
-			@Override
-			public String get(final String path) {
-				final Object obj = this.data.get(path);
-				if (obj==null)
-					return null;
-				return String.valueOf(obj);
-			}
+			item.setItemMeta(itemmeta);
 		}
 	}
 }

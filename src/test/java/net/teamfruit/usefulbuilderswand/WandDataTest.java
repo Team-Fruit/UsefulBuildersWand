@@ -11,8 +11,10 @@ import org.junit.Test;
 
 import com.google.common.collect.Maps;
 
-import net.teamfruit.usefulbuilderswand.WandData.AbstractData.TestData;
-import net.teamfruit.usefulbuilderswand.WandData.AbstractSettings.TestSettings;
+import net.teamfruit.usefulbuilderswand.meta.IWandMeta;
+import net.teamfruit.usefulbuilderswand.meta.WandMapMeta;
+import net.teamfruit.usefulbuilderswand.meta.WandCompoundMeta;
+import net.teamfruit.usefulbuilderswand.meta.WandTextUtils;
 
 public class WandDataTest {
 
@@ -34,7 +36,7 @@ public class WandDataTest {
 
 	@Test
 	public void test() {
-		final TestSettings settings = new TestSettings(WandData.it);
+		final IWandMeta settings = new WandMapMeta(WandData.it);
 
 		final String title = (String) WandData.it.get("item.title");
 		@SuppressWarnings("unchecked")
@@ -52,12 +54,13 @@ public class WandDataTest {
 		// itemmap.put("feature.meta.durability.data", 114514);
 		itemmap.put("feature.meta.durability.max", 3.13);
 		itemmap.put("feature.meta.durability.blockcount", true);
-		final TestData itemdata = new TestData(itemmap);
+		final IWandMeta itemdata = new WandMapMeta(itemmap);
+		final IWandMeta wmeta = WandCompoundMeta.of(settings, itemdata);
 
 		final long time = System.nanoTime();
-		Log.log.info(settings.resolve(itemdata, title));
+		Log.log.info(WandTextUtils.resolve(wmeta, title));
 		for (final String l : lore)
-			Log.log.info(settings.resolve(itemdata, l));
+			Log.log.info(WandTextUtils.resolve(wmeta, l));
 		Log.log.info(String.format("time: %s", (System.nanoTime()-time)/1000000000.0));
 	}
 

@@ -11,11 +11,12 @@ import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Player;
 
-import net.teamfruit.usefulbuilderswand.meta.WandItemMeta;
+import net.teamfruit.usefulbuilderswand.meta.IWandMeta;
+import net.teamfruit.usefulbuilderswand.meta.WandItem;
 
 public interface UsefulBuildersWandAPI {
 	@Nullable
 	RayTraceResult rayTrace(final @Nonnull Player player);
 
-	List<Location> getCandidateBlocks(final @Nonnull WandItemMeta meta, final @Nonnull Player player, final @Nullable World world, final @Nullable Block target, final @Nonnull BlockFace face);
+	List<Location> getCandidateBlocks(final @Nonnull WandItem witem, final @Nonnull IWandMeta meta, final @Nonnull Player player, final @Nullable World world, final @Nullable Block target, final @Nonnull BlockFace face);
 }
