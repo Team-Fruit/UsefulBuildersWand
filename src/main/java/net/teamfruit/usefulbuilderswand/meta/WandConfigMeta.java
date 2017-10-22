@@ -5,10 +5,10 @@ import javax.annotation.Nullable;
 import org.apache.commons.lang.StringUtils;
 import org.bukkit.configuration.file.FileConfiguration;
 
-public class ConfigWandMeta implements IWandMeta {
+public class WandConfigMeta implements IWandMeta {
 	private final FileConfiguration cfg;
 
-	public ConfigWandMeta(final FileConfiguration cfg) {
+	public WandConfigMeta(final FileConfiguration cfg) {
 		this.cfg = cfg;
 	}
 

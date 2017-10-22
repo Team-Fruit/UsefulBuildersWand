@@ -1,4 +1,4 @@
-package net.teamfruit.usefulbuilderswand.meta;
+package net.teamfruit.usefulbuilderswand.meta.lore;
 
 import java.util.List;
 import java.util.ListIterator;
@@ -19,10 +19,10 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
-import net.teamfruit.usefulbuilderswand.meta.ItemLore.ItemLoreDataFormat.FlagMeta;
-import net.teamfruit.usefulbuilderswand.meta.ItemLore.ItemLoreDataFormat.FlagMeta.FlagMetaAccess;
-import net.teamfruit.usefulbuilderswand.meta.ItemLore.ItemLoreDataFormat.NumberMeta;
-import net.teamfruit.usefulbuilderswand.meta.ItemLore.ItemLoreDataFormat.TextMeta;
+import net.teamfruit.usefulbuilderswand.meta.lore.ItemLore.ItemLoreDataFormat.FlagMeta;
+import net.teamfruit.usefulbuilderswand.meta.lore.ItemLore.ItemLoreDataFormat.NumberMeta;
+import net.teamfruit.usefulbuilderswand.meta.lore.ItemLore.ItemLoreDataFormat.TextMeta;
+import net.teamfruit.usefulbuilderswand.meta.lore.ItemLore.ItemLoreDataFormat.FlagMeta.FlagMetaAccess;
 
 @Deprecated
 public abstract class ItemLore {

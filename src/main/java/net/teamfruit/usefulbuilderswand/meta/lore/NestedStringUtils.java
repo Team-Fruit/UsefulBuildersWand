@@ -1,4 +1,4 @@
-package net.teamfruit.usefulbuilderswand.meta;
+package net.teamfruit.usefulbuilderswand.meta.lore;
 
 import java.util.List;
 

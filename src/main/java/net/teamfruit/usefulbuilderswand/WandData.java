@@ -13,7 +13,7 @@ import org.bukkit.inventory.meta.ItemMeta;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
-import net.teamfruit.usefulbuilderswand.meta.ConfigWandMeta;
+import net.teamfruit.usefulbuilderswand.meta.WandConfigMeta;
 import net.teamfruit.usefulbuilderswand.meta.Features;
 import net.teamfruit.usefulbuilderswand.meta.IWandMeta;
 import net.teamfruit.usefulbuilderswand.meta.WandCompoundMeta;
@@ -85,7 +85,7 @@ public class WandData {
 	}
 
 	public IWandMeta wrapMeta(final IWandMeta meta) {
-		return WandCompoundMeta.of(meta, new ConfigWandMeta(getConfig()));
+		return WandCompoundMeta.of(meta, new WandConfigMeta(getConfig()));
 	}
 
 	public void updateItem(final WandItem meta) {

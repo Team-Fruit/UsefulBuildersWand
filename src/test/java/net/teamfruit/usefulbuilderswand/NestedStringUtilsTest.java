@@ -1,6 +1,6 @@
 package net.teamfruit.usefulbuilderswand;
 
-import static net.teamfruit.usefulbuilderswand.meta.NestedStringUtils.*;
+import static net.teamfruit.usefulbuilderswand.meta.lore.NestedStringUtils.*;
 import static org.junit.Assert.*;
 
 import java.util.Scanner;
