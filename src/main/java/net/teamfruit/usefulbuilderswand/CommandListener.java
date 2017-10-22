@@ -7,7 +7,6 @@ import java.util.List;
 
 import org.apache.commons.lang.StringUtils;
 import org.bukkit.command.Command;
-import org.bukkit.command.CommandException;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -111,11 +110,20 @@ public class CommandListener implements CommandExecutor {
 			}
 		} else if (StringUtils.equalsIgnoreCase(type, "help")) {
 			final List<String> msgs = Lists.newArrayList();
-			msgs.add("default property:");
-			final IWandMeta cfgmeta = this.wanddata.configMeta();
-			for (final Features ft : Features.values()) {
-				final Object value = get(cfgmeta, ft);
-				msgs.add(String.format("§7%s [%s] =>§f %s", ft.key, ft.type, value));
+			if (args.length>=1&&StringUtils.equalsIgnoreCase(args[0], "defaults")) {
+				msgs.add("default properties:");
+				final IWandMeta cfgmeta = this.wanddata.configMeta();
+				for (final Features ft : Features.values()) {
+					final Object value = get(cfgmeta, ft);
+					msgs.add(String.format("§7%s [%s] =>§f %s", ft.key, ft.type, value));
+				}
+			} else {
+				msgs.add("/ubw create §7the item in your hand will be a wand");
+				msgs.add("/ubw set <property> <value> §7set property");
+				msgs.add("/ubw remove <property> §7set property to default");
+				msgs.add("/ubw get §7get property list");
+				msgs.add("/ubw get <property> §7get property");
+				msgs.add("/ubw help defaults §7get default properties");
 			}
 			return CommandResult.success("UsefulBuildersWand help", msgs.toArray(new String[msgs.size()]));
 		} else if (StringUtils.equalsIgnoreCase(type, "create")) {
@@ -177,31 +185,6 @@ public class CommandListener implements CommandExecutor {
 			SUCCESS,
 			ERROR,
 			UNKNOWN,
-		}
-	}
-
-	public static class CommandMathUtils {
-		public static int parseInt(final String p_71526_1_) {
-			try {
-				return Integer.parseInt(p_71526_1_);
-			} catch (final NumberFormatException numberformatexception) {
-				throw new CommandException("commands.generic.num.invalid"/*, new Object[] {p_71526_1_}*/);
-			}
-		}
-
-		public static int parseIntWithMin(final String p_71528_1_, final int p_71528_2_) {
-			return parseIntBounded(p_71528_1_, p_71528_2_, Integer.MAX_VALUE);
-		}
-
-		public static int parseIntBounded(final String p_71532_1_, final int p_71532_2_, final int p_71532_3_) {
-			final int k = parseInt(p_71532_1_);
-
-			if (k<p_71532_2_)
-				throw new CommandException("commands.generic.num.tooSmall"/*, new Object[] {Integer.valueOf(k), Integer.valueOf(p_71532_2_)}*/);
-			else if (k>p_71532_3_)
-				throw new CommandException("commands.generic.num.tooBig"/*, new Object[] {Integer.valueOf(k), Integer.valueOf(p_71532_3_)}*/);
-			else
-				return k;
 		}
 	}
 }
