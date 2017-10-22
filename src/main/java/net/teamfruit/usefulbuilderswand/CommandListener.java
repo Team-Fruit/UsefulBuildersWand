@@ -1,7 +1,9 @@
 package net.teamfruit.usefulbuilderswand;
 
-import static net.teamfruit.usefulbuilderswand.meta.Features.*;
 import static net.teamfruit.usefulbuilderswand.meta.WandMetaUtils.*;
+
+import java.util.Arrays;
+import java.util.List;
 
 import org.apache.commons.lang.StringUtils;
 import org.bukkit.command.Command;
@@ -10,6 +12,8 @@ import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+
+import com.google.common.collect.Lists;
 
 import net.teamfruit.usefulbuilderswand.meta.Features;
 import net.teamfruit.usefulbuilderswand.meta.IWandMeta;
@@ -27,72 +31,153 @@ public class CommandListener implements CommandExecutor {
 
 	@Override
 	public boolean onCommand(final CommandSender sender, final Command cmd, final String label, final String[] args) {
-		if (args.length>=1)
-			if (StringUtils.equalsIgnoreCase(args[0], "set")) {
-				if (args.length>=3)
-					if (sender instanceof Player) {
-						final Player player = (Player) sender;
-						final ItemStack itemStack = this.nativemc.getItemInHand(player.getInventory());
-						if (itemStack!=null) {
-							final WandItem witem = new WandItem(itemStack);
-							final WandItemMeta wmeta = witem.getMeta();
-							if (wmeta!=null) {
-								final Features ft = getFt(args[1]);
-								if (ft!=null)
-									set(wmeta, ft, args[2]);
-								this.wanddata.updateItem(witem);
-								this.nativemc.setItemInHand(player.getInventory(), witem.getItem());
-								return true;
-							}
-						}
-					}
-			} else if (StringUtils.equalsIgnoreCase(args[0], "get")) {
-				if (args.length>=2)
-					if (sender instanceof Player) {
-						final Player player = (Player) sender;
-						final ItemStack itemStack = this.nativemc.getItemInHand(player.getInventory());
-						if (itemStack!=null) {
-							final WandItem witem = new WandItem(itemStack);
-							final WandItemMeta wmeta = witem.getMeta();
-							final IWandMeta meta = this.wanddata.wrapMeta(wmeta);
-							if (wmeta!=null) {
-								final Features ft = getFt(args[1]);
-								if (ft!=null) {
-									final Object value = get(meta, ft);
-									if (value!=null)
-										sender.sendMessage(String.valueOf(value));
-								}
-								this.wanddata.updateItem(witem);
-								this.nativemc.setItemInHand(player.getInventory(), witem.getItem());
-								return true;
-							}
-						}
-					}
-			} else if (StringUtils.equalsIgnoreCase(args[0], "create"))
-				if (sender instanceof Player) {
-					final Player player = (Player) sender;
-					final ItemStack itemStack = this.nativemc.getItemInHand(player.getInventory());
-					if (itemStack==null||itemStack.getAmount()==0)
-						return true;
-					final WandItem witem = new WandItem(itemStack);
-					witem.activate();
-					this.wanddata.updateItem(witem);
-					this.nativemc.setItemInHand(player.getInventory(), witem.getItem());
-					return true;
-				}
-
-		return false;
+		if (args.length<1)
+			return false;
+		final CommandResult result = onCommand(sender, args[0], Arrays.copyOfRange(args, 1, args.length));
+		switch (result.getType()) {
+			case UNKNOWN:
+				return false;
+			case ERROR: {
+				final String message = result.getMessage();
+				if (message!=null)
+					sender.sendMessage(String.format("§c[UBW] %s", message));
+				final String[] details = result.getDetails();
+				for (final String detail : details)
+					sender.sendMessage(String.format("§c        %s", detail));
+				break;
+			}
+			default:
+			case SUCCESS: {
+				final String message = result.getMessage();
+				if (message!=null)
+					sender.sendMessage(String.format("§f[UBW] %s", message));
+				final String[] details = result.getDetails();
+				for (final String detail : details)
+					sender.sendMessage(String.format("§f        %s", detail));
+				break;
+			}
+		}
+		return true;
 	}
 
-	private Features getFt(final String key) {
-		Features key1 = getFeature(WandData.FEATURE_META+"."+key);
-		if (key1==null)
-			key1 = getFeature(key);
-		if (key1==null)
-			key1 = getFeature(WandData.FEATURE_META+"."+key+".data");
-		if (key1==null)
-			key1 = getFeature(key+".data");
-		return key1;
+	private CommandResult onCommand(final CommandSender sender, final String type, final String[] args) {
+		if (StringUtils.equalsIgnoreCase(type, "set")||StringUtils.equalsIgnoreCase(type, "get")||StringUtils.equalsIgnoreCase(type, "remove")) {
+			if (!(sender instanceof Player))
+				return CommandResult.error("you must be a player.");
+			final Player player = (Player) sender;
+			final ItemStack itemStack = this.nativemc.getItemInHand(player.getInventory());
+			if (itemStack==null)
+				return CommandResult.error("hold the item in your hand");
+			final WandItem witem = new WandItem(itemStack);
+			final WandItemMeta wmeta = witem.getMeta();
+			if (wmeta==null)
+				return CommandResult.error("this item is not a wand item", "type '/ubw create' to activate your item");
+			if (StringUtils.equalsIgnoreCase(type, "set")||StringUtils.equalsIgnoreCase(type, "remove")) {
+				final Features ft = Features.getFeatureKey(args[0]);
+				if (ft==null)
+					return CommandResult.error("invalid property", "see '/ubw help'");
+				Object value;
+				if (StringUtils.equalsIgnoreCase(type, "remove")) {
+					final IWandMeta cfgmeta = this.wanddata.configMeta();
+					value = get(cfgmeta, ft);
+					set(wmeta, ft, null);
+				} else
+					set(wmeta, ft, value = args.length<2 ? "" : args[1]);
+				this.wanddata.updateItem(witem);
+				this.nativemc.setItemInHand(player.getInventory(), witem.getItem());
+				return CommandResult.success(String.format("§7%s <=§f %s", args[0], value));
+			} else if (StringUtils.equalsIgnoreCase(type, "get")) {
+				final IWandMeta meta = this.wanddata.wrapMeta(wmeta);
+				CommandResult result;
+				if (args.length<1) {
+					final List<String> msgs = Lists.newArrayList();
+					for (final Features ft : Features.values()) {
+						final Object value = get(meta, ft);
+						msgs.add(String.format("§7%s [%s] =>§f %s", ft.key, ft.type, value));
+					}
+					result = CommandResult.success("your wand property:", msgs.toArray(new String[msgs.size()]));
+				} else {
+					final Features ft = Features.getFeatureKey(args[0]);
+					if (ft==null)
+						return CommandResult.error("invalid property", "see '/ubw help'");
+					final Object value = get(meta, ft);
+					this.wanddata.updateItem(witem);
+					this.nativemc.setItemInHand(player.getInventory(), witem.getItem());
+					result = CommandResult.success(String.format("§7%s [%s] =>§f %s", ft.key, ft.type, value));
+				}
+				this.wanddata.updateItem(witem);
+				this.nativemc.setItemInHand(player.getInventory(), witem.getItem());
+				return result;
+			}
+		} else if (StringUtils.equalsIgnoreCase(type, "help")) {
+			final List<String> msgs = Lists.newArrayList();
+			msgs.add("default property:");
+			final IWandMeta cfgmeta = this.wanddata.configMeta();
+			for (final Features ft : Features.values()) {
+				final Object value = get(cfgmeta, ft);
+				msgs.add(String.format("§7%s [%s] =>§f %s", ft.key, ft.type, value));
+			}
+			return CommandResult.success("UsefulBuildersWand help", msgs.toArray(new String[msgs.size()]));
+		} else if (StringUtils.equalsIgnoreCase(type, "create")) {
+			if (sender instanceof Player) {
+				final Player player = (Player) sender;
+				final ItemStack itemStack = this.nativemc.getItemInHand(player.getInventory());
+				if (itemStack==null||itemStack.getAmount()==0)
+					return CommandResult.error("No Items");
+				final WandItem witem = new WandItem(itemStack);
+				witem.activate();
+				this.wanddata.updateItem(witem);
+				this.nativemc.setItemInHand(player.getInventory(), witem.getItem());
+			}
+		} else
+			return CommandResult.unknown();
+		return CommandResult.success();
+	}
+
+	public static class CommandResult {
+		private ResultType type;
+		private String message;
+		private String[] details;
+
+		private CommandResult(final ResultType type, final String message, final String... details) {
+			this.type = type;
+			this.message = message;
+			this.details = details;
+		}
+
+		public ResultType getType() {
+			return this.type;
+		}
+
+		public String getMessage() {
+			return this.message;
+		}
+
+		public String[] getDetails() {
+			return this.details;
+		}
+
+		public static CommandResult success(final String message, final String... details) {
+			return new CommandResult(ResultType.SUCCESS, message, details);
+		}
+
+		public static CommandResult success() {
+			return new CommandResult(ResultType.SUCCESS, null);
+		}
+
+		public static CommandResult error(final String message, final String... details) {
+			return new CommandResult(ResultType.ERROR, message, details);
+		}
+
+		public static CommandResult unknown() {
+			return new CommandResult(ResultType.UNKNOWN, null);
+		}
+
+		public enum ResultType {
+			SUCCESS,
+			ERROR,
+			UNKNOWN,
+		}
 	}
 
 	public static class CommandMathUtils {

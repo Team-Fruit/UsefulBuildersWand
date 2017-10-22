@@ -87,17 +87,20 @@ public class WandListener implements Listener, UsefulBuildersWandAPI {
 		} catch (final Exception e) {
 		}
 
-		final Boolean ownerenabled = meta.getFlag(FEATURE_META_OWNER.key);
-		if (ownerenabled!=null&&ownerenabled)
-			if (!StringUtils.equals(player.getUniqueId().toString(), meta.getText(FEATURE_META_OWNER_ID.key)))
+		final Boolean ownerenabled = meta.getFlag(FEATURE_META_OWNER.path);
+		if (ownerenabled!=null&&ownerenabled) {
+			final String uuidhash = StringUtils.replace(player.getUniqueId().toString(), "-", "");
+			final String metaid = meta.getText(FEATURE_META_OWNER_ID.path);
+			if (!StringUtils.isEmpty(metaid)&&!StringUtils.equals(uuidhash, metaid))
 				return;
+		}
 
 		if (blocks!=null) {
-			final int color_r = or(meta.getNumber(FEATURE_META_PARTICLE_COLOR_R.key), 255);
-			final int color_g = or(meta.getNumber(FEATURE_META_PARTICLE_COLOR_G.key), 255);
-			final int color_b = or(meta.getNumber(FEATURE_META_PARTICLE_COLOR_B.key), 255);
+			final int color_r = or(meta.getNumber(FEATURE_META_PARTICLE_COLOR_R.path), 255);
+			final int color_g = or(meta.getNumber(FEATURE_META_PARTICLE_COLOR_G.path), 255);
+			final int color_b = or(meta.getNumber(FEATURE_META_PARTICLE_COLOR_B.path), 255);
 			final int range = this.wanddata.getConfig().getInt(WandData.SETTING_EFFECT_RANGE);
-			if (range>0&&or(meta.getFlag(FEATURE_META_PARTICLE_SHARE.key), true)) {
+			if (range>0&&or(meta.getFlag(FEATURE_META_PARTICLE_SHARE.path), true)) {
 				for (final Player other : Bukkit.getOnlinePlayers())
 					if (other.getLocation().distance(player.getLocation())<=range)
 						for (final Location block : blocks)
@@ -148,19 +151,19 @@ public class WandListener implements Listener, UsefulBuildersWandAPI {
 			return;
 
 		try {
-			final Boolean ownerenabled = meta.getFlag(FEATURE_META_OWNER.key);
+			final Boolean ownerenabled = meta.getFlag(FEATURE_META_OWNER.path);
 			if (ownerenabled!=null&&ownerenabled) {
-				final String uuidhash = player.getUniqueId().toString();
-				final String metaid = meta.getText(FEATURE_META_OWNER_ID.key);
+				final String uuidhash = StringUtils.replace(player.getUniqueId().toString(), "-", "");
+				final String metaid = meta.getText(FEATURE_META_OWNER_ID.path);
 				if (!StringUtils.isEmpty(metaid)&&!StringUtils.equals(uuidhash, metaid))
 					return;
 				else {
-					wmeta.setText(FEATURE_META_OWNER_ID.key, uuidhash);
-					wmeta.setText(FEATURE_META_OWNER_NAME.key, player.getDisplayName());
+					wmeta.setText(FEATURE_META_OWNER_ID.path, uuidhash);
+					wmeta.setText(FEATURE_META_OWNER_NAME.path, player.getDisplayName());
 				}
 			} else {
-				wmeta.setText(FEATURE_META_OWNER_ID.key, null);
-				wmeta.setText(FEATURE_META_OWNER_NAME.key, null);
+				wmeta.setText(FEATURE_META_OWNER_ID.path, null);
+				wmeta.setText(FEATURE_META_OWNER_NAME.path, null);
 			}
 
 			final Action action = event.getAction();
@@ -172,7 +175,7 @@ public class WandListener implements Listener, UsefulBuildersWandAPI {
 					if (onItemUse(witem, meta, player, player.getWorld(), block, face))
 						event.setCancelled(true);
 			} else if (player.isSneaking()&&(action==Action.LEFT_CLICK_AIR||action==Action.LEFT_CLICK_BLOCK)) {
-				wmeta.setFlag(FEATURE_META_MODE.key, !or(meta.getFlag(FEATURE_META_MODE.key), false));
+				wmeta.setFlag(FEATURE_META_MODE.path, !or(meta.getFlag(FEATURE_META_MODE.path), false));
 				event.setCancelled(true);
 			}
 
@@ -193,15 +196,15 @@ public class WandListener implements Listener, UsefulBuildersWandAPI {
 		if (wmeta==null)
 			return false;
 
-		final int maxdurability = or(meta.getNumber(FEATURE_META_DURABILITY_MAX.key), 0);
+		final int maxdurability = or(meta.getNumber(FEATURE_META_DURABILITY_MAX.path), 0);
 
 		final List<Location> blocks = getPotentialBlocks(witem, meta, player, world, target, face);
 
 		if (blocks.isEmpty())
 			return false;
 
-		int durability = or(meta.getNumber(FEATURE_META_DURABILITY.key), 0);
-		final boolean blockcount = or(meta.getFlag(FEATURE_META_DURABILITY_BLOCKCOUNT.key), false);
+		int durability = or(meta.getNumber(FEATURE_META_DURABILITY.path), 0);
+		final boolean blockcount = or(meta.getFlag(FEATURE_META_DURABILITY_BLOCKCOUNT.path), false);
 
 		if (maxdurability>0&&durability<=0)
 			return false;
@@ -254,10 +257,10 @@ public class WandListener implements Listener, UsefulBuildersWandAPI {
 		}
 		if (!blockcount)
 			durability--;
-		wmeta.setNumber(FEATURE_META_COUNT_PLACE.key, or(meta.getNumber(FEATURE_META_COUNT_PLACE.key), 0)+placecount);
-		wmeta.setNumber(FEATURE_META_COUNT_USE.key, or(meta.getNumber(FEATURE_META_COUNT_USE.key), 0)+1);
+		wmeta.setNumber(FEATURE_META_COUNT_PLACE.path, or(meta.getNumber(FEATURE_META_COUNT_PLACE.path), 0)+placecount);
+		wmeta.setNumber(FEATURE_META_COUNT_USE.path, or(meta.getNumber(FEATURE_META_COUNT_USE.path), 0)+1);
 		if (maxdurability>0)
-			wmeta.setNumber(FEATURE_META_DURABILITY.key, durability);
+			wmeta.setNumber(FEATURE_META_DURABILITY.path, durability);
 
 		return true;
 	}
@@ -274,14 +277,14 @@ public class WandListener implements Listener, UsefulBuildersWandAPI {
 	public List<Location> getPotentialBlocks(final WandItem witem, final IWandMeta meta, final Player player, final @Nullable World world, final @Nullable Block target, final BlockFace face) throws WorldGuardHandleException {
 		final List<Location> blocks = Lists.newArrayList();
 
-		final int maxdurability = or(meta.getNumber(FEATURE_META_DURABILITY_MAX.key), 0);
-		final int durability = or(meta.getNumber(FEATURE_META_DURABILITY.key), 0);
-		final boolean blockcount = or(meta.getFlag(FEATURE_META_DURABILITY_BLOCKCOUNT.key), false);
+		final int maxdurability = or(meta.getNumber(FEATURE_META_DURABILITY_MAX.path), 0);
+		final int durability = or(meta.getNumber(FEATURE_META_DURABILITY.path), 0);
+		final boolean blockcount = or(meta.getFlag(FEATURE_META_DURABILITY_BLOCKCOUNT.path), false);
 
 		if (maxdurability>0&&durability<=0)
 			return blocks;
 
-		final int maxBlocks = or(meta.getNumber(FEATURE_META_SIZE.key), 0);
+		final int maxBlocks = or(meta.getNumber(FEATURE_META_SIZE.path), 0);
 
 		if (world==null)
 			return blocks;
@@ -325,7 +328,7 @@ public class WandListener implements Listener, UsefulBuildersWandAPI {
 		int mz = dz==0 ? 1 : 0;
 
 		if (player.isSneaking()) {
-			final boolean isVertical = or(meta.getFlag(FEATURE_META_MODE.key), false);
+			final boolean isVertical = or(meta.getFlag(FEATURE_META_MODE.path), false);
 			;
 			if (face!=BlockFace.UP&&face!=BlockFace.DOWN)
 				if (isVertical) {

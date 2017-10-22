@@ -39,11 +39,11 @@ public class WandMetaUtils {
 	}
 
 	public static void set(final @Nonnull IWandWritableMeta meta, final @Nonnull Features ft, final Object value) {
-		set(meta, ft.type, ft.key, value);
+		set(meta, ft.type, ft.path, value);
 	}
 
 	public static Object get(final @Nonnull IWandMeta meta, final @Nonnull Features ft) {
-		return get(meta, ft.type, ft.key);
+		return get(meta, ft.type, ft.path);
 	}
 
 	public static void set(final IWandWritableMeta meta, final String path, final Object value) {
