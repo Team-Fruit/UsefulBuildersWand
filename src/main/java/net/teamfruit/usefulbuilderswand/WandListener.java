@@ -3,7 +3,6 @@ package net.teamfruit.usefulbuilderswand;
 import static net.teamfruit.usefulbuilderswand.meta.Features.*;
 import static net.teamfruit.usefulbuilderswand.meta.WandMetaUtils.*;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Level;
 
@@ -13,14 +12,9 @@ import org.apache.commons.lang.StringUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
-import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
-import org.bukkit.command.Command;
-import org.bukkit.command.CommandException;
-import org.bukkit.command.CommandExecutor;
-import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -37,21 +31,20 @@ import org.bukkit.scheduler.BukkitRunnable;
 import com.google.common.collect.Lists;
 
 import net.teamfruit.usefulbuilderswand.WorldGuardHandler.WorldGuardHandleException;
-import net.teamfruit.usefulbuilderswand.meta.Features;
 import net.teamfruit.usefulbuilderswand.meta.IWandMeta;
 import net.teamfruit.usefulbuilderswand.meta.WandItem;
 import net.teamfruit.usefulbuilderswand.meta.WandItemMeta;
 
-public class WandListener implements Listener, CommandExecutor, UsefulBuildersWandAPI {
+public class WandListener implements Listener, UsefulBuildersWandAPI {
 	private final Plugin plugin;
 	private final WandData wanddata;
 	private NativeMinecraft nativemc;
 	private final WorldGuardHandler worldguard;
 
-	public WandListener(final Plugin plugin, final WandData data) {
+	public WandListener(final Plugin plugin, final WandData wanddata, final NativeMinecraft nativemc) {
 		this.plugin = plugin;
-		this.wanddata = data;
-		this.nativemc = NativeMinecraft.NativeMinecraftFactory.create(plugin);
+		this.wanddata = wanddata;
+		this.nativemc = nativemc;
 		this.worldguard = WorldGuardHandler.Factory.create(plugin);
 		new BukkitRunnable() {
 			@Override
@@ -64,112 +57,6 @@ public class WandListener implements Listener, CommandExecutor, UsefulBuildersWa
 	@Override
 	public @Nullable RayTraceResult rayTrace(final Player player) {
 		return this.nativemc.rayTrace(player);
-	}
-
-	public static int parseInt(final String p_71526_1_) {
-		try {
-			return Integer.parseInt(p_71526_1_);
-		} catch (final NumberFormatException numberformatexception) {
-			throw new CommandException("commands.generic.num.invalid"/*, new Object[] {p_71526_1_}*/);
-		}
-	}
-
-	public static int parseIntWithMin(final String p_71528_1_, final int p_71528_2_) {
-		return parseIntBounded(p_71528_1_, p_71528_2_, Integer.MAX_VALUE);
-	}
-
-	public static int parseIntBounded(final String p_71532_1_, final int p_71532_2_, final int p_71532_3_) {
-		final int k = parseInt(p_71532_1_);
-
-		if (k<p_71532_2_)
-			throw new CommandException("commands.generic.num.tooSmall"/*, new Object[] {Integer.valueOf(k), Integer.valueOf(p_71532_2_)}*/);
-		else if (k>p_71532_3_)
-			throw new CommandException("commands.generic.num.tooBig"/*, new Object[] {Integer.valueOf(k), Integer.valueOf(p_71532_3_)}*/);
-		else
-			return k;
-	}
-
-	@Override
-	public boolean onCommand(final CommandSender sender, final Command cmd, final String label, final String[] args) {
-		if (args.length>=1)
-			if (StringUtils.equalsIgnoreCase(args[0], "give")) {
-				final Player player = Bukkit.getPlayer(args[1]);
-				if (player==null) {
-					sender.sendMessage("missing player");
-					return true;
-				}
-				final Material item = Material.matchMaterial(args[2]);
-				if (item==null) {
-					sender.sendMessage("missing item");
-					return true;
-				}
-
-				int i = 1;
-				int j = 0;
-
-				if (args.length>3)
-					i = parseIntBounded(args[3], 1, 64);
-
-				if (args.length>4)
-					j = parseInt(args[4]);
-
-				final WandItem witem = new WandItem(new ItemStack(item, i, (short) j));
-				final IWandMeta meta = this.wanddata.wrapMeta(witem.getMeta());
-				updateItemMeta(sender, witem, meta, Lists.newArrayList(Arrays.copyOfRange(args, 5, args.length)));
-
-				player.getWorld().dropItem(player.getEyeLocation(), witem.getItem());
-
-				player.chat("commands.successful");
-			} else if (StringUtils.equalsIgnoreCase(args[0], "hand")) {
-				if (sender instanceof Player) {
-					final Player player = (Player) sender;
-					final ItemStack itemStack = this.nativemc.getItemInHand(player.getInventory());
-					if (itemStack!=null) {
-						final WandItem witem = new WandItem(itemStack);
-						final IWandMeta meta = this.wanddata.wrapMeta(witem.getMeta());
-						updateItemMeta(sender, witem, meta, Lists.newArrayList(args));
-						this.nativemc.setItemInHand(player.getInventory(), witem.getItem());
-						return true;
-					}
-				}
-			} else
-				return false;
-
-		return false;
-	}
-
-	public void updateItemMeta(final CommandSender sender, final WandItem witem, final IWandMeta meta, final List<String> args) {
-		witem.activate();
-		final WandItemMeta wmeta = witem.getMeta();
-		if (wmeta==null)
-			return;
-		for (final String arg : args)
-			if (StringUtils.contains(arg, "=")) {
-				final String key = StringUtils.substringBefore(arg, "=");
-				final String value = StringUtils.substringAfter(arg, "=");
-				final Features key1 = getFt(key);
-				if (key1!=null)
-					set(wmeta, key1, value);
-			} else {
-				final Features key1 = getFt(arg);
-				if (key1!=null) {
-					final Object value = get(meta, key1);
-					if (value!=null)
-						sender.sendMessage(String.valueOf(value));
-				}
-			}
-		this.wanddata.updateItem(witem);
-	}
-
-	private Features getFt(final String key) {
-		Features key1 = getFeature(WandData.FEATURE_META+"."+key);
-		if (key1==null)
-			key1 = getFeature(key);
-		if (key1==null)
-			key1 = getFeature(WandData.FEATURE_META+"."+key+".data");
-		if (key1==null)
-			key1 = getFeature(key+".data");
-		return key1;
 	}
 
 	public void onEffect() {

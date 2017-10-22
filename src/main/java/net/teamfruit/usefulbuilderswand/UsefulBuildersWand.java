@@ -2,8 +2,6 @@ package net.teamfruit.usefulbuilderswand;
 
 import java.util.List;
 
-import javax.annotation.Nonnull;
-
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -20,19 +18,6 @@ public class UsefulBuildersWand extends JavaPlugin {
 
 	}
 
-	private WandData data = new WandData();
-	private WandListener listener;
-
-	private WandListener getWandListener() {
-		if (this.listener==null)
-			this.listener = new WandListener(this, this.data);
-		return this.listener;
-	}
-
-	public @Nonnull UsefulBuildersWandAPI getAPI() {
-		return getWandListener();
-	}
-
 	@Override
 	public void onLoad() {
 	}
@@ -41,13 +26,18 @@ public class UsefulBuildersWand extends JavaPlugin {
 	public void onEnable() {
 		Log.log = getLogger();
 		final FileConfiguration config = getConfig();
-		this.data.initConfig(config);
+		final WandData wanddata = new WandData();
+		wanddata.initConfig(config);
 		config.options().copyDefaults(true);
 		saveConfig();
 
-		final WandListener listener = getWandListener();
+		final NativeMinecraft nativemc = NativeMinecraft.NativeMinecraftFactory.create(this);
+
+		final WandListener listener = new WandListener(this, wanddata, nativemc);
 		getServer().getPluginManager().registerEvents(listener, this);
-		getCommand("usefulbuilderswand").setExecutor(listener);
+
+		final CommandListener cmdlistener = new CommandListener(wanddata, nativemc);
+		getCommand("usefulbuilderswand").setExecutor(cmdlistener);
 	}
 
 	@Override
