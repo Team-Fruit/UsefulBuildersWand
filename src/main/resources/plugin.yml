@@ -1,16 +1,16 @@
 name: UsefulBuildersWand
-main: net.teamfruit.usefulbuilderswand.UsefulBuildersWand
+main: net.teamfruit.ubw.UsefulBuildersWand
 version: 1.0.0
 author: Kamesuta
 commands:
   ubw:
-    description: Builder's Wand Commands
+    description: UsefulBuilder'sWand commands
     usage: §b[UBW] §b/ubw help §7 to see more usages
     aliases: [usefulbuilderswand]
     permission: ubw
 permissions:
   ubw:
-    description: All of UsefulBuildersWand Commands
+    description: UsefulBuilder'sWand commands
     default: true
   ubw.create:
     description: Create wand from item in your hand

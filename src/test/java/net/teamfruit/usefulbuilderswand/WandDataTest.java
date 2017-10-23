@@ -11,10 +11,12 @@ import org.junit.Test;
 
 import com.google.common.collect.Maps;
 
-import net.teamfruit.usefulbuilderswand.meta.IWandMeta;
-import net.teamfruit.usefulbuilderswand.meta.WandMapMeta;
-import net.teamfruit.usefulbuilderswand.meta.WandCompoundMeta;
-import net.teamfruit.usefulbuilderswand.meta.WandTextUtils;
+import net.teamfruit.ubw.Log;
+import net.teamfruit.ubw.WandData;
+import net.teamfruit.ubw.meta.IWandMeta;
+import net.teamfruit.ubw.meta.WandCompoundMeta;
+import net.teamfruit.ubw.meta.WandMapMeta;
+import net.teamfruit.ubw.meta.WandTextUtils;
 
 public class WandDataTest {
 

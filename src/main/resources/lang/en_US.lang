@@ -5,10 +5,10 @@ ubw.command.format.error.main=§c[UBW] %s
 ubw.command.format.error.sub=§c   %s
 ubw.command.error.unknown=§cUnknown command: §b/ubw help §7 to see more usages
 ubw.command.error.permission=§cYou don't have permission: §3%s
-ubw.command.error.notplayer=§cyou must be a player.
-ubw.command.error.itemnotinhand=§chold the item in your hand
-ubw.command.error.itemnotwand=§cthis item is not a wand item
-ubw.command.error.itemnotwand.msg=§ctype §b/ubw create§c to activate your item
+ubw.command.error.notplayer=§cYou must be a player.
+ubw.command.error.itemnotinhand=§cHold the item in your hand
+ubw.command.error.itemnotwand=§cThis item is not a wand item
+ubw.command.error.itemnotwand.msg=§cType §b/ubw create§c to activate your item
 ubw.command.error.remove=§b/ubw remove <property>
 ubw.command.error.set=§b/ubw set <property>
 ubw.command.error.invalidproperty=§cinvalid property
@@ -16,17 +16,17 @@ ubw.command.error.invalidproperty.seehelp=§csee §b/ubw help
 ubw.command.success.unknown=§b/ubw help §7 to see more usages
 ubw.command.success.set=§7%s [%s] <=§f %s
 ubw.command.success.get=§7%s [%s] =>§f %s
-ubw.command.success.getall.main=§7your wand property:
+ubw.command.success.getall.main=§7Properties of your wand:
 ubw.command.success.getall.sub=§7%s
-ubw.command.success.help.defaults.main=§fdefault properties:
+ubw.command.success.help.defaults.main=§fDefault properties:
 ubw.command.success.help.defaults.sub=§f%s
-ubw.command.success.help.main=§fUsefulBuildersWand help
-ubw.command.success.help.sub.create=§b/ubw create §7 the item in your hand will be a wand
-ubw.command.success.help.sub.set=§b/ubw set <property> <value> §7 set property
-ubw.command.success.help.sub.remove=§b/ubw remove <property> §7 set property to default
-ubw.command.success.help.sub.getall=§b/ubw get §7 get property list
-ubw.command.success.help.sub.get=§b/ubw get <property> §7 get property
-ubw.command.success.help.sub.defaults=§b/ubw help defaults §7 get default properties
+ubw.command.success.help.main=§fUsefulBuilder'sWand help
+ubw.command.success.help.sub.create=§b/ubw create §7 The item in your hand will be a wand
+ubw.command.success.help.sub.set=§b/ubw set <property> <value> §7 Set property
+ubw.command.success.help.sub.remove=§b/ubw remove <property> §7 Set property to default
+ubw.command.success.help.sub.getall=§b/ubw get §7 Get property list
+ubw.command.success.help.sub.get=§b/ubw get <property> §7 Get property
+ubw.command.success.help.sub.defaults=§b/ubw help defaults §7 Get default properties
 
 # Action
 ubw.action.format.error.main=§c[UBW] %s

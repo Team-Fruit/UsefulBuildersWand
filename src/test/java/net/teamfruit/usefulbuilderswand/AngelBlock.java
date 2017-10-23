@@ -19,6 +19,8 @@ import org.bukkit.plugin.Plugin;
 
 import com.google.common.collect.Lists;
 
+import net.teamfruit.ubw.WandData;
+
 public class AngelBlock {
 	private final Plugin plugin;
 
