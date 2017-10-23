@@ -16,8 +16,20 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import net.teamfruit.ubw.I18n.Locale;
 import net.teamfruit.ubw.I18n.Locale.LocaleBuilder;
+import net.teamfruit.ubw.api.UsefulBuildersWand;
+import net.teamfruit.ubw.api.UsefulBuildersWandAPI;
+import net.teamfruit.ubw.api.UsefulBuildersWandAPI.UBWBridge;
+import net.teamfruit.ubw.api.impl.UBWBridgeImpl;
 
-public class UsefulBuildersWand extends JavaPlugin {
+public class UBWPlugin extends JavaPlugin implements UsefulBuildersWand {
+	private UBWBridge apiimpl = new UBWBridgeImpl();
+	private UsefulBuildersWandAPI api = new UsefulBuildersWandAPI(this.apiimpl);
+
+	@Override
+	public UsefulBuildersWandAPI getAPI() {
+		return this.api;
+	}
+
 	@Override
 	public boolean onCommand(final CommandSender sender, final Command command, final String label, final String[] args) {
 		return false;
@@ -50,7 +62,7 @@ public class UsefulBuildersWand extends JavaPlugin {
 		getServer().getPluginManager().registerEvents(listener, this);
 
 		final CommandListener cmdlistener = new CommandListener(locale, wanddata, nativemc);
-		getCommand("usefulbuilderswand").setExecutor(cmdlistener);
+		getCommand("ubw").setExecutor(cmdlistener);
 	}
 
 	private Locale getLocale(final FileConfiguration cfg) {

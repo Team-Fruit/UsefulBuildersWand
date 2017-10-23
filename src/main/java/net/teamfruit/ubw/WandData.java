@@ -26,8 +26,6 @@ public class WandData {
 
 	public static final String USEFUL_BUILDERS_WAND_NBT = "ubwand";
 
-	public static final String FEATURE_META = "feature.meta";
-
 	public static final String ITEM_TITLE = "item.title";
 	public static final String ITEM_LORE = "item.lore";
 
@@ -107,32 +105,30 @@ public class WandData {
 	}
 
 	public void updateItem(final WandItem meta) {
-		if (meta.init()) {
-			final ItemStack item = meta.getItem();
-			final ItemMeta itemmeta = item.getItemMeta();
-			final FileConfiguration cfg = getConfig();
-			final IWandMeta wmeta = wrapMeta(meta.getMeta());
+		final ItemStack item = meta.getItem();
+		final ItemMeta itemmeta = item.getItemMeta();
+		final FileConfiguration cfg = getConfig();
+		final IWandMeta wmeta = wrapMeta(meta.getMeta());
 
-			Object itemtitle = cfg.get(WandData.ITEM_TITLE);
-			if (itemtitle==null)
-				itemtitle = WandData.it.get(WandData.ITEM_TITLE);
-			if (itemtitle instanceof String)
-				itemmeta.setDisplayName(WandTextUtils.resolve(wmeta, (String) itemtitle));
+		Object itemtitle = cfg.get(WandData.ITEM_TITLE);
+		if (itemtitle==null)
+			itemtitle = WandData.it.get(WandData.ITEM_TITLE);
+		if (itemtitle instanceof String)
+			itemmeta.setDisplayName(WandTextUtils.resolve(wmeta, (String) itemtitle));
 
-			Object itemlore = cfg.get(WandData.ITEM_LORE);
-			if (itemlore==null)
-				itemlore = WandData.it.get(WandData.ITEM_LORE);
-			if (itemlore instanceof List<?>) {
-				final List<String> newlore = Lists.newArrayList();
-				for (final Object obj : (List<?>) itemlore)
-					if (obj instanceof String) {
-						final String res = WandTextUtils.resolve(wmeta, (String) obj);
-						if (!StringUtils.isEmpty(res))
-							newlore.add(res);
-					}
-				itemmeta.setLore(newlore);
-			}
-			item.setItemMeta(itemmeta);
+		Object itemlore = cfg.get(WandData.ITEM_LORE);
+		if (itemlore==null)
+			itemlore = WandData.it.get(WandData.ITEM_LORE);
+		if (itemlore instanceof List<?>) {
+			final List<String> newlore = Lists.newArrayList();
+			for (final Object obj : (List<?>) itemlore)
+				if (obj instanceof String) {
+					final String res = WandTextUtils.resolve(wmeta, (String) obj);
+					if (!StringUtils.isEmpty(res))
+						newlore.add(res);
+				}
+			itemmeta.setLore(newlore);
 		}
+		item.setItemMeta(itemmeta);
 	}
 }

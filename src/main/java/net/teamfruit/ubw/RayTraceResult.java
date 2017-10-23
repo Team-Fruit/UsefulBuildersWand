@@ -1,13 +1,26 @@
 package net.teamfruit.ubw;
 
+import javax.annotation.Nonnull;
+
 import org.bukkit.Location;
 import org.bukkit.block.BlockFace;
 
+/**
+ * Block Location and Face
+ *
+ * @author TeamFruit
+ */
 public class RayTraceResult {
-	public final Location location;
-	public final BlockFace face;
+	/**
+	 * Location
+	 */
+	public final @Nonnull Location location;
+	/**
+	 * Face
+	 */
+	public final @Nonnull BlockFace face;
 
-	public RayTraceResult(final Location location, final BlockFace face) {
+	public RayTraceResult(final @Nonnull Location location, final @Nonnull BlockFace face) {
 		this.location = location;
 		this.face = face;
 	}

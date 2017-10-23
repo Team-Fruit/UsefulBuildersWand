@@ -61,24 +61,17 @@ public class WandListener implements Listener {
 
 	private void onEffect() {
 		for (final Player player : this.plugin.getServer().getOnlinePlayers()) {
-			final WandItem witem = new WandItem(this.nativemc.getItemInHand(player.getInventory()));
-
-			{
-				final ItemStack itemStack = witem.getItem();
-				if (itemStack==null||itemStack.getAmount()==0)
-					continue;
-			}
-
-			final IWandMeta meta = this.wanddata.wrapMeta(witem.getMeta());
-
-			if (!witem.hasContent())
+			final ItemStack itemStack = this.nativemc.getItemInHand(player.getInventory());
+			if (!WandItem.isItem(itemStack)||!WandItem.isWandItem(itemStack))
 				continue;
+			final WandItem witem = WandItem.newWandItem(itemStack);
+			final IWandMeta meta = this.wanddata.wrapMeta(witem.getMeta());
 
 			List<Location> blocks = null;
 			try {
 				final RayTraceResult res = this.nativemc.rayTrace(player);
 				if (res!=null)
-					blocks = getPotentialBlocks(witem, meta, player, player.getWorld(), res.location.getBlock(), res.face);
+					blocks = getPotentialBlocks(witem, meta, player, res.location.getBlock(), res.face);
 			} catch (final Exception e) {
 			}
 
@@ -126,38 +119,29 @@ public class WandListener implements Listener {
 
 	private ActionResult onPlayerUse(final Player player, final Action action, final Block target, final BlockFace face) {
 		final PlayerInventory inventory = player.getInventory();
-		final WandItem witem = new WandItem(this.nativemc.getItemInHand(inventory));
-
-		{
-			final ItemStack itemStack = witem.getItem();
-			if (itemStack==null||itemStack.getAmount()==0)
-				return ActionResult.error();
-
-			if (itemStack.getAmount()>1) {
-				final ItemStack[] stacks = inventory.getContents();
-				final int heldslot = inventory.getHeldItemSlot();
-				stackbreak: {
-					final ItemStack newItemStack = itemStack.clone();
-					newItemStack.setAmount(itemStack.getAmount()-1);
-					itemStack.setAmount(1);
-					for (int i = 0; i<stacks.length; i++)
-						if (i!=heldslot&&stacks[i]==null) {
-							inventory.setItem(i, newItemStack);
-							break stackbreak;
-						}
-					player.getWorld().dropItem(player.getEyeLocation(), newItemStack);
-				}
+		final ItemStack itemStack = this.nativemc.getItemInHand(player.getInventory());
+		if (!WandItem.isItem(itemStack)||!WandItem.isWandItem(itemStack))
+			return ActionResult.error();
+		if (itemStack.getAmount()>1) {
+			final ItemStack[] stacks = inventory.getContents();
+			final int heldslot = inventory.getHeldItemSlot();
+			stackbreak: {
+				final ItemStack newItemStack = itemStack.clone();
+				newItemStack.setAmount(itemStack.getAmount()-1);
+				itemStack.setAmount(1);
+				for (int i = 0; i<stacks.length; i++)
+					if (i!=heldslot&&stacks[i]==null) {
+						inventory.setItem(i, newItemStack);
+						break stackbreak;
+					}
+				player.getWorld().dropItem(player.getEyeLocation(), newItemStack);
 			}
 		}
 
+		WandItem witem = WandItem.newWandItem(itemStack);
 		try {
-			final WandItemMeta wmeta = witem.getMeta();
-			if (wmeta==null)
-				return ActionResult.error();
-			final IWandMeta meta = this.wanddata.wrapMeta(wmeta);
-
-			if (!witem.hasContent())
-				return ActionResult.error();
+			WandItemMeta wmeta = witem.getMeta();
+			IWandMeta meta = this.wanddata.wrapMeta(wmeta);
 
 			final boolean ownerenabled = or(meta.getFlag(FEATURE_META_OWNER.path), false);
 			String ownerid = meta.getText(FEATURE_META_OWNER_ID.path);
@@ -185,8 +169,81 @@ public class WandListener implements Listener {
 						Log.log.log(Level.INFO, String.format("[player=%s] tried to use wand in protected area: %s", player.getName(), target));
 						return ActionResult.error(I18n.format(this.locale, "ubw.action.error.worldguard"));
 					}
-					if (onItemUse(witem, meta, player, player.getWorld(), target, face))
-						return ActionResult.success();
+					if (target.isEmpty())
+						return ActionResult.error();
+
+					final int maxdurability = or(meta.getNumber(FEATURE_META_DURABILITY_MAX.path), 0);
+
+					final List<Location> blocks = getPotentialBlocks(witem, meta, player, target, face);
+
+					if (blocks.isEmpty())
+						return ActionResult.error();
+
+					int durability = or(meta.getNumber(FEATURE_META_DURABILITY.path), 0);
+					final boolean blockcount = or(meta.getFlag(FEATURE_META_DURABILITY_BLOCKCOUNT.path), false);
+
+					if (maxdurability>0&&durability<=0)
+						return ActionResult.error();
+
+					int data = -1;
+
+					final ItemStack item1 = this.nativemc.getItemFromBlock(target);
+
+					if (this.nativemc.hasSubType(item1))
+						data = this.nativemc.getDropData(target);
+
+					int slot = 0;
+					int placecount = 0;
+					for (final Location temp : blocks) {
+						if (maxdurability>0&&durability<=0)
+							return ActionResult.error();
+						for (slot = 0; slot<inventory.getSize(); ++slot) {
+							final ItemStack itemslot = inventory.getItem(slot);
+							if (itemslot==null||itemslot.getAmount()==0||!itemslot.getType().equals(item1.getType()))
+								continue;
+							if (data==-1||data==itemslot.getDurability())
+								break;
+						}
+
+						if (slot>=inventory.getSize())
+							break;
+
+						final ItemStack item = inventory.getItem(slot);
+						ItemStack objitem = item;
+						if (player.getGameMode()==GameMode.CREATIVE) {
+							objitem = objitem.clone();
+							objitem.setAmount(1);
+						}
+
+						final Block block = temp.getBlock().getRelative(face.getOppositeFace());
+
+						final ItemStackHolder holder = new ItemStackHolder(witem.getItem());
+						final boolean placeresult = this.nativemc.placeItem(player, block, holder, objitem, EquipmentSlot.HAND, face, player.getEyeLocation());
+						witem = WandItem.newWandItem(holder.getItem());
+						wmeta = witem.getMeta();
+						meta = this.wanddata.wrapMeta(wmeta);
+
+						if (placeresult) {
+							objitem.setAmount(objitem.getAmount()-1);
+							if (item.getAmount()<=0)
+								inventory.setItem(slot, null);
+							else
+								inventory.setItem(slot, item);
+
+							this.nativemc.playSound(player, temp, target, .25f, 1f);
+							placecount++;
+							if (blockcount)
+								durability--;
+						}
+					}
+					if (!blockcount)
+						durability--;
+					wmeta.setNumber(FEATURE_META_COUNT_PLACE.path, or(meta.getNumber(FEATURE_META_COUNT_PLACE.path), 0)+placecount);
+					wmeta.setNumber(FEATURE_META_COUNT_USE.path, or(meta.getNumber(FEATURE_META_COUNT_USE.path), 0)+1);
+					if (maxdurability>0)
+						wmeta.setNumber(FEATURE_META_DURABILITY.path, durability);
+
+					return ActionResult.success();
 				}
 			} else if (player.isSneaking()&&(action==Action.LEFT_CLICK_AIR||action==Action.LEFT_CLICK_BLOCK)) {
 				wmeta.setFlag(FEATURE_META_MODE.path, !or(meta.getFlag(FEATURE_META_MODE.path), false));
@@ -203,84 +260,7 @@ public class WandListener implements Listener {
 		}
 	}
 
-	private boolean onItemUse(final WandItem witem, final IWandMeta meta, final Player player, final World world, final Block target, final BlockFace face) throws WorldGuardHandleException {
-		if (target.isEmpty())
-			return false;
-
-		final WandItemMeta wmeta = witem.getMeta();
-		if (wmeta==null)
-			return false;
-
-		final int maxdurability = or(meta.getNumber(FEATURE_META_DURABILITY_MAX.path), 0);
-
-		final List<Location> blocks = getPotentialBlocks(witem, meta, player, world, target, face);
-
-		if (blocks.isEmpty())
-			return false;
-
-		int durability = or(meta.getNumber(FEATURE_META_DURABILITY.path), 0);
-		final boolean blockcount = or(meta.getFlag(FEATURE_META_DURABILITY_BLOCKCOUNT.path), false);
-
-		if (maxdurability>0&&durability<=0)
-			return false;
-
-		int data = -1;
-
-		final ItemStack item1 = this.nativemc.getItemFromBlock(target);
-
-		if (this.nativemc.hasSubType(item1))
-			data = this.nativemc.getDropData(target);
-
-		int slot = 0;
-		final PlayerInventory inventory = player.getInventory();
-		int placecount = 0;
-		for (final Location temp : blocks) {
-			if (maxdurability>0&&durability<=0)
-				return false;
-			for (slot = 0; slot<inventory.getSize(); ++slot) {
-				final ItemStack itemStack = inventory.getItem(slot);
-				if (itemStack==null||itemStack.getAmount()==0||!itemStack.getType().equals(item1.getType()))
-					continue;
-				if (data==-1||data==itemStack.getDurability())
-					break;
-			}
-
-			if (slot>=inventory.getSize())
-				break;
-
-			final ItemStack item = inventory.getItem(slot);
-			ItemStack objitem = item;
-			if (player.getGameMode()==GameMode.CREATIVE) {
-				objitem = objitem.clone();
-				objitem.setAmount(1);
-			}
-
-			final Block block = temp.getBlock().getRelative(face.getOppositeFace());
-
-			if (this.nativemc.placeItem(player, block, witem, objitem, EquipmentSlot.HAND, face, player.getEyeLocation())) {
-				objitem.setAmount(objitem.getAmount()-1);
-				if (item.getAmount()<=0)
-					inventory.setItem(slot, null);
-				else
-					inventory.setItem(slot, item);
-
-				this.nativemc.playSound(player, temp, target, .25f, 1f);
-				placecount++;
-				if (blockcount)
-					durability--;
-			}
-		}
-		if (!blockcount)
-			durability--;
-		wmeta.setNumber(FEATURE_META_COUNT_PLACE.path, or(meta.getNumber(FEATURE_META_COUNT_PLACE.path), 0)+placecount);
-		wmeta.setNumber(FEATURE_META_COUNT_USE.path, or(meta.getNumber(FEATURE_META_COUNT_USE.path), 0)+1);
-		if (maxdurability>0)
-			wmeta.setNumber(FEATURE_META_DURABILITY.path, durability);
-
-		return true;
-	}
-
-	private List<Location> getPotentialBlocks(final WandItem witem, final IWandMeta meta, final Player player, final @Nullable World world, final @Nullable Block target, final BlockFace face) throws WorldGuardHandleException {
+	private List<Location> getPotentialBlocks(final WandItem witem, final IWandMeta meta, final Player player, final @Nullable Block target, final BlockFace face) throws WorldGuardHandleException {
 		final List<Location> blocks = Lists.newArrayList();
 
 		final int maxdurability = or(meta.getNumber(FEATURE_META_DURABILITY_MAX.path), 0);
@@ -291,9 +271,6 @@ public class WandListener implements Listener {
 			return blocks;
 
 		final int maxBlocks = or(meta.getNumber(FEATURE_META_SIZE.path), 0);
-
-		if (world==null)
-			return blocks;
 
 		if (target==null||target.isEmpty())
 			return blocks;
@@ -353,6 +330,10 @@ public class WandListener implements Listener {
 					mz = 0;
 			}
 		}
+
+		final World world = player.getWorld();
+		if (world==null)
+			return blocks;
 
 		final Location modblockpos = target.getLocation().clone().add(dx, dy, dz);
 

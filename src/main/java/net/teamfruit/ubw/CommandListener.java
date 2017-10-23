@@ -51,18 +51,19 @@ public class CommandListener implements CommandExecutor {
 				return CommandResult.error(I18n.format(this.locale, "ubw.command.error.notplayer"));
 			final Player player = (Player) sender;
 			final ItemStack itemStack = this.nativemc.getItemInHand(player.getInventory());
-			if (itemStack==null||itemStack.getAmount()==0)
+			if (!WandItem.isItem(itemStack))
 				return CommandResult.error(I18n.format(this.locale, "ubw.command.error.itemnotinhand"));
-			final WandItem witem = new WandItem(itemStack);
+			WandItem witem = null;
 			try {
 				if (StringUtils.equalsIgnoreCase(type, "create")) {
 					if (!sender.hasPermission("ubw.create"))
 						return CommandResult.error(I18n.format(this.locale, "ubw.command.error.permission", "ubw.create"));
-					witem.activate();
+					witem = WandItem.newWandItem(itemStack);
 				} else {
-					final WandItemMeta wmeta = witem.getMeta();
-					if (wmeta==null)
+					if (!WandItem.isWandItem(itemStack))
 						return CommandResult.error(I18n.format(this.locale, "ubw.command.error.itemnotwand"), I18n.format(this.locale, "ubw.command.error.itemnotwand.msg"));
+					witem = WandItem.newWandItem(itemStack);
+					final WandItemMeta wmeta = witem.getMeta();
 					if (StringUtils.equalsIgnoreCase(type, "set")||StringUtils.equalsIgnoreCase(type, "remove")) {
 						if (!sender.hasPermission("ubw.set"))
 							return CommandResult.error(I18n.format(this.locale, "ubw.command.error.permission", "ubw.set"));
@@ -109,8 +110,10 @@ public class CommandListener implements CommandExecutor {
 					}
 				}
 			} finally {
-				this.wanddata.updateItem(witem);
-				this.nativemc.setItemInHand(player.getInventory(), witem.getItem());
+				if (witem!=null) {
+					this.wanddata.updateItem(witem);
+					this.nativemc.setItemInHand(player.getInventory(), witem.getItem());
+				}
 			}
 		} else if (StringUtils.equalsIgnoreCase(type, "help")) {
 			if (!sender.hasPermission("ubw.help"))

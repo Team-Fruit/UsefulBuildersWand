@@ -1,5 +1,5 @@
 name: UsefulBuildersWand
-main: net.teamfruit.ubw.UsefulBuildersWand
+main: net.teamfruit.ubw.UBWPlugin
 version: 1.0.0
 author: Kamesuta
 commands:

@@ -129,11 +129,11 @@ public class I18n {
 			return s1==null ? p_135026_1_ : s1;
 		}
 
-		public String format(final String p_135023_1_, final Object[] p_135023_2_) {
-			final String s1 = translate(p_135023_1_);
+		public String format(final String langkey, final Object... args) {
+			final String s1 = translate(langkey);
 
 			try {
-				return String.format(s1, p_135023_2_);
+				return String.format(s1, args);
 			} catch (final IllegalFormatException illegalformatexception) {
 				return "Format error: "+s1;
 			}

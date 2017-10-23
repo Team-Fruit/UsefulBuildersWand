@@ -4,8 +4,6 @@ import static net.teamfruit.ubw.meta.WandItemMetaType.*;
 
 import org.apache.commons.lang.StringUtils;
 
-import net.teamfruit.ubw.WandData;
-
 public enum Features {
 	FEATURE_META_SIZE("size", NUMBER, 9, "usefulbuilderswand.set.settings.size"),
 	FEATURE_META_MODE("mode", FLAG, false, "usefulbuilderswand.set.meta.mode"),
@@ -27,10 +25,11 @@ public enum Features {
 	public final WandItemMetaType type;
 	public final Object defaultValue;
 	public final String permission;
+	public static final String FEATURE_META = "feature.meta";
 
 	private Features(final String key, final WandItemMetaType type, final Object defaultValue, final String permission) {
 		this.key = StringUtils.substringBeforeLast(key, ".data");
-		this.path = WandData.FEATURE_META+"."+key;
+		this.path = FEATURE_META+"."+key;
 		this.type = type;
 		this.defaultValue = defaultValue;
 		this.permission = permission;
