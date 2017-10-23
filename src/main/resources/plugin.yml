@@ -3,12 +3,47 @@ main: net.teamfruit.usefulbuilderswand.UsefulBuildersWand
 version: 1.0.0
 author: Kamesuta
 commands:
-  usefulbuilderswand:
-    description: create/modify wand from item in your hand
-    usage: /uw [key=data]
-    aliases: [uw, ub, uwand]
-    permission: usefulbuilderswand.edit
+  ubw:
+    description: Builder's Wand Commands
+    usage: §b[UBW] §b/ubw help §7 to see more usages
+    aliases: [usefulbuilderswand]
+    permission: ubw
 permissions:
-  usefulbuilderswand.create:
-    description: create/modify wand from item in your hand
+  ubw:
+    description: All of UsefulBuildersWand Commands
+    default: true
+  ubw.create:
+    description: Create wand from item in your hand
+    default: op
+  ubw.help:
+    description: View help
+    default: true
+  ubw.defaults:
+    description: View default properties
+    default: true
+  ubw.get:
+    description: View properties
+    default: true
+  ubw.set:
+    description: Set properties
+    default: true
+  ubw.set.settings.size:
+    default: op
+  ubw.set.meta.mode:
+    default: true
+  ubw.set.meta.durability:
+    default: op
+  ubw.set.settings.durabilitymax:
+    default: op
+  ubw.set.settings.blockcount:
+    default: op
+  ubw.set.statistics.countplace:
+    default: op
+  ubw.set.statistics.countuse:
+    default: op
+  ubw.set.appearance.color:
+    default: true
+  ubw.set.appearance.share:
+    default: op
+  ubw.set.owner.manage:
     default: op
