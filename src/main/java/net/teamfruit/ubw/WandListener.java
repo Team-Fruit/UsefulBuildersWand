@@ -128,29 +128,29 @@ public class WandListener implements Listener {
 		final PlayerInventory inventory = player.getInventory();
 		final WandItem witem = new WandItem(this.nativemc.getItemInHand(inventory));
 
-		try {
-			{
-				final ItemStack itemStack = witem.getItem();
-				if (itemStack==null||itemStack.getAmount()==0)
-					return ActionResult.error();
+		{
+			final ItemStack itemStack = witem.getItem();
+			if (itemStack==null||itemStack.getAmount()==0)
+				return ActionResult.error();
 
-				if (itemStack.getAmount()>1) {
-					final ItemStack[] stacks = inventory.getContents();
-					final int heldslot = inventory.getHeldItemSlot();
-					stackbreak: {
-						final ItemStack newItemStack = itemStack.clone();
-						newItemStack.setAmount(itemStack.getAmount()-1);
-						itemStack.setAmount(1);
-						for (int i = 0; i<stacks.length; i++)
-							if (i!=heldslot&&stacks[i]==null) {
-								inventory.setItem(i, newItemStack);
-								break stackbreak;
-							}
-						player.getWorld().dropItem(player.getEyeLocation(), newItemStack);
-					}
+			if (itemStack.getAmount()>1) {
+				final ItemStack[] stacks = inventory.getContents();
+				final int heldslot = inventory.getHeldItemSlot();
+				stackbreak: {
+					final ItemStack newItemStack = itemStack.clone();
+					newItemStack.setAmount(itemStack.getAmount()-1);
+					itemStack.setAmount(1);
+					for (int i = 0; i<stacks.length; i++)
+						if (i!=heldslot&&stacks[i]==null) {
+							inventory.setItem(i, newItemStack);
+							break stackbreak;
+						}
+					player.getWorld().dropItem(player.getEyeLocation(), newItemStack);
 				}
 			}
+		}
 
+		try {
 			final WandItemMeta wmeta = witem.getMeta();
 			if (wmeta==null)
 				return ActionResult.error();
@@ -172,26 +172,30 @@ public class WandListener implements Listener {
 				}
 				if (StringUtils.isEmpty(ownerid)||StringUtils.equals(playerid, ownerid))
 					wmeta.setText(FEATURE_META_OWNER_ID.path, playerid);
-				else
+				else {
+					Log.log.log(Level.INFO, String.format("[player=%s] tried to use protected wand of others: [player=%s, uuid=%s]", player.getName(), PlayerUUID.getName(ownerid).orElse("<unknown>"), ownerid));
 					return ActionResult.error(I18n.format(this.locale, "ubw.action.error.owner"));
+				}
 			} else
 				wmeta.setText(FEATURE_META_OWNER_ID.path, null);
 
 			if (target!=null&&action==Action.RIGHT_CLICK_BLOCK) {
-				if (face!=null)
+				if (face!=null) {
+					if (!this.worldguard.canBuild(player, target)) {
+						Log.log.log(Level.INFO, String.format("[player=%s] tried to use wand in protected area: %s", player.getName(), target));
+						return ActionResult.error(I18n.format(this.locale, "ubw.action.error.worldguard"));
+					}
 					if (onItemUse(witem, meta, player, player.getWorld(), target, face))
 						return ActionResult.success();
+				}
 			} else if (player.isSneaking()&&(action==Action.LEFT_CLICK_AIR||action==Action.LEFT_CLICK_BLOCK)) {
 				wmeta.setFlag(FEATURE_META_MODE.path, !or(meta.getFlag(FEATURE_META_MODE.path), false));
 				return ActionResult.success();
 			}
 			return ActionResult.error();
-		} catch (final WorldGuardHandleException e) {
-			Log.log.log(Level.INFO, "[player=%s] tried to use wand in protected area: %s", target);
-			return ActionResult.error(I18n.format(this.locale, "ubw.action.error.worldguard"));
 		} catch (final Throwable e) {
 			final String errorcode = Long.toHexString(System.currentTimeMillis());
-			Log.log.log(Level.SEVERE, String.format("[player=%s, errorcode=%s]: A fatal error has occured: ", player.getDisplayName(), errorcode), e.getCause());
+			Log.log.log(Level.SEVERE, String.format("[player=%s, errorcode=%s]: A fatal error has occured: ", player.getName(), errorcode), e.getCause());
 			return ActionResult.error(I18n.format(this.locale, "ubw.action.error", e.getMessage()), I18n.format(this.locale, "ubw.action.error.reportcode", errorcode));
 		} finally {
 			this.wanddata.updateItem(witem);
@@ -234,10 +238,10 @@ public class WandListener implements Listener {
 			if (maxdurability>0&&durability<=0)
 				return false;
 			for (slot = 0; slot<inventory.getSize(); ++slot) {
-				final ItemStack item = inventory.getItem(slot);
-				if (item==null||!item.getType().equals(item1.getType()))
+				final ItemStack itemStack = inventory.getItem(slot);
+				if (itemStack==null||itemStack.getAmount()==0||!itemStack.getType().equals(item1.getType()))
 					continue;
-				if (data==-1||data==item.getDurability())
+				if (data==-1||data==itemStack.getDurability())
 					break;
 			}
 

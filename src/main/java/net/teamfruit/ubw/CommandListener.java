@@ -51,7 +51,7 @@ public class CommandListener implements CommandExecutor {
 				return CommandResult.error(I18n.format(this.locale, "ubw.command.error.notplayer"));
 			final Player player = (Player) sender;
 			final ItemStack itemStack = this.nativemc.getItemInHand(player.getInventory());
-			if (itemStack==null)
+			if (itemStack==null||itemStack.getAmount()==0)
 				return CommandResult.error(I18n.format(this.locale, "ubw.command.error.itemnotinhand"));
 			final WandItem witem = new WandItem(itemStack);
 			try {
