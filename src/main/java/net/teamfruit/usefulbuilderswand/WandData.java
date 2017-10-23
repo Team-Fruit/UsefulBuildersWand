@@ -57,8 +57,20 @@ public class WandData {
 		it.put("custom.lore.durability.if", "${custom.durability.unbreakable}");
 		it.put("custom.lore.durability.true", "(Infinity)");
 		it.put("custom.lore.durability.false", "${"+FEATURE_META_DURABILITY.path+"} of ${"+FEATURE_META_DURABILITY_MAX.path+"}${custom.lore.blockcount}");
+		it.put("custom.lore.owner.public.eval", "empty");
+		it.put("custom.lore.owner.public.arg0", "${"+FEATURE_META_OWNER_ID.path+"}");
+		it.put("custom.lore.owner.name.eval", "name");
+		it.put("custom.lore.owner.name.arg0", "${"+FEATURE_META_OWNER_ID.path+"}");
+		it.put("custom.lore.owner.namenotexists.eval", "empty");
+		it.put("custom.lore.owner.namenotexists.arg0", "${custom.lore.owner.name}");
+		it.put("custom.lore.owner.nameuuid.if", "${custom.lore.owner.namenotexists}");
+		it.put("custom.lore.owner.nameuuid.true", "§8${"+FEATURE_META_OWNER_ID.path+"}");
+		it.put("custom.lore.owner.nameuuid.false", "${custom.lore.owner.name}");
+		it.put("custom.lore.owner.namepublic.if", "${custom.lore.owner.public}");
+		it.put("custom.lore.owner.namepublic.true", "§bPublic");
+		it.put("custom.lore.owner.namepublic.false", "${custom.lore.owner.nameuuid}");
 		it.put("custom.lore.owner.if", "${"+FEATURE_META_OWNER.path+"}");
-		it.put("custom.lore.owner.true", "§3 - Owner §7: ${"+FEATURE_META_OWNER_NAME.path+"}");
+		it.put("custom.lore.owner.true", "§3 - Owner §7: ${custom.lore.owner.namepublic}");
 
 		it.put(ITEM_TITLE, "§eBuilder's Wand §7x${"+FEATURE_META_SIZE.path+"} [${custom.title.mode}] (${custom.title.durability})");
 		it.put(ITEM_LORE, Lists.newArrayList(new String[] {

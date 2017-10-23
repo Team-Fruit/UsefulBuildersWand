@@ -20,7 +20,6 @@ public enum Features {
 	FEATURE_META_PARTICLE_SHARE("particle.share", FLAG, true),
 	FEATURE_META_OWNER("owner.data", FLAG, false),
 	FEATURE_META_OWNER_ID("owner.id", TEXT, ""),
-	FEATURE_META_OWNER_NAME("owner.name", TEXT, ""),
 	;
 
 	public final String key;

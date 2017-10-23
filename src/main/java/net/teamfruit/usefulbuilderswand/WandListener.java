@@ -30,6 +30,7 @@ import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitRunnable;
 
 import com.google.common.collect.Lists;
+import com.mojang.util.UUIDTypeAdapter;
 
 import net.teamfruit.usefulbuilderswand.I18n.Locale;
 import net.teamfruit.usefulbuilderswand.WorldGuardHandler.WorldGuardHandleException;
@@ -81,11 +82,18 @@ public class WandListener implements Listener {
 			} catch (final Exception e) {
 			}
 
-			final Boolean ownerenabled = meta.getFlag(FEATURE_META_OWNER.path);
-			if (ownerenabled!=null&&ownerenabled) {
-				final String uuidhash = StringUtils.replace(player.getUniqueId().toString(), "-", "");
-				final String metaid = meta.getText(FEATURE_META_OWNER_ID.path);
-				if (!StringUtils.isEmpty(metaid)&&!StringUtils.equals(uuidhash, metaid))
+			final boolean ownerenabled = or(meta.getFlag(FEATURE_META_OWNER.path), false);
+			String ownerid = meta.getText(FEATURE_META_OWNER_ID.path);
+			final String playerid = UUIDTypeAdapter.fromUUID(player.getUniqueId());
+			if (ownerenabled) {
+				try {
+					UUIDTypeAdapter.fromString(ownerid);
+				} catch (final IllegalArgumentException e) {
+					final String playername = player.getName();
+					if (StringUtils.equals(playername, ownerid))
+						ownerid = null;
+				}
+				if (!(StringUtils.isEmpty(ownerid)||StringUtils.equals(playerid, ownerid)))
 					return;
 			}
 
@@ -151,20 +159,23 @@ public class WandListener implements Listener {
 			if (!witem.hasContent())
 				return ActionResult.error();
 
-			final Boolean ownerenabled = meta.getFlag(FEATURE_META_OWNER.path);
-			if (ownerenabled!=null&&ownerenabled) {
-				final String uuidhash = StringUtils.replace(player.getUniqueId().toString(), "-", "");
-				final String metaid = meta.getText(FEATURE_META_OWNER_ID.path);
-				if (!StringUtils.isEmpty(metaid)&&!StringUtils.equals(uuidhash, metaid))
-					return ActionResult.error(I18n.format(this.locale, "ubw.action.error.owner"));
-				else {
-					wmeta.setText(FEATURE_META_OWNER_ID.path, uuidhash);
-					wmeta.setText(FEATURE_META_OWNER_NAME.path, player.getDisplayName());
+			final boolean ownerenabled = or(meta.getFlag(FEATURE_META_OWNER.path), false);
+			String ownerid = meta.getText(FEATURE_META_OWNER_ID.path);
+			final String playerid = UUIDTypeAdapter.fromUUID(player.getUniqueId());
+			if (ownerenabled) {
+				try {
+					UUIDTypeAdapter.fromString(ownerid);
+				} catch (final IllegalArgumentException e) {
+					final String playername = player.getName();
+					if (StringUtils.equals(playername, ownerid))
+						ownerid = null;
 				}
-			} else {
+				if (StringUtils.isEmpty(ownerid)||StringUtils.equals(playerid, ownerid))
+					wmeta.setText(FEATURE_META_OWNER_ID.path, playerid);
+				else
+					return ActionResult.error(I18n.format(this.locale, "ubw.action.error.owner"));
+			} else
 				wmeta.setText(FEATURE_META_OWNER_ID.path, null);
-				wmeta.setText(FEATURE_META_OWNER_NAME.path, null);
-			}
 
 			if (target!=null&&action==Action.RIGHT_CLICK_BLOCK) {
 				if (face!=null)
