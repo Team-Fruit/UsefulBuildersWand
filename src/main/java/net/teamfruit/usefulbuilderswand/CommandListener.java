@@ -14,16 +14,19 @@ import org.bukkit.inventory.ItemStack;
 
 import com.google.common.collect.Lists;
 
+import net.teamfruit.usefulbuilderswand.I18n.Locale;
 import net.teamfruit.usefulbuilderswand.meta.Features;
 import net.teamfruit.usefulbuilderswand.meta.IWandMeta;
 import net.teamfruit.usefulbuilderswand.meta.WandItem;
 import net.teamfruit.usefulbuilderswand.meta.WandItemMeta;
 
 public class CommandListener implements CommandExecutor {
+	private final Locale locale;
 	private final WandData wanddata;
-	private NativeMinecraft nativemc;
+	private final NativeMinecraft nativemc;
 
-	public CommandListener(final WandData wanddata, final NativeMinecraft nativemc) {
+	public CommandListener(final Locale locale, final WandData wanddata, final NativeMinecraft nativemc) {
+		this.locale = locale;
 		this.wanddata = wanddata;
 		this.nativemc = nativemc;
 	}

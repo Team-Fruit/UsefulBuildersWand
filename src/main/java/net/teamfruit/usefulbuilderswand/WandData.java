@@ -21,6 +21,7 @@ import net.teamfruit.usefulbuilderswand.meta.WandItem;
 import net.teamfruit.usefulbuilderswand.meta.WandTextUtils;
 
 public class WandData {
+	public static final String SETTING_LANG = "setting.lang";
 	public static final String SETTING_EFFECT_RANGE = "setting.effect.range";
 
 	public static final String USEFUL_BUILDERS_WAND_NBT = "ubwand";
@@ -32,6 +33,7 @@ public class WandData {
 
 	public static final Map<String, Object> it = Maps.newHashMap();
 	static {
+		it.put(SETTING_LANG, "en_US.lang");
 		it.put(SETTING_EFFECT_RANGE, 48);
 
 		for (final Features ft : values())

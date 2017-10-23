@@ -30,6 +30,7 @@ import org.bukkit.scheduler.BukkitRunnable;
 
 import com.google.common.collect.Lists;
 
+import net.teamfruit.usefulbuilderswand.I18n.Locale;
 import net.teamfruit.usefulbuilderswand.WorldGuardHandler.WorldGuardHandleException;
 import net.teamfruit.usefulbuilderswand.meta.IWandMeta;
 import net.teamfruit.usefulbuilderswand.meta.WandItem;
@@ -37,12 +38,14 @@ import net.teamfruit.usefulbuilderswand.meta.WandItemMeta;
 
 public class WandListener implements Listener, UsefulBuildersWandAPI {
 	private final Plugin plugin;
+	private final Locale locale;
 	private final WandData wanddata;
 	private NativeMinecraft nativemc;
 	private final WorldGuardHandler worldguard;
 
-	public WandListener(final Plugin plugin, final WandData wanddata, final NativeMinecraft nativemc) {
+	public WandListener(final Plugin plugin, final Locale locale, final WandData wanddata, final NativeMinecraft nativemc) {
 		this.plugin = plugin;
+		this.locale = locale;
 		this.wanddata = wanddata;
 		this.nativemc = nativemc;
 		this.worldguard = WorldGuardHandler.Factory.create(plugin);
