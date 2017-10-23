@@ -57,15 +57,15 @@ public class UsefulBuildersWand extends JavaPlugin {
 		final LocaleBuilder lcb = new LocaleBuilder();
 		final String langdef = (String) WandData.it.get(WandData.SETTING_LANG);
 		final String lang = cfg.getString(WandData.SETTING_EFFECT_RANGE, langdef);
-		final File dataDir = getDataFolder();
+		final File langDir = new File(getDataFolder(), "lang");
 		final File pluginFile = getFile();
 		ZipFile pluginZip = null;
 		try {
 			pluginZip = new ZipFile(pluginFile);
-			final File resdef = new File(dataDir, langdef);
-			final File res = new File(dataDir, lang);
-			final ZipEntry entrydef = pluginZip.getEntry(langdef);
-			final ZipEntry entry = pluginZip.getEntry(lang);
+			final File resdef = new File(langDir, langdef);
+			final File res = new File(langDir, lang);
+			final ZipEntry entrydef = pluginZip.getEntry("lang/"+langdef);
+			final ZipEntry entry = pluginZip.getEntry("lang/"+lang);
 			if (resdef.exists())
 				try {
 					lcb.fromInputStream(new BufferedInputStream(new FileInputStream(resdef)));

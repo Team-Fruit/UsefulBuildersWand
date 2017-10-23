@@ -5,6 +5,8 @@ import static net.teamfruit.usefulbuilderswand.meta.WandMetaUtils.*;
 import java.util.Arrays;
 import java.util.List;
 
+import javax.annotation.Nonnull;
+
 import org.apache.commons.lang.StringUtils;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -35,49 +37,30 @@ public class CommandListener implements CommandExecutor {
 	public boolean onCommand(final CommandSender sender, final Command cmd, final String label, final String[] args) {
 		if (args.length<1)
 			return false;
-		final CommandResult result = onCommand(sender, args[0], Arrays.copyOfRange(args, 1, args.length));
-		switch (result.getType()) {
-			case UNKNOWN:
-				return false;
-			case ERROR: {
-				final String message = result.getMessage();
-				if (message!=null)
-					sender.sendMessage(String.format("§c[UBW] %s", message));
-				final String[] details = result.getDetails();
-				for (final String detail : details)
-					sender.sendMessage(String.format("§c        %s", detail));
-				break;
-			}
-			default:
-			case SUCCESS: {
-				final String message = result.getMessage();
-				if (message!=null)
-					sender.sendMessage(String.format("§f[UBW] %s", message));
-				final String[] details = result.getDetails();
-				for (final String detail : details)
-					sender.sendMessage(String.format("§f        %s", detail));
-				break;
-			}
-		}
-		return true;
+		return sendResultMessage(onCommand(sender, args[0], Arrays.copyOfRange(args, 1, args.length)), this.locale, sender);
 	}
 
-	private CommandResult onCommand(final CommandSender sender, final String type, final String[] args) {
+	private @Nonnull CommandResult onCommand(final CommandSender sender, final String type, final String[] args) {
 		if (StringUtils.equalsIgnoreCase(type, "set")||StringUtils.equalsIgnoreCase(type, "get")||StringUtils.equalsIgnoreCase(type, "remove")) {
 			if (!(sender instanceof Player))
-				return CommandResult.error("you must be a player.");
+				return CommandResult.error(I18n.format(this.locale, "ubw.command.error.notplayer"));
 			final Player player = (Player) sender;
 			final ItemStack itemStack = this.nativemc.getItemInHand(player.getInventory());
 			if (itemStack==null)
-				return CommandResult.error("hold the item in your hand");
+				return CommandResult.error(I18n.format(this.locale, "ubw.command.error.itemnotinhand"));
 			final WandItem witem = new WandItem(itemStack);
 			final WandItemMeta wmeta = witem.getMeta();
 			if (wmeta==null)
-				return CommandResult.error("this item is not a wand item", "type '/ubw create' to activate your item");
+				return CommandResult.error(I18n.format(this.locale, "ubw.command.error.itemnotwand"), I18n.format(this.locale, "ubw.command.error.itemnotwand.msg"));
 			if (StringUtils.equalsIgnoreCase(type, "set")||StringUtils.equalsIgnoreCase(type, "remove")) {
+				if (args.length<1)
+					if (StringUtils.equalsIgnoreCase(type, "remove"))
+						return CommandResult.error(I18n.format(this.locale, "ubw.command.error.remove"));
+					else
+						return CommandResult.error(I18n.format(this.locale, "ubw.command.error.set"));
 				final Features ft = Features.getFeatureKey(args[0]);
 				if (ft==null)
-					return CommandResult.error("invalid property", "see '/ubw help'");
+					return CommandResult.error(I18n.format(this.locale, "ubw.command.error.invalidproperty"), I18n.format(this.locale, "ubw.command.error.invalidproperty.seehelp"));
 				Object value;
 				if (StringUtils.equalsIgnoreCase(type, "remove")) {
 					final IWandMeta cfgmeta = this.wanddata.configMeta();
@@ -87,7 +70,7 @@ public class CommandListener implements CommandExecutor {
 					set(wmeta, ft, value = args.length<2 ? "" : args[1]);
 				this.wanddata.updateItem(witem);
 				this.nativemc.setItemInHand(player.getInventory(), witem.getItem());
-				return CommandResult.success(String.format("§7%s <=§f %s", args[0], value));
+				return CommandResult.success(I18n.format(this.locale, "ubw.command.success.set", ft.key, ft.type, value));
 			} else if (StringUtils.equalsIgnoreCase(type, "get")) {
 				final IWandMeta meta = this.wanddata.wrapMeta(wmeta);
 				CommandResult result;
@@ -95,17 +78,17 @@ public class CommandListener implements CommandExecutor {
 					final List<String> msgs = Lists.newArrayList();
 					for (final Features ft : Features.values()) {
 						final Object value = get(meta, ft);
-						msgs.add(String.format("§7%s [%s] =>§f %s", ft.key, ft.type, value));
+						msgs.add(I18n.format(this.locale, "ubw.command.success.getall.sub", I18n.format(this.locale, "ubw.command.success.get", ft.key, ft.type, value)));
 					}
-					result = CommandResult.success("your wand property:", msgs.toArray(new String[msgs.size()]));
+					result = CommandResult.success(I18n.format(this.locale, "ubw.command.success.getall.main"), msgs.toArray(new String[msgs.size()]));
 				} else {
 					final Features ft = Features.getFeatureKey(args[0]);
 					if (ft==null)
-						return CommandResult.error("invalid property", "see '/ubw help'");
+						return CommandResult.error(I18n.format(this.locale, "ubw.command.error.invalidproperty"), I18n.format(this.locale, "ubw.command.error.invalidproperty.seehelp"));
 					final Object value = get(meta, ft);
 					this.wanddata.updateItem(witem);
 					this.nativemc.setItemInHand(player.getInventory(), witem.getItem());
-					result = CommandResult.success(String.format("§7%s [%s] =>§f %s", ft.key, ft.type, value));
+					return CommandResult.success(I18n.format(this.locale, "ubw.command.success.set", ft.key, ft.type, value));
 				}
 				this.wanddata.updateItem(witem);
 				this.nativemc.setItemInHand(player.getInventory(), witem.getItem());
@@ -114,27 +97,27 @@ public class CommandListener implements CommandExecutor {
 		} else if (StringUtils.equalsIgnoreCase(type, "help")) {
 			final List<String> msgs = Lists.newArrayList();
 			if (args.length>=1&&StringUtils.equalsIgnoreCase(args[0], "defaults")) {
-				msgs.add("default properties:");
+				msgs.add(I18n.format(this.locale, "ubw.command.success.help.defaults.main"));
 				final IWandMeta cfgmeta = this.wanddata.configMeta();
 				for (final Features ft : Features.values()) {
 					final Object value = get(cfgmeta, ft);
-					msgs.add(String.format("§7%s [%s] =>§f %s", ft.key, ft.type, value));
+					msgs.add(I18n.format(this.locale, "ubw.command.success.help.defaults.sub", I18n.format(this.locale, "ubw.command.success.get", ft.key, ft.type, value)));
 				}
 			} else {
-				msgs.add("/ubw create §7the item in your hand will be a wand");
-				msgs.add("/ubw set <property> <value> §7set property");
-				msgs.add("/ubw remove <property> §7set property to default");
-				msgs.add("/ubw get §7get property list");
-				msgs.add("/ubw get <property> §7get property");
-				msgs.add("/ubw help defaults §7get default properties");
+				msgs.add(I18n.format(this.locale, "ubw.command.success.help.sub.create"));
+				msgs.add(I18n.format(this.locale, "ubw.command.success.help.sub.set"));
+				msgs.add(I18n.format(this.locale, "ubw.command.success.help.sub.remove"));
+				msgs.add(I18n.format(this.locale, "ubw.command.success.help.sub.getall"));
+				msgs.add(I18n.format(this.locale, "ubw.command.success.help.sub.get"));
+				msgs.add(I18n.format(this.locale, "ubw.command.success.help.sub.defaults"));
 			}
-			return CommandResult.success("UsefulBuildersWand help", msgs.toArray(new String[msgs.size()]));
+			return CommandResult.success(I18n.format(this.locale, "ubw.command.success.help.main"), msgs.toArray(new String[msgs.size()]));
 		} else if (StringUtils.equalsIgnoreCase(type, "create")) {
 			if (sender instanceof Player) {
 				final Player player = (Player) sender;
 				final ItemStack itemStack = this.nativemc.getItemInHand(player.getInventory());
 				if (itemStack==null||itemStack.getAmount()==0)
-					return CommandResult.error("No Items");
+					return CommandResult.error(I18n.format(this.locale, "ubw.command.error.itemnotinhand"));
 				final WandItem witem = new WandItem(itemStack);
 				witem.activate();
 				this.wanddata.updateItem(witem);
@@ -143,6 +126,32 @@ public class CommandListener implements CommandExecutor {
 		} else
 			return CommandResult.unknown();
 		return CommandResult.success();
+	}
+
+	public boolean sendResultMessage(final CommandResult result, final Locale locale, final CommandSender sender) {
+		switch (result.getType()) {
+			case UNKNOWN:
+				return false;
+			case ERROR: {
+				final String message = result.getMessage();
+				if (message!=null)
+					sender.sendMessage(I18n.format(locale, "ubw.command.format.error.main", message));
+				final String[] details = result.getDetails();
+				for (final String detail : details)
+					sender.sendMessage(I18n.format(locale, "ubw.command.format.error.sub", detail));
+				return true;
+			}
+			default:
+			case SUCCESS: {
+				final String message = result.getMessage();
+				if (message!=null)
+					sender.sendMessage(I18n.format(locale, "ubw.command.format.success.main", message));
+				final String[] details = result.getDetails();
+				for (final String detail : details)
+					sender.sendMessage(I18n.format(locale, "ubw.command.format.success.sub", detail));
+				return true;
+			}
+		}
 	}
 
 	public static class CommandResult {

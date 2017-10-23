@@ -15,6 +15,7 @@ import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
+import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -36,7 +37,7 @@ import net.teamfruit.usefulbuilderswand.meta.IWandMeta;
 import net.teamfruit.usefulbuilderswand.meta.WandItem;
 import net.teamfruit.usefulbuilderswand.meta.WandItemMeta;
 
-public class WandListener implements Listener, UsefulBuildersWandAPI {
+public class WandListener implements Listener {
 	private final Plugin plugin;
 	private final Locale locale;
 	private final WandData wanddata;
@@ -57,12 +58,7 @@ public class WandListener implements Listener, UsefulBuildersWandAPI {
 		}.runTaskTimer(this.plugin, 3, 3);
 	}
 
-	@Override
-	public @Nullable RayTraceResult rayTrace(final Player player) {
-		return this.nativemc.rayTrace(player);
-	}
-
-	public void onEffect() {
+	private void onEffect() {
 		for (final Player player : this.plugin.getServer().getOnlinePlayers()) {
 			final WandItem witem = new WandItem(this.nativemc.getItemInHand(player.getInventory()));
 
@@ -75,42 +71,38 @@ public class WandListener implements Listener, UsefulBuildersWandAPI {
 			final IWandMeta meta = this.wanddata.wrapMeta(witem.getMeta());
 
 			if (!witem.hasContent())
-				return;
+				continue;
 
-			onEffect(player, witem, meta);
-		}
-	}
+			List<Location> blocks = null;
+			try {
+				final RayTraceResult res = this.nativemc.rayTrace(player);
+				if (res!=null)
+					blocks = getPotentialBlocks(witem, meta, player, player.getWorld(), res.location.getBlock(), res.face);
+			} catch (final Exception e) {
+			}
 
-	public void onEffect(final Player player, final WandItem witem, final IWandMeta meta) {
-		List<Location> blocks = null;
-		try {
-			final RayTraceResult res = this.nativemc.rayTrace(player);
-			if (res!=null)
-				blocks = getPotentialBlocks(witem, meta, player, player.getWorld(), res.location.getBlock(), res.face);
-		} catch (final Exception e) {
-		}
+			final Boolean ownerenabled = meta.getFlag(FEATURE_META_OWNER.path);
+			if (ownerenabled!=null&&ownerenabled) {
+				final String uuidhash = StringUtils.replace(player.getUniqueId().toString(), "-", "");
+				final String metaid = meta.getText(FEATURE_META_OWNER_ID.path);
+				if (!StringUtils.isEmpty(metaid)&&!StringUtils.equals(uuidhash, metaid))
+					return;
+			}
 
-		final Boolean ownerenabled = meta.getFlag(FEATURE_META_OWNER.path);
-		if (ownerenabled!=null&&ownerenabled) {
-			final String uuidhash = StringUtils.replace(player.getUniqueId().toString(), "-", "");
-			final String metaid = meta.getText(FEATURE_META_OWNER_ID.path);
-			if (!StringUtils.isEmpty(metaid)&&!StringUtils.equals(uuidhash, metaid))
-				return;
-		}
-
-		if (blocks!=null) {
-			final int color_r = or(meta.getNumber(FEATURE_META_PARTICLE_COLOR_R.path), 255);
-			final int color_g = or(meta.getNumber(FEATURE_META_PARTICLE_COLOR_G.path), 255);
-			final int color_b = or(meta.getNumber(FEATURE_META_PARTICLE_COLOR_B.path), 255);
-			final int range = this.wanddata.getConfig().getInt(WandData.SETTING_EFFECT_RANGE);
-			if (range>0&&or(meta.getFlag(FEATURE_META_PARTICLE_SHARE.path), true)) {
-				for (final Player other : Bukkit.getOnlinePlayers())
-					if (other.getLocation().distance(player.getLocation())<=range)
-						for (final Location block : blocks)
-							this.nativemc.spawnParticles(other, block, color_r/255f, color_g/255f, color_b/255f);
-			} else
-				for (final Location block : blocks)
-					this.nativemc.spawnParticles(player, block, color_r/255f, color_g/255f, color_b/255f);
+			if (blocks!=null) {
+				final int color_r = or(meta.getNumber(FEATURE_META_PARTICLE_COLOR_R.path), 255);
+				final int color_g = or(meta.getNumber(FEATURE_META_PARTICLE_COLOR_G.path), 255);
+				final int color_b = or(meta.getNumber(FEATURE_META_PARTICLE_COLOR_B.path), 255);
+				final int range = this.wanddata.getConfig().getInt(WandData.SETTING_EFFECT_RANGE);
+				if (range>0&&or(meta.getFlag(FEATURE_META_PARTICLE_SHARE.path), true)) {
+					for (final Player other : Bukkit.getOnlinePlayers())
+						if (other.getLocation().distance(player.getLocation())<=range)
+							for (final Location block : blocks)
+								this.nativemc.spawnParticles(other, block, color_r/255f, color_g/255f, color_b/255f);
+				} else
+					for (final Location block : blocks)
+						this.nativemc.spawnParticles(player, block, color_r/255f, color_g/255f, color_b/255f);
+			}
 		}
 	}
 
@@ -120,46 +112,51 @@ public class WandListener implements Listener, UsefulBuildersWandAPI {
 			return;
 
 		final Player player = event.getPlayer();
+		if (sendResultMessage(onPlayerUse(player, event.getAction(), event.getClickedBlock(), event.getBlockFace()), this.locale, player))
+			event.setCancelled(true);
+	}
+
+	private ActionResult onPlayerUse(final Player player, final Action action, final Block target, final BlockFace face) {
 		final PlayerInventory inventory = player.getInventory();
 		final WandItem witem = new WandItem(this.nativemc.getItemInHand(inventory));
 
-		{
-			final ItemStack itemStack = witem.getItem();
-			if (itemStack==null||itemStack.getAmount()==0)
-				return;
+		try {
+			{
+				final ItemStack itemStack = witem.getItem();
+				if (itemStack==null||itemStack.getAmount()==0)
+					return ActionResult.error();
 
-			if (itemStack.getAmount()>1) {
-				final ItemStack[] stacks = inventory.getContents();
-				final int heldslot = inventory.getHeldItemSlot();
-				stackbreak: {
-					final ItemStack newItemStack = itemStack.clone();
-					newItemStack.setAmount(itemStack.getAmount()-1);
-					itemStack.setAmount(1);
-					for (int i = 0; i<stacks.length; i++)
-						if (i!=heldslot&&stacks[i]==null) {
-							inventory.setItem(i, newItemStack);
-							break stackbreak;
-						}
-					player.getWorld().dropItem(player.getEyeLocation(), newItemStack);
+				if (itemStack.getAmount()>1) {
+					final ItemStack[] stacks = inventory.getContents();
+					final int heldslot = inventory.getHeldItemSlot();
+					stackbreak: {
+						final ItemStack newItemStack = itemStack.clone();
+						newItemStack.setAmount(itemStack.getAmount()-1);
+						itemStack.setAmount(1);
+						for (int i = 0; i<stacks.length; i++)
+							if (i!=heldslot&&stacks[i]==null) {
+								inventory.setItem(i, newItemStack);
+								break stackbreak;
+							}
+						player.getWorld().dropItem(player.getEyeLocation(), newItemStack);
+					}
 				}
 			}
-		}
 
-		final WandItemMeta wmeta = witem.getMeta();
-		if (wmeta==null)
-			return;
-		final IWandMeta meta = this.wanddata.wrapMeta(wmeta);
+			final WandItemMeta wmeta = witem.getMeta();
+			if (wmeta==null)
+				return ActionResult.error();
+			final IWandMeta meta = this.wanddata.wrapMeta(wmeta);
 
-		if (!witem.hasContent())
-			return;
+			if (!witem.hasContent())
+				return ActionResult.error();
 
-		try {
 			final Boolean ownerenabled = meta.getFlag(FEATURE_META_OWNER.path);
 			if (ownerenabled!=null&&ownerenabled) {
 				final String uuidhash = StringUtils.replace(player.getUniqueId().toString(), "-", "");
 				final String metaid = meta.getText(FEATURE_META_OWNER_ID.path);
 				if (!StringUtils.isEmpty(metaid)&&!StringUtils.equals(uuidhash, metaid))
-					return;
+					return ActionResult.error(I18n.format(this.locale, "ubw.action.error.owner"));
 				else {
 					wmeta.setText(FEATURE_META_OWNER_ID.path, uuidhash);
 					wmeta.setText(FEATURE_META_OWNER_NAME.path, player.getDisplayName());
@@ -169,29 +166,29 @@ public class WandListener implements Listener, UsefulBuildersWandAPI {
 				wmeta.setText(FEATURE_META_OWNER_NAME.path, null);
 			}
 
-			final Action action = event.getAction();
-			final Block block = event.getClickedBlock();
-
-			if (block!=null&&action==Action.RIGHT_CLICK_BLOCK) {
-				final BlockFace face = event.getBlockFace();
+			if (target!=null&&action==Action.RIGHT_CLICK_BLOCK) {
 				if (face!=null)
-					if (onItemUse(witem, meta, player, player.getWorld(), block, face))
-						event.setCancelled(true);
+					if (onItemUse(witem, meta, player, player.getWorld(), target, face))
+						return ActionResult.success();
 			} else if (player.isSneaking()&&(action==Action.LEFT_CLICK_AIR||action==Action.LEFT_CLICK_BLOCK)) {
 				wmeta.setFlag(FEATURE_META_MODE.path, !or(meta.getFlag(FEATURE_META_MODE.path), false));
-				event.setCancelled(true);
+				return ActionResult.success();
 			}
-
-			this.wanddata.updateItem(witem);
-			this.nativemc.setItemInHand(inventory, witem.getItem());
+			return ActionResult.error();
+		} catch (final WorldGuardHandleException e) {
+			Log.log.log(Level.INFO, "[player=%s] tried to use wand in protected area: %s", target);
+			return ActionResult.error(I18n.format(this.locale, "ubw.action.error.worldguard"));
 		} catch (final Throwable e) {
 			final String errorcode = Long.toHexString(System.currentTimeMillis());
-			player.sendMessage(String.format("§c[Useful Builder's Wand] A fatal error has occured. Please report to server administrator. [errorcode=%s]", errorcode));
 			Log.log.log(Level.SEVERE, String.format("[player=%s, errorcode=%s]: A fatal error has occured: ", player.getDisplayName(), errorcode), e.getCause());
+			return ActionResult.error(I18n.format(this.locale, "ubw.action.error", e.getMessage()), I18n.format(this.locale, "ubw.action.error.reportcode", errorcode));
+		} finally {
+			this.wanddata.updateItem(witem);
+			this.nativemc.setItemInHand(inventory, witem.getItem());
 		}
 	}
 
-	public boolean onItemUse(final WandItem witem, final IWandMeta meta, final Player player, final World world, final Block target, final BlockFace face) throws WorldGuardHandleException {
+	private boolean onItemUse(final WandItem witem, final IWandMeta meta, final Player player, final World world, final Block target, final BlockFace face) throws WorldGuardHandleException {
 		if (target.isEmpty())
 			return false;
 
@@ -268,16 +265,7 @@ public class WandListener implements Listener, UsefulBuildersWandAPI {
 		return true;
 	}
 
-	@Override
-	public List<Location> getCandidateBlocks(final WandItem witem, final IWandMeta meta, final Player player, final @Nullable World world, final @Nullable Block target, final BlockFace face) {
-		try {
-			return getPotentialBlocks(witem, meta, player, world, target, face);
-		} catch (final WorldGuardHandleException e) {
-			return Lists.newArrayList();
-		}
-	}
-
-	public List<Location> getPotentialBlocks(final WandItem witem, final IWandMeta meta, final Player player, final @Nullable World world, final @Nullable Block target, final BlockFace face) throws WorldGuardHandleException {
+	private List<Location> getPotentialBlocks(final WandItem witem, final IWandMeta meta, final Player player, final @Nullable World world, final @Nullable Block target, final BlockFace face) throws WorldGuardHandleException {
 		final List<Location> blocks = Lists.newArrayList();
 
 		final int maxdurability = or(meta.getNumber(FEATURE_META_DURABILITY_MAX.path), 0);
@@ -388,5 +376,63 @@ public class WandListener implements Listener, UsefulBuildersWandAPI {
 					}
 		}
 		return blocks;
+	}
+
+	public boolean sendResultMessage(final ActionResult result, final Locale locale, final CommandSender sender) {
+		switch (result.getType()) {
+			case ERROR: {
+				final String message = result.getMessage();
+				if (message!=null)
+					sender.sendMessage(I18n.format(locale, "ubw.action.format.error.main", message));
+				final String[] details = result.getDetails();
+				for (final String detail : details)
+					sender.sendMessage(I18n.format(locale, "ubw.action.format.error.sub", detail));
+				return false;
+			}
+			default:
+			case SUCCESS:
+				return true;
+		}
+	}
+
+	public static class ActionResult {
+		private ResultType type;
+		private String message;
+		private String[] details;
+
+		private ActionResult(final ResultType type, final String message, final String... details) {
+			this.type = type;
+			this.message = message;
+			this.details = details;
+		}
+
+		public ResultType getType() {
+			return this.type;
+		}
+
+		public String getMessage() {
+			return this.message;
+		}
+
+		public String[] getDetails() {
+			return this.details;
+		}
+
+		public static ActionResult success() {
+			return new ActionResult(ResultType.SUCCESS, null);
+		}
+
+		public static ActionResult error() {
+			return new ActionResult(ResultType.ERROR, null);
+		}
+
+		public static ActionResult error(final String message, final String... details) {
+			return new ActionResult(ResultType.ERROR, message, details);
+		}
+
+		public enum ResultType {
+			SUCCESS,
+			ERROR,
+		}
 	}
 }

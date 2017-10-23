@@ -1,0 +1,34 @@
+# Command
+ubw.command.format.success.main=§f[UBW] %s
+ubw.command.format.success.sub=§f   %s
+ubw.command.format.error.main=§c[UBW] %s
+ubw.command.format.error.sub=§c   %s
+ubw.command.error.notplayer=you must be a player.
+ubw.command.error.itemnotinhand=hold the item in your hand
+ubw.command.error.itemnotwand=this item is not a wand item
+ubw.command.error.itemnotwand.msg=type '/ubw create' to activate your item
+ubw.command.error.remove=/ubw remove <property>
+ubw.command.error.set=/ubw set <property>
+ubw.command.error.invalidproperty=invalid property
+ubw.command.error.invalidproperty.seehelp=see '/ubw help'
+ubw.command.success.set=§7%s [%s] <=§f %s
+ubw.command.success.get=§7%s [%s] =>§f %s
+ubw.command.success.getall.main=your wand property:
+ubw.command.success.getall.sub=%s
+ubw.command.success.help.defaults.main=default properties:
+ubw.command.success.help.defaults.sub=%s
+ubw.command.success.help.main=UsefulBuildersWand help
+ubw.command.success.help.sub.create=/ubw create §7 the item in your hand will be a wand
+ubw.command.success.help.sub.set=/ubw set <property> <value> §7 set property
+ubw.command.success.help.sub.remove=/ubw remove <property> §7 set property to default
+ubw.command.success.help.sub.getall=/ubw get §7 get property list
+ubw.command.success.help.sub.get=/ubw get <property> §7 get property
+ubw.command.success.help.sub.defaults=/ubw help defaults §7 get default properties
+
+# Action
+ubw.action.format.error.main=§c[UBW] %s
+ubw.action.format.error.sub=§c   %s
+ubw.action.error=A fatal error has occured.
+ubw.action.error.reportcode=Please report to server administrator with this code: %s
+ubw.action.error.worldguard=You cannot use wand here
+ubw.action.error.owner=This wand is not yours
