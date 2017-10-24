@@ -5,6 +5,7 @@ import static net.teamfruit.ubw.meta.WandItemMetaType.*;
 import org.apache.commons.lang.StringUtils;
 
 public enum Features {
+	FEATURE_META_NAME("name", TEXT, "", "usefulbuilderswand.set.settings.name"),
 	FEATURE_META_SIZE("size", NUMBER, 9, "usefulbuilderswand.set.settings.size"),
 	FEATURE_META_MODE("mode", FLAG, false, "usefulbuilderswand.set.meta.mode"),
 	FEATURE_META_DURABILITY("durability.data", NUMBER, 27, "usefulbuilderswand.set.meta.durability"),

@@ -22,6 +22,7 @@ public class WandData {
 
 	public static final String USEFUL_BUILDERS_WAND_NBT = "ubwand";
 
+	public static final String ITEM_PREFIX = "item.prefix";
 	public static final String ITEM_TITLE = "item.title";
 	public static final String ITEM_LORE = "item.lore";
 
@@ -36,6 +37,15 @@ public class WandData {
 		it.put("custom.durability.unbreakable.eval", "<=");
 		it.put("custom.durability.unbreakable.arg0", "${"+FEATURE_META_DURABILITY_MAX.path+"}");
 		it.put("custom.durability.unbreakable.arg1", "0");
+		it.put("custom.title.namecolor.eval", "replace");
+		it.put("custom.title.namecolor.arg0", "${"+FEATURE_META_NAME.path+"}");
+		it.put("custom.title.namecolor.arg1", "&");
+		it.put("custom.title.namecolor.arg2", "§");
+		it.put("custom.title.namenotexists.eval", "empty");
+		it.put("custom.title.namenotexists.arg0", "${custom.title.namecolor}");
+		it.put("custom.title.name.if", "${custom.title.namenotexists}");
+		it.put("custom.title.name.true", "§eBuilder's Wand");
+		it.put("custom.title.name.false", "${custom.title.namecolor}");
 		it.put("custom.title.mode.if", "${"+FEATURE_META_MODE.path+"}");
 		it.put("custom.title.mode.true", "┃");
 		it.put("custom.title.mode.false", "━");
@@ -66,7 +76,8 @@ public class WandData {
 		it.put("custom.lore.owner.if", "${"+FEATURE_META_OWNER.path+"}");
 		it.put("custom.lore.owner.true", "§3 - Owner §7: ${custom.lore.owner.namepublic}");
 
-		it.put(ITEM_TITLE, "§eBuilder's Wand §7x${"+FEATURE_META_SIZE.path+"} [${custom.title.mode}] (${custom.title.durability})");
+		it.put(ITEM_PREFIX, "§m§a§k§e§r");
+		it.put(ITEM_TITLE, "${custom.title.name} §7x${"+FEATURE_META_SIZE.path+"} [${custom.title.mode}] (${custom.title.durability})");
 		it.put(ITEM_LORE, Lists.newArrayList(new String[] {
 				"§3 - Mode §7: ${custom.lore.mode}",
 				"§3 - Durability §7: ${custom.lore.durability}",

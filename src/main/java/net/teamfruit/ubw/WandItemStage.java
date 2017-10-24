@@ -11,6 +11,7 @@ import org.bukkit.inventory.meta.ItemMeta;
 
 import com.google.common.collect.Lists;
 
+import net.teamfruit.ubw.meta.Features;
 import net.teamfruit.ubw.meta.IWandWritableMeta;
 import net.teamfruit.ubw.meta.WandItem;
 import net.teamfruit.ubw.meta.WandTextUtils;
@@ -62,14 +63,26 @@ public class WandItemStage implements ItemStackHolder {
 	public void updateItem() {
 		if (!isItem()||!isWandItem())
 			return;
-		final ItemMeta itemmeta = getItem().getItemMeta();
 		final FileConfiguration cfg = this.wanddata.getConfig();
 
+		Object itemprefix = cfg.get(WandData.ITEM_PREFIX);
+		if (itemprefix==null)
+			itemprefix = WandData.it.get(WandData.ITEM_PREFIX);
+		if (itemprefix instanceof String) {
+			final ItemMeta itemmeta = getItem().getItemMeta();
+			if (itemmeta.hasDisplayName()) {
+				final String name = itemmeta.getDisplayName();
+				if (!StringUtils.startsWith(name, (String) itemprefix))
+					meta().setText(Features.FEATURE_META_NAME.path, name);
+			}
+		}
+
+		final ItemMeta itemmeta = getItem().getItemMeta();
 		Object itemtitle = cfg.get(WandData.ITEM_TITLE);
 		if (itemtitle==null)
 			itemtitle = WandData.it.get(WandData.ITEM_TITLE);
 		if (itemtitle instanceof String)
-			itemmeta.setDisplayName(WandTextUtils.resolve(meta(), (String) itemtitle));
+			itemmeta.setDisplayName((itemprefix instanceof String ? itemprefix : "")+WandTextUtils.resolve(meta(), (String) itemtitle));
 
 		Object itemlore = cfg.get(WandData.ITEM_LORE);
 		if (itemlore==null)

@@ -27,6 +27,8 @@ permissions:
   ubw.set:
     description: Set properties
     default: true
+  ubw.set.settings.name:
+    default: true
   ubw.set.settings.size:
     default: op
   ubw.set.meta.mode:

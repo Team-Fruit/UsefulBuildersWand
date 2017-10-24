@@ -126,6 +126,16 @@ public interface Evals {
 					return StringUtils.isEmpty(str);
 				}
 			}, "empty");
+			puts(new Evals() {
+				@Override
+				public String eval(final List<String> args) {
+					if (args.size()>=3) {
+						final String sa = args.get(0), sb = args.get(1), sc = args.get(2);
+						return StringUtils.replace(sa, sb, sc);
+					}
+					return null;
+				}
+			}, "replace");
 			puts(new AbstractSingleEvals<String>() {
 				@Override
 				public String eval(final String uuid) {
