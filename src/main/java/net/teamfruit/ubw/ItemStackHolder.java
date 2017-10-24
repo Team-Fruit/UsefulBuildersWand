@@ -2,18 +2,26 @@ package net.teamfruit.ubw;
 
 import org.bukkit.inventory.ItemStack;
 
-public class ItemStackHolder {
-	private ItemStack itemStack;
+public interface ItemStackHolder {
+	public void setItem(final ItemStack itemStack);
 
-	public ItemStackHolder(final ItemStack itemStack) {
-		setItem(itemStack);
-	}
+	public ItemStack getItem();
 
-	public void setItem(final ItemStack itemStack) {
-		this.itemStack = itemStack;
-	}
+	public static class DefaultItemStackHolder implements ItemStackHolder {
+		private ItemStack itemStack;
 
-	public ItemStack getItem() {
-		return this.itemStack;
+		public DefaultItemStackHolder(final ItemStack itemStack) {
+			setItem(itemStack);
+		}
+
+		@Override
+		public void setItem(final ItemStack itemStack) {
+			this.itemStack = itemStack;
+		}
+
+		@Override
+		public ItemStack getItem() {
+			return this.itemStack;
+		}
 	}
 }

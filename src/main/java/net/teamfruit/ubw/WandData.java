@@ -2,23 +2,19 @@ package net.teamfruit.ubw;
 
 import static net.teamfruit.ubw.meta.Features.*;
 
-import java.util.List;
 import java.util.Map;
 
-import org.apache.commons.lang.StringUtils;
+import javax.annotation.Nonnull;
+
 import org.bukkit.configuration.file.FileConfiguration;
-import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 import net.teamfruit.ubw.meta.Features;
-import net.teamfruit.ubw.meta.IWandMeta;
+import net.teamfruit.ubw.meta.IWandWritableMeta;
 import net.teamfruit.ubw.meta.WandCompoundMeta;
 import net.teamfruit.ubw.meta.WandConfigMeta;
-import net.teamfruit.ubw.meta.WandItem;
-import net.teamfruit.ubw.meta.WandTextUtils;
 
 public class WandData {
 	public static final String SETTING_LANG = "setting.lang";
@@ -100,35 +96,7 @@ public class WandData {
 		return new WandConfigMeta(getConfig());
 	}
 
-	public IWandMeta wrapMeta(final IWandMeta meta) {
-		return WandCompoundMeta.of(meta, configMeta());
-	}
-
-	public void updateItem(final WandItem meta) {
-		final ItemStack item = meta.getItem();
-		final ItemMeta itemmeta = item.getItemMeta();
-		final FileConfiguration cfg = getConfig();
-		final IWandMeta wmeta = wrapMeta(meta.getMeta());
-
-		Object itemtitle = cfg.get(WandData.ITEM_TITLE);
-		if (itemtitle==null)
-			itemtitle = WandData.it.get(WandData.ITEM_TITLE);
-		if (itemtitle instanceof String)
-			itemmeta.setDisplayName(WandTextUtils.resolve(wmeta, (String) itemtitle));
-
-		Object itemlore = cfg.get(WandData.ITEM_LORE);
-		if (itemlore==null)
-			itemlore = WandData.it.get(WandData.ITEM_LORE);
-		if (itemlore instanceof List<?>) {
-			final List<String> newlore = Lists.newArrayList();
-			for (final Object obj : (List<?>) itemlore)
-				if (obj instanceof String) {
-					final String res = WandTextUtils.resolve(wmeta, (String) obj);
-					if (!StringUtils.isEmpty(res))
-						newlore.add(res);
-				}
-			itemmeta.setLore(newlore);
-		}
-		item.setItemMeta(itemmeta);
+	public @Nonnull IWandWritableMeta wrapMeta(final IWandWritableMeta meta) {
+		return WandCompoundMeta.writableof(meta, configMeta());
 	}
 }

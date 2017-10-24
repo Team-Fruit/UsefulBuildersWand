@@ -12,15 +12,12 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.ItemStack;
 
 import com.google.common.collect.Lists;
 
 import net.teamfruit.ubw.I18n.Locale;
 import net.teamfruit.ubw.meta.Features;
 import net.teamfruit.ubw.meta.IWandMeta;
-import net.teamfruit.ubw.meta.WandItem;
-import net.teamfruit.ubw.meta.WandItemMeta;
 
 public class CommandListener implements CommandExecutor {
 	private final Locale locale;
@@ -50,20 +47,18 @@ public class CommandListener implements CommandExecutor {
 			if (!(sender instanceof Player))
 				return CommandResult.error(I18n.format(this.locale, "ubw.command.error.notplayer"));
 			final Player player = (Player) sender;
-			final ItemStack itemStack = this.nativemc.getItemInHand(player.getInventory());
-			if (!WandItem.isItem(itemStack))
+			final WandItemStage stage = new WandItemStage(this.wanddata);
+			stage.setItem(this.nativemc.getItemInHand(player.getInventory()));
+			if (!stage.isItem())
 				return CommandResult.error(I18n.format(this.locale, "ubw.command.error.itemnotinhand"));
-			WandItem witem = null;
 			try {
 				if (StringUtils.equalsIgnoreCase(type, "create")) {
 					if (!sender.hasPermission("ubw.create"))
 						return CommandResult.error(I18n.format(this.locale, "ubw.command.error.permission", "ubw.create"));
-					witem = WandItem.newWandItem(itemStack);
+					stage.getWandItem();
 				} else {
-					if (!WandItem.isWandItem(itemStack))
+					if (!stage.isWandItem())
 						return CommandResult.error(I18n.format(this.locale, "ubw.command.error.itemnotwand"), I18n.format(this.locale, "ubw.command.error.itemnotwand.msg"));
-					witem = WandItem.newWandItem(itemStack);
-					final WandItemMeta wmeta = witem.getMeta();
 					if (StringUtils.equalsIgnoreCase(type, "set")||StringUtils.equalsIgnoreCase(type, "remove")) {
 						if (!sender.hasPermission("ubw.set"))
 							return CommandResult.error(I18n.format(this.locale, "ubw.command.error.permission", "ubw.set"));
@@ -81,20 +76,17 @@ public class CommandListener implements CommandExecutor {
 						if (StringUtils.equalsIgnoreCase(type, "remove")) {
 							final IWandMeta cfgmeta = this.wanddata.configMeta();
 							value = get(cfgmeta, ft);
-							set(wmeta, ft, null);
+							set(stage.meta(), ft, null);
 						} else
-							set(wmeta, ft, value = args.length<2 ? "" : args[1]);
-						this.wanddata.updateItem(witem);
-						this.nativemc.setItemInHand(player.getInventory(), witem.getItem());
+							set(stage.meta(), ft, value = args.length<2 ? "" : args[1]);
 						return CommandResult.success(I18n.format(this.locale, "ubw.command.success.set", ft.key, ft.type, value));
 					} else if (StringUtils.equalsIgnoreCase(type, "get")) {
 						if (!sender.hasPermission("ubw.get"))
 							return CommandResult.error(I18n.format(this.locale, "ubw.command.error.permission", "ubw.get"));
-						final IWandMeta meta = this.wanddata.wrapMeta(wmeta);
 						if (args.length<1) {
 							final List<String> msgs = Lists.newArrayList();
 							for (final Features ft : Features.values()) {
-								final Object value = get(meta, ft);
+								final Object value = get(stage.meta(), ft);
 								msgs.add(I18n.format(this.locale, "ubw.command.success.getall.sub", I18n.format(this.locale, "ubw.command.success.get", ft.key, ft.type, value)));
 							}
 							return CommandResult.success(I18n.format(this.locale, "ubw.command.success.getall.main"), msgs.toArray(new String[msgs.size()]));
@@ -102,17 +94,15 @@ public class CommandListener implements CommandExecutor {
 							final Features ft = Features.getFeatureKey(args[0]);
 							if (ft==null)
 								return CommandResult.error(I18n.format(this.locale, "ubw.command.error.invalidproperty"), I18n.format(this.locale, "ubw.command.error.invalidproperty.seehelp"));
-							final Object value = get(meta, ft);
-							this.wanddata.updateItem(witem);
-							this.nativemc.setItemInHand(player.getInventory(), witem.getItem());
+							final Object value = get(stage.meta(), ft);
 							return CommandResult.success(I18n.format(this.locale, "ubw.command.success.set", ft.key, ft.type, value));
 						}
 					}
 				}
 			} finally {
-				if (witem!=null) {
-					this.wanddata.updateItem(witem);
-					this.nativemc.setItemInHand(player.getInventory(), witem.getItem());
+				if (stage.isWandItem()) {
+					stage.updateItem();
+					this.nativemc.setItemInHand(player.getInventory(), stage.getItem());
 				}
 			}
 		} else if (StringUtils.equalsIgnoreCase(type, "help")) {
