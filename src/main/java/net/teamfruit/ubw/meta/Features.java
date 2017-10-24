@@ -21,13 +21,12 @@ public enum Features {
 	FEATURE_META_OWNER_ID("owner.id", TEXT, "", "usefulbuilderswand.set.owner.manage"),
 	;
 
+	public static final String FEATURE_META = "feature.meta";
 	public final String key;
 	public final String path;
 	public final WandItemMetaType type;
 	public final Object defaultValue;
 	public final String permission;
-	public static final String FEATURE_META = "feature.meta";
-
 	private Features(final String key, final WandItemMetaType type, final Object defaultValue, final String permission) {
 		this.key = StringUtils.substringBeforeLast(key, ".data");
 		this.path = FEATURE_META+"."+key;

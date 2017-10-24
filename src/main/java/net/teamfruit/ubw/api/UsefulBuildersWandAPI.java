@@ -1,22 +1,26 @@
 package net.teamfruit.ubw.api;
 
+import javax.annotation.Nonnull;
+
 /**
- * API
+ * API Terminal
  * <p>
- * some features may not be initialized before this plugin <code>onEnable</code> phase
+ * Select API you want to use.
  * <p>
- * please don't use these features in <code>onEnable</code> phase
+ * Some features may <b>not be initialized</b> before this plugin <code>onEnable</code> phase
+ * <br>
+ * <b>Do not use these features</b> before the <code>onEnable</code> phase completes.
  *
  * @author TeamFruit
  */
-public class UsefulBuildersWandAPI {
-	private final UBWBridge bridge;
+public interface UsefulBuildersWandAPI {
 
-	public UsefulBuildersWandAPI(final UBWBridge bridge) {
-		this.bridge = bridge;
-	}
+	/**
+	 * Create a wand / Check if the item is a wand / Change wand attribute API
+	 * @return item API object.
+	 * @throws IllegalStateException before initialized.
+	 */
+	@Nonnull
+	WandItemAPI itemAPI() throws IllegalStateException;
 
-	public interface UBWBridge {
-
-	}
 }

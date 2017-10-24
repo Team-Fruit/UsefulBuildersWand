@@ -16,18 +16,18 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import net.teamfruit.ubw.I18n.Locale;
 import net.teamfruit.ubw.I18n.Locale.LocaleBuilder;
-import net.teamfruit.ubw.api.UsefulBuildersWand;
 import net.teamfruit.ubw.api.UsefulBuildersWandAPI;
-import net.teamfruit.ubw.api.UsefulBuildersWandAPI.UBWBridge;
-import net.teamfruit.ubw.api.impl.UBWBridgeImpl;
+import net.teamfruit.ubw.api.WandItemAPI;
+import net.teamfruit.ubw.api.impl.WandItemAPIImpl;
 
-public class UBWPlugin extends JavaPlugin implements UsefulBuildersWand {
-	private UBWBridge apiimpl = new UBWBridgeImpl();
-	private UsefulBuildersWandAPI api = new UsefulBuildersWandAPI(this.apiimpl);
+public class UBWPlugin extends JavaPlugin implements UsefulBuildersWandAPI {
+	private WandItemAPIImpl wandItemAPI;
 
 	@Override
-	public UsefulBuildersWandAPI getAPI() {
-		return this.api;
+	public WandItemAPI itemAPI() throws IllegalStateException {
+		if (this.wandItemAPI==null)
+			throw new IllegalStateException("Item API is not initialized. call after initialized.");
+		return this.wandItemAPI;
 	}
 
 	@Override
@@ -53,6 +53,8 @@ public class UBWPlugin extends JavaPlugin implements UsefulBuildersWand {
 		wanddata.initConfig(config);
 		config.options().copyDefaults(true);
 		saveConfig();
+
+		this.wandItemAPI = new WandItemAPIImpl(wanddata);
 
 		final Locale locale = getLocale(wanddata.getConfig());
 
