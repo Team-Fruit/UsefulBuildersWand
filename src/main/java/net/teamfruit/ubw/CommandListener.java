@@ -16,8 +16,9 @@ import org.bukkit.entity.Player;
 import com.google.common.collect.Lists;
 
 import net.teamfruit.ubw.I18n.Locale;
-import net.teamfruit.ubw.meta.Features;
 import net.teamfruit.ubw.meta.IWandMeta;
+import net.teamfruit.ubw.meta.WandFeature;
+import net.teamfruit.ubw.meta.WandFeatureRegistry;
 
 public class CommandListener implements CommandExecutor {
 	private final Locale locale;
@@ -67,11 +68,11 @@ public class CommandListener implements CommandExecutor {
 								return CommandResult.error(I18n.format(this.locale, "ubw.command.error.remove"));
 							else
 								return CommandResult.error(I18n.format(this.locale, "ubw.command.error.set"));
-						final Features ft = Features.getFeatureKey(args[0]);
+						final WandFeature<?> ft = WandFeatureRegistry.getFeatureKey(args[0]);
 						if (ft==null)
 							return CommandResult.error(I18n.format(this.locale, "ubw.command.error.invalidproperty"), I18n.format(this.locale, "ubw.command.error.invalidproperty.seehelp"));
-						if (!sender.hasPermission(ft.permission))
-							return CommandResult.error(I18n.format(this.locale, "ubw.command.error.permission", ft.permission));
+						// if (!sender.hasPermission(ft.permission))
+						//	return CommandResult.error(I18n.format(this.locale, "ubw.command.error.permission", ft.permission));
 						Object value;
 						if (StringUtils.equalsIgnoreCase(type, "remove")) {
 							final IWandMeta cfgmeta = this.wanddata.configMeta();
@@ -85,13 +86,13 @@ public class CommandListener implements CommandExecutor {
 							return CommandResult.error(I18n.format(this.locale, "ubw.command.error.permission", "ubw.get"));
 						if (args.length<1) {
 							final List<String> msgs = Lists.newArrayList();
-							for (final Features ft : Features.values()) {
+							for (final WandFeature<?> ft : WandFeatureRegistry.getFeatures()) {
 								final Object value = get(stage.meta(), ft);
 								msgs.add(I18n.format(this.locale, "ubw.command.success.getall.sub", I18n.format(this.locale, "ubw.command.success.get", ft.key, ft.type, value)));
 							}
 							return CommandResult.success(I18n.format(this.locale, "ubw.command.success.getall.main"), msgs.toArray(new String[msgs.size()]));
 						} else {
-							final Features ft = Features.getFeatureKey(args[0]);
+							final WandFeature<?> ft = WandFeatureRegistry.getFeatureKey(args[0]);
 							if (ft==null)
 								return CommandResult.error(I18n.format(this.locale, "ubw.command.error.invalidproperty"), I18n.format(this.locale, "ubw.command.error.invalidproperty.seehelp"));
 							final Object value = get(stage.meta(), ft);
@@ -114,7 +115,7 @@ public class CommandListener implements CommandExecutor {
 					return CommandResult.error(I18n.format(this.locale, "ubw.command.error.permission", "ubw.help.defaults"));
 				msgs.add(I18n.format(this.locale, "ubw.command.success.help.defaults.main"));
 				final IWandMeta cfgmeta = this.wanddata.configMeta();
-				for (final Features ft : Features.values()) {
+				for (final WandFeature<?> ft : WandFeatureRegistry.getFeatures()) {
 					final Object value = get(cfgmeta, ft);
 					msgs.add(I18n.format(this.locale, "ubw.command.success.help.defaults.sub", I18n.format(this.locale, "ubw.command.success.get", ft.key, ft.type, value)));
 				}

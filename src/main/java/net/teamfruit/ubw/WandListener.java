@@ -1,6 +1,6 @@
 package net.teamfruit.ubw;
 
-import static net.teamfruit.ubw.meta.Features.*;
+import static net.teamfruit.ubw.meta.WandFeatureRegistry.*;
 import static net.teamfruit.ubw.meta.WandMetaUtils.*;
 
 import java.util.List;

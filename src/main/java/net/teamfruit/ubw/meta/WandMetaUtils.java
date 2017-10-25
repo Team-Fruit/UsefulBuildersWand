@@ -38,11 +38,11 @@ public class WandMetaUtils {
 		return null;
 	}
 
-	public static void set(final @Nonnull IWandWritableMeta meta, final @Nonnull Features ft, final Object value) {
+	public static void set(final @Nonnull IWandWritableMeta meta, final @Nonnull WandFeature<?> ft, final Object value) {
 		set(meta, ft.type, ft.path, value);
 	}
 
-	public static Object get(final @Nonnull IWandMeta meta, final @Nonnull Features ft) {
+	public static Object get(final @Nonnull IWandMeta meta, final @Nonnull WandFeature<?> ft) {
 		return get(meta, ft.type, ft.path);
 	}
 

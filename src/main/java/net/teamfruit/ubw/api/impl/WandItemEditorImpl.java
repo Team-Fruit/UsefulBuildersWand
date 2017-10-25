@@ -6,8 +6,9 @@ import net.teamfruit.ubw.WandData;
 import net.teamfruit.ubw.WandItemStage;
 import net.teamfruit.ubw.api.WandItemEditor;
 import net.teamfruit.ubw.api.WandItemProperty;
-import net.teamfruit.ubw.meta.Features;
 import net.teamfruit.ubw.meta.IWandMeta;
+import net.teamfruit.ubw.meta.WandFeature;
+import net.teamfruit.ubw.meta.WandFeatureRegistry;
 import net.teamfruit.ubw.meta.WandMetaUtils;
 
 public class WandItemEditorImpl implements WandItemEditor {
@@ -24,20 +25,20 @@ public class WandItemEditorImpl implements WandItemEditor {
 		this.defmeta = this.wanddata.configMeta();
 	}
 
-	private final WandItemProperty<String> NAME = new WandItemPropertyImpl<String>(Features.FEATURE_META_NAME);
-	private final WandItemProperty<Integer> SIZE = new WandItemPropertyImpl<Integer>(Features.FEATURE_META_SIZE);
-	private final WandItemProperty<Boolean> MODE = new WandItemPropertyImpl<Boolean>(Features.FEATURE_META_MODE);
-	private final WandItemProperty<Integer> DURABILITY = new WandItemPropertyImpl<Integer>(Features.FEATURE_META_DURABILITY);
-	private final WandItemProperty<Integer> DURABILITY_MAX = new WandItemPropertyImpl<Integer>(Features.FEATURE_META_DURABILITY_MAX);
-	private final WandItemProperty<Boolean> DURABILITY_BLOCKCOUNT = new WandItemPropertyImpl<Boolean>(Features.FEATURE_META_DURABILITY_BLOCKCOUNT);
-	private final WandItemProperty<Integer> COUNT_PLACE = new WandItemPropertyImpl<Integer>(Features.FEATURE_META_COUNT_PLACE);
-	private final WandItemProperty<Integer> COUNT_USE = new WandItemPropertyImpl<Integer>(Features.FEATURE_META_COUNT_USE);
-	private final WandItemProperty<Integer> PARTICLE_COLOR_R = new WandItemPropertyImpl<Integer>(Features.FEATURE_META_PARTICLE_COLOR_R);
-	private final WandItemProperty<Integer> PARTICLE_COLOR_G = new WandItemPropertyImpl<Integer>(Features.FEATURE_META_PARTICLE_COLOR_G);
-	private final WandItemProperty<Integer> PARTICLE_COLOR_B = new WandItemPropertyImpl<Integer>(Features.FEATURE_META_PARTICLE_COLOR_B);
-	private final WandItemProperty<Boolean> PARTICLE_SHARE = new WandItemPropertyImpl<Boolean>(Features.FEATURE_META_PARTICLE_SHARE);
-	private final WandItemProperty<Boolean> OWNER = new WandItemPropertyImpl<Boolean>(Features.FEATURE_META_OWNER);
-	private final WandItemProperty<String> OWNER_ID = new WandItemPropertyImpl<String>(Features.FEATURE_META_OWNER_ID);
+	private final WandItemProperty<String> NAME = new WandItemPropertyImpl<String>(WandFeatureRegistry.FEATURE_META_NAME);
+	private final WandItemProperty<Integer> SIZE = new WandItemPropertyImpl<Integer>(WandFeatureRegistry.FEATURE_META_SIZE);
+	private final WandItemProperty<Boolean> MODE = new WandItemPropertyImpl<Boolean>(WandFeatureRegistry.FEATURE_META_MODE);
+	private final WandItemProperty<Integer> DURABILITY = new WandItemPropertyImpl<Integer>(WandFeatureRegistry.FEATURE_META_DURABILITY);
+	private final WandItemProperty<Integer> DURABILITY_MAX = new WandItemPropertyImpl<Integer>(WandFeatureRegistry.FEATURE_META_DURABILITY_MAX);
+	private final WandItemProperty<Boolean> DURABILITY_BLOCKCOUNT = new WandItemPropertyImpl<Boolean>(WandFeatureRegistry.FEATURE_META_DURABILITY_BLOCKCOUNT);
+	private final WandItemProperty<Integer> COUNT_PLACE = new WandItemPropertyImpl<Integer>(WandFeatureRegistry.FEATURE_META_COUNT_PLACE);
+	private final WandItemProperty<Integer> COUNT_USE = new WandItemPropertyImpl<Integer>(WandFeatureRegistry.FEATURE_META_COUNT_USE);
+	private final WandItemProperty<Integer> PARTICLE_COLOR_R = new WandItemPropertyImpl<Integer>(WandFeatureRegistry.FEATURE_META_PARTICLE_COLOR_R);
+	private final WandItemProperty<Integer> PARTICLE_COLOR_G = new WandItemPropertyImpl<Integer>(WandFeatureRegistry.FEATURE_META_PARTICLE_COLOR_G);
+	private final WandItemProperty<Integer> PARTICLE_COLOR_B = new WandItemPropertyImpl<Integer>(WandFeatureRegistry.FEATURE_META_PARTICLE_COLOR_B);
+	private final WandItemProperty<Boolean> PARTICLE_SHARE = new WandItemPropertyImpl<Boolean>(WandFeatureRegistry.FEATURE_META_PARTICLE_SHARE);
+	private final WandItemProperty<Boolean> OWNER = new WandItemPropertyImpl<Boolean>(WandFeatureRegistry.FEATURE_META_OWNER);
+	private final WandItemProperty<String> OWNER_ID = new WandItemPropertyImpl<String>(WandFeatureRegistry.FEATURE_META_OWNER_ID);
 
 	@Override
 	public WandItemProperty<String> nameProperty() {
@@ -110,9 +111,9 @@ public class WandItemEditorImpl implements WandItemEditor {
 	}
 
 	public class WandItemPropertyImpl<T> implements WandItemProperty<T> {
-		private final Features ft;
+		private final WandFeature<?> ft;
 
-		public WandItemPropertyImpl(final Features ft) {
+		public WandItemPropertyImpl(final WandFeature<?> ft) {
 			this.ft = ft;
 		}
 

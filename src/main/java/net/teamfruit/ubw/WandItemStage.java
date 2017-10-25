@@ -11,8 +11,8 @@ import org.bukkit.inventory.meta.ItemMeta;
 
 import com.google.common.collect.Lists;
 
-import net.teamfruit.ubw.meta.Features;
 import net.teamfruit.ubw.meta.IWandWritableMeta;
+import net.teamfruit.ubw.meta.WandFeatureRegistry;
 import net.teamfruit.ubw.meta.WandItem;
 import net.teamfruit.ubw.meta.WandTextUtils;
 
@@ -73,7 +73,7 @@ public class WandItemStage implements ItemStackHolder {
 			if (itemmeta.hasDisplayName()) {
 				final String name = itemmeta.getDisplayName();
 				if (!StringUtils.startsWith(name, (String) itemprefix))
-					meta().setText(Features.FEATURE_META_NAME.path, name);
+					meta().setText(WandFeatureRegistry.FEATURE_META_NAME.path, name);
 			}
 		}
 

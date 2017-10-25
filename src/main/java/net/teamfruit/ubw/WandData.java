@@ -1,6 +1,6 @@
 package net.teamfruit.ubw;
 
-import static net.teamfruit.ubw.meta.Features.*;
+import static net.teamfruit.ubw.meta.WandFeatureRegistry.*;
 
 import java.util.Map;
 
@@ -11,10 +11,10 @@ import org.bukkit.configuration.file.FileConfiguration;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
-import net.teamfruit.ubw.meta.Features;
 import net.teamfruit.ubw.meta.IWandWritableMeta;
 import net.teamfruit.ubw.meta.WandCompoundMeta;
 import net.teamfruit.ubw.meta.WandConfigMeta;
+import net.teamfruit.ubw.meta.WandFeature;
 
 public class WandData {
 	public static final String SETTING_LANG = "setting.lang";
@@ -31,7 +31,7 @@ public class WandData {
 		it.put(SETTING_LANG, "en_US.lang");
 		it.put(SETTING_EFFECT_RANGE, 48);
 
-		for (final Features ft : values())
+		for (final WandFeature<?> ft : getFeatures())
 			it.put(ft.path, ft.defaultValue);
 
 		it.put("custom.durability.unbreakable.eval", "<=");
