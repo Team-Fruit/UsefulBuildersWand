@@ -13,7 +13,7 @@ public class WandItemMeta implements IWandWritableMeta {
 
 	@Override
 	public WandItemMetaType getType(final String path) {
-		final WandFeature<?> ft = WandFeatureRegistry.getFeature(path);
+		final WandFeature<?> ft = WandFeatureRegistry.getFeaturePath(path);
 		if (ft!=null)
 			return ft.type;
 		return null;

@@ -14,7 +14,7 @@ import com.google.common.collect.Maps;
 import net.teamfruit.ubw.meta.IWandWritableMeta;
 import net.teamfruit.ubw.meta.WandCompoundMeta;
 import net.teamfruit.ubw.meta.WandConfigMeta;
-import net.teamfruit.ubw.meta.WandFeature;
+import net.teamfruit.ubw.meta.WandFeatureRegistry;
 
 public class WandData {
 	public static final WandData INSTANCE = new WandData();
@@ -28,59 +28,58 @@ public class WandData {
 	public static final String ITEM_TITLE = "item.title";
 	public static final String ITEM_LORE = "item.lore";
 
-	public static final Map<String, Object> it = Maps.newHashMap();
+	private static final Map<String, Object> configInit = Maps.newHashMap();
 	static {
-		it.put(SETTING_LANG, "en_US.lang");
-		it.put(SETTING_EFFECT_RANGE, 48);
+		configInit.put(SETTING_LANG, "en_US.lang");
+		configInit.put(SETTING_EFFECT_RANGE, 48);
 
-		for (final WandFeature<?> ft : getFeatures())
-			it.put(ft.path, ft.defaultValue);
+		WandFeatureRegistry.injectFeatureConfig(configInit);
 
-		it.put("custom.durability.unbreakable.eval", "<=");
-		it.put("custom.durability.unbreakable.arg0", "${"+FEATURE_META_DURABILITY_MAX.path+"}");
-		it.put("custom.durability.unbreakable.arg1", "0");
-		it.put("custom.title.namecolor.eval", "replace");
-		it.put("custom.title.namecolor.arg0", "${"+FEATURE_META_NAME.path+"}");
-		it.put("custom.title.namecolor.arg1", "&");
-		it.put("custom.title.namecolor.arg2", "§");
-		it.put("custom.title.namenotexists.eval", "empty");
-		it.put("custom.title.namenotexists.arg0", "${custom.title.namecolor}");
-		it.put("custom.title.name.if", "${custom.title.namenotexists}");
-		it.put("custom.title.name.true", "§eBuilder's Wand");
-		it.put("custom.title.name.false", "${custom.title.namecolor}");
-		it.put("custom.title.mode.if", "${"+FEATURE_META_MODE.path+"}");
-		it.put("custom.title.mode.true", "┃");
-		it.put("custom.title.mode.false", "━");
-		it.put("custom.title.durability.if", "${custom.durability.unbreakable}");
-		it.put("custom.title.durability.true", "Infinity");
-		it.put("custom.title.durability.false", "${"+FEATURE_META_DURABILITY.path+"}/${"+FEATURE_META_DURABILITY_MAX.path+"}");
-		it.put("custom.lore.mode.if", "${"+FEATURE_META_MODE.path+"}");
-		it.put("custom.lore.mode.true", "Vertical");
-		it.put("custom.lore.mode.false", "Horizonal");
-		it.put("custom.lore.blockcount.if", "${"+FEATURE_META_DURABILITY_BLOCKCOUNT.path+"}");
-		it.put("custom.lore.blockcount.true", " blocks");
-		it.put("custom.lore.blockcount.false", " times");
-		it.put("custom.lore.durability.if", "${custom.durability.unbreakable}");
-		it.put("custom.lore.durability.true", "(Infinity)");
-		it.put("custom.lore.durability.false", "${"+FEATURE_META_DURABILITY.path+"} of ${"+FEATURE_META_DURABILITY_MAX.path+"}${custom.lore.blockcount}");
-		it.put("custom.lore.owner.public.eval", "empty");
-		it.put("custom.lore.owner.public.arg0", "${"+FEATURE_META_OWNER_ID.path+"}");
-		it.put("custom.lore.owner.name.eval", "name");
-		it.put("custom.lore.owner.name.arg0", "${"+FEATURE_META_OWNER_ID.path+"}");
-		it.put("custom.lore.owner.namenotexists.eval", "empty");
-		it.put("custom.lore.owner.namenotexists.arg0", "${custom.lore.owner.name}");
-		it.put("custom.lore.owner.nameuuid.if", "${custom.lore.owner.namenotexists}");
-		it.put("custom.lore.owner.nameuuid.true", "§8${"+FEATURE_META_OWNER_ID.path+"}");
-		it.put("custom.lore.owner.nameuuid.false", "${custom.lore.owner.name}");
-		it.put("custom.lore.owner.namepublic.if", "${custom.lore.owner.public}");
-		it.put("custom.lore.owner.namepublic.true", "§bPublic");
-		it.put("custom.lore.owner.namepublic.false", "${custom.lore.owner.nameuuid}");
-		it.put("custom.lore.owner.if", "${"+FEATURE_META_OWNER.path+"}");
-		it.put("custom.lore.owner.true", "§3 - Owner §7: ${custom.lore.owner.namepublic}");
+		configInit.put("custom.durability.unbreakable.eval", "<=");
+		configInit.put("custom.durability.unbreakable.arg0", "${"+FEATURE_META_DURABILITY_MAX.path+"}");
+		configInit.put("custom.durability.unbreakable.arg1", "0");
+		configInit.put("custom.title.namecolor.eval", "replace");
+		configInit.put("custom.title.namecolor.arg0", "${"+FEATURE_META_NAME.path+"}");
+		configInit.put("custom.title.namecolor.arg1", "&");
+		configInit.put("custom.title.namecolor.arg2", "§");
+		configInit.put("custom.title.namenotexists.eval", "empty");
+		configInit.put("custom.title.namenotexists.arg0", "${custom.title.namecolor}");
+		configInit.put("custom.title.name.if", "${custom.title.namenotexists}");
+		configInit.put("custom.title.name.true", "§eBuilder's Wand");
+		configInit.put("custom.title.name.false", "${custom.title.namecolor}");
+		configInit.put("custom.title.mode.if", "${"+FEATURE_META_MODE.path+"}");
+		configInit.put("custom.title.mode.true", "┃");
+		configInit.put("custom.title.mode.false", "━");
+		configInit.put("custom.title.durability.if", "${custom.durability.unbreakable}");
+		configInit.put("custom.title.durability.true", "Infinity");
+		configInit.put("custom.title.durability.false", "${"+FEATURE_META_DURABILITY.path+"}/${"+FEATURE_META_DURABILITY_MAX.path+"}");
+		configInit.put("custom.lore.mode.if", "${"+FEATURE_META_MODE.path+"}");
+		configInit.put("custom.lore.mode.true", "Vertical");
+		configInit.put("custom.lore.mode.false", "Horizonal");
+		configInit.put("custom.lore.blockcount.if", "${"+FEATURE_META_DURABILITY_BLOCKCOUNT.path+"}");
+		configInit.put("custom.lore.blockcount.true", " blocks");
+		configInit.put("custom.lore.blockcount.false", " times");
+		configInit.put("custom.lore.durability.if", "${custom.durability.unbreakable}");
+		configInit.put("custom.lore.durability.true", "(Infinity)");
+		configInit.put("custom.lore.durability.false", "${"+FEATURE_META_DURABILITY.path+"} of ${"+FEATURE_META_DURABILITY_MAX.path+"}${custom.lore.blockcount}");
+		configInit.put("custom.lore.owner.public.eval", "empty");
+		configInit.put("custom.lore.owner.public.arg0", "${"+FEATURE_META_OWNER_ID.path+"}");
+		configInit.put("custom.lore.owner.name.eval", "name");
+		configInit.put("custom.lore.owner.name.arg0", "${"+FEATURE_META_OWNER_ID.path+"}");
+		configInit.put("custom.lore.owner.namenotexists.eval", "empty");
+		configInit.put("custom.lore.owner.namenotexists.arg0", "${custom.lore.owner.name}");
+		configInit.put("custom.lore.owner.nameuuid.if", "${custom.lore.owner.namenotexists}");
+		configInit.put("custom.lore.owner.nameuuid.true", "§8${"+FEATURE_META_OWNER_ID.path+"}");
+		configInit.put("custom.lore.owner.nameuuid.false", "${custom.lore.owner.name}");
+		configInit.put("custom.lore.owner.namepublic.if", "${custom.lore.owner.public}");
+		configInit.put("custom.lore.owner.namepublic.true", "§bPublic");
+		configInit.put("custom.lore.owner.namepublic.false", "${custom.lore.owner.nameuuid}");
+		configInit.put("custom.lore.owner.if", "${"+FEATURE_META_OWNER.path+"}");
+		configInit.put("custom.lore.owner.true", "§3 - Owner §7: ${custom.lore.owner.namepublic}");
 
-		it.put(ITEM_PREFIX, "§m§a§k§e§r");
-		it.put(ITEM_TITLE, "${custom.title.name} §7x${"+FEATURE_META_SIZE.path+"} [${custom.title.mode}] (${custom.title.durability})");
-		it.put(ITEM_LORE, Lists.newArrayList(new String[] {
+		configInit.put(ITEM_PREFIX, "§m§a§k§e§r");
+		configInit.put(ITEM_TITLE, "${custom.title.name} §7x${"+FEATURE_META_SIZE.path+"} [${custom.title.mode}] (${custom.title.durability})");
+		configInit.put(ITEM_LORE, Lists.newArrayList(new String[] {
 				"§3 - Mode §7: ${custom.lore.mode}",
 				"§3 - Durability §7: ${custom.lore.durability}",
 				"§3 - Size §7: ${"+FEATURE_META_SIZE.path+"}",
@@ -88,6 +87,15 @@ public class WandData {
 				"§3 - PlaceCount §7: ${"+FEATURE_META_COUNT_PLACE.path+"}",
 				"${custom.lore.owner}",
 		}));
+	}
+
+	@Deprecated
+	public static Map<String, Object> getConfigInit() {
+		return configInit;
+	}
+
+	public static Object getInitDefault(final String path) {
+		return configInit.get(path);
 	}
 
 	private FileConfiguration cfg;
@@ -98,7 +106,7 @@ public class WandData {
 	public void initConfig(final FileConfiguration cfg) {
 		this.cfg = cfg;
 
-		cfg.addDefaults(it);
+		cfg.addDefaults(configInit);
 	}
 
 	public FileConfiguration getConfig() {

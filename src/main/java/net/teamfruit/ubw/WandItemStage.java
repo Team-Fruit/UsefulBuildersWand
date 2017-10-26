@@ -62,7 +62,7 @@ public class WandItemStage implements ItemStackHolder {
 
 		Object itemprefix = cfg.get(WandData.ITEM_PREFIX);
 		if (itemprefix==null)
-			itemprefix = WandData.it.get(WandData.ITEM_PREFIX);
+			itemprefix = WandData.getInitDefault(WandData.ITEM_PREFIX);
 		if (itemprefix instanceof String) {
 			final ItemMeta itemmeta = getItem().getItemMeta();
 			if (itemmeta.hasDisplayName()) {
@@ -75,13 +75,13 @@ public class WandItemStage implements ItemStackHolder {
 		final ItemMeta itemmeta = getItem().getItemMeta();
 		Object itemtitle = cfg.get(WandData.ITEM_TITLE);
 		if (itemtitle==null)
-			itemtitle = WandData.it.get(WandData.ITEM_TITLE);
+			itemtitle = WandData.getInitDefault(WandData.ITEM_TITLE);
 		if (itemtitle instanceof String)
 			itemmeta.setDisplayName((itemprefix instanceof String ? itemprefix : "")+WandTextUtils.resolve(meta(), (String) itemtitle));
 
 		Object itemlore = cfg.get(WandData.ITEM_LORE);
 		if (itemlore==null)
-			itemlore = WandData.it.get(WandData.ITEM_LORE);
+			itemlore = WandData.getInitDefault(WandData.ITEM_LORE);
 		if (itemlore instanceof List<?>) {
 			final List<String> newlore = Lists.newArrayList();
 			for (final Object obj : (List<?>) itemlore)

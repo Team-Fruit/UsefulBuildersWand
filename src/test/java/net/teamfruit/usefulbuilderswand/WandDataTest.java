@@ -36,13 +36,14 @@ public class WandDataTest {
 	public void tearDown() throws Exception {
 	}
 
+	@SuppressWarnings("deprecation")
 	@Test
 	public void test() {
-		final IWandMeta settings = new WandMapMeta(WandData.it);
+		final IWandMeta settings = new WandMapMeta(WandData.getConfigInit());
 
-		final String title = (String) WandData.it.get("item.title");
+		final String title = (String) WandData.getInitDefault("item.title");
 		@SuppressWarnings("unchecked")
-		final List<String> lore = (List<String>) WandData.it.get("item.lore");
+		final List<String> lore = (List<String>) WandData.getInitDefault("item.lore");
 
 		final Map<String, Object> itemmap = Maps.newHashMap();
 		itemmap.put("feature.meta.mode", true);

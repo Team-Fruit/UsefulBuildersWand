@@ -56,7 +56,7 @@ public class UBWPlugin extends JavaPlugin implements UsefulBuildersWandAPI {
 
 		this.wandItemAPI = new WandItemAPIImpl();
 
-		final String langdef = (String) WandData.it.get(WandData.SETTING_LANG);
+		final String langdef = (String) WandData.getInitDefault(WandData.SETTING_LANG);
 		final String langcfg = config.getString(WandData.SETTING_LANG, langdef);
 		final Locale locale = getLocale(langdef, langcfg);
 

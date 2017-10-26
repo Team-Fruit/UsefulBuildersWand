@@ -15,13 +15,14 @@ import com.google.common.collect.Lists;
 
 import net.teamfruit.ubw.meta.lore.ItemLore.ItemLoreContent;
 import net.teamfruit.ubw.meta.lore.ItemLore.ItemLoreDataFormat;
-import net.teamfruit.ubw.meta.lore.ItemLore.ItemLoreMeta;
-import net.teamfruit.ubw.meta.lore.ItemLore.ItemLoreMetaEditable;
-import net.teamfruit.ubw.meta.lore.ItemLore.ItemLoreRaw;
 import net.teamfruit.ubw.meta.lore.ItemLore.ItemLoreDataFormat.FlagMeta;
 import net.teamfruit.ubw.meta.lore.ItemLore.ItemLoreDataFormat.FlagMeta.TextFlagMeta;
 import net.teamfruit.ubw.meta.lore.ItemLore.ItemLoreDataFormat.FlagMeta.TextFlagMeta.TestAccess;
+import net.teamfruit.ubw.meta.lore.ItemLore.ItemLoreMeta;
+import net.teamfruit.ubw.meta.lore.ItemLore.ItemLoreMetaEditable;
+import net.teamfruit.ubw.meta.lore.ItemLore.ItemLoreRaw;
 
+@SuppressWarnings("deprecation")
 public class ItemLoreTest {
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
