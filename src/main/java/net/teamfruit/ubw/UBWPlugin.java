@@ -19,6 +19,7 @@ import net.teamfruit.ubw.I18n.Locale.LocaleBuilder;
 import net.teamfruit.ubw.api.UsefulBuildersWandAPI;
 import net.teamfruit.ubw.api.WandItemAPI;
 import net.teamfruit.ubw.api.impl.WandItemAPIImpl;
+import net.teamfruit.ubw.command.CommandListener;
 
 public class UBWPlugin extends JavaPlugin implements UsefulBuildersWandAPI {
 	private WandItemAPIImpl wandItemAPI;
@@ -49,37 +50,36 @@ public class UBWPlugin extends JavaPlugin implements UsefulBuildersWandAPI {
 		Log.log = getLogger();
 		final FileConfiguration config = getConfig();
 
-		final WandData wanddata = new WandData();
-		wanddata.initConfig(config);
+		WandData.INSTANCE.initConfig(config);
 		config.options().copyDefaults(true);
 		saveConfig();
 
-		this.wandItemAPI = new WandItemAPIImpl(wanddata);
+		this.wandItemAPI = new WandItemAPIImpl();
 
-		final Locale locale = getLocale(wanddata.getConfig());
+		final String langdef = (String) WandData.it.get(WandData.SETTING_LANG);
+		final String langcfg = config.getString(WandData.SETTING_LANG, langdef);
+		final Locale locale = getLocale(langdef, langcfg);
 
 		final NativeMinecraft nativemc = NativeMinecraft.NativeMinecraftFactory.create(this);
 
-		final WandListener listener = new WandListener(this, locale, wanddata, nativemc);
+		final WandListener listener = new WandListener(this, locale, nativemc);
 		getServer().getPluginManager().registerEvents(listener, this);
 
-		final CommandListener cmdlistener = new CommandListener(locale, wanddata, nativemc);
+		final CommandListener cmdlistener = new CommandListener(locale, nativemc);
 		getCommand("ubw").setExecutor(cmdlistener);
 	}
 
-	private Locale getLocale(final FileConfiguration cfg) {
+	private Locale getLocale(final String langdef, final String langcfg) {
 		final LocaleBuilder lcb = new LocaleBuilder();
-		final String langdef = (String) WandData.it.get(WandData.SETTING_LANG);
-		final String lang = cfg.getString(WandData.SETTING_EFFECT_RANGE, langdef);
 		final File langDir = new File(getDataFolder(), "lang");
 		final File pluginFile = getFile();
 		ZipFile pluginZip = null;
 		try {
 			pluginZip = new ZipFile(pluginFile);
 			final File resdef = new File(langDir, langdef);
-			final File res = new File(langDir, lang);
+			final File res = new File(langDir, langcfg);
 			final ZipEntry entrydef = pluginZip.getEntry("lang/"+langdef);
-			final ZipEntry entry = pluginZip.getEntry("lang/"+lang);
+			final ZipEntry entry = pluginZip.getEntry("lang/"+langcfg);
 			if (resdef.exists())
 				try {
 					lcb.fromInputStream(new BufferedInputStream(new FileInputStream(resdef)));

@@ -4,7 +4,7 @@ import org.apache.commons.lang.StringUtils;
 
 import net.teamfruit.ubw.api.WandProperty;
 
-public class WandFeature<T> implements WandProperty<T> {
+public final class WandFeature<T> implements WandProperty<T> {
 	public static final String FEATURE_META = "feature.meta";
 	public final String key;
 	public final String path;

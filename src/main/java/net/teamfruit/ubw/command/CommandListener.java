@@ -1,4 +1,4 @@
-package net.teamfruit.ubw;
+package net.teamfruit.ubw.command;
 
 import static net.teamfruit.ubw.meta.WandMetaUtils.*;
 
@@ -15,19 +15,20 @@ import org.bukkit.entity.Player;
 
 import com.google.common.collect.Lists;
 
+import net.teamfruit.ubw.I18n;
 import net.teamfruit.ubw.I18n.Locale;
-import net.teamfruit.ubw.meta.IWandMeta;
+import net.teamfruit.ubw.NativeMinecraft;
+import net.teamfruit.ubw.WandData;
+import net.teamfruit.ubw.WandItemStage;
 import net.teamfruit.ubw.meta.WandFeature;
 import net.teamfruit.ubw.meta.WandFeatureRegistry;
 
 public class CommandListener implements CommandExecutor {
 	private final Locale locale;
-	private final WandData wanddata;
 	private final NativeMinecraft nativemc;
 
-	public CommandListener(final Locale locale, final WandData wanddata, final NativeMinecraft nativemc) {
+	public CommandListener(final Locale locale, final NativeMinecraft nativemc) {
 		this.locale = locale;
-		this.wanddata = wanddata;
 		this.nativemc = nativemc;
 	}
 
@@ -48,7 +49,7 @@ public class CommandListener implements CommandExecutor {
 			if (!(sender instanceof Player))
 				return CommandResult.error(I18n.format(this.locale, "ubw.command.error.notplayer"));
 			final Player player = (Player) sender;
-			final WandItemStage stage = new WandItemStage(this.wanddata);
+			final WandItemStage stage = new WandItemStage();
 			stage.setItem(this.nativemc.getItemInHand(player.getInventory()));
 			if (!stage.isItem())
 				return CommandResult.error(I18n.format(this.locale, "ubw.command.error.itemnotinhand"));
@@ -75,8 +76,7 @@ public class CommandListener implements CommandExecutor {
 						//	return CommandResult.error(I18n.format(this.locale, "ubw.command.error.permission", ft.permission));
 						Object value;
 						if (StringUtils.equalsIgnoreCase(type, "remove")) {
-							final IWandMeta cfgmeta = this.wanddata.configMeta();
-							value = get(cfgmeta, ft);
+							value = get(WandData.INSTANCE.configMeta(), ft);
 							set(stage.meta(), ft, null);
 						} else
 							set(stage.meta(), ft, value = args.length<2 ? "" : args[1]);
@@ -114,9 +114,8 @@ public class CommandListener implements CommandExecutor {
 				if (!sender.hasPermission("ubw.help.defaults"))
 					return CommandResult.error(I18n.format(this.locale, "ubw.command.error.permission", "ubw.help.defaults"));
 				msgs.add(I18n.format(this.locale, "ubw.command.success.help.defaults.main"));
-				final IWandMeta cfgmeta = this.wanddata.configMeta();
 				for (final WandFeature<?> ft : WandFeatureRegistry.getFeatures()) {
-					final Object value = get(cfgmeta, ft);
+					final Object value = get(WandData.INSTANCE.configMeta(), ft);
 					msgs.add(I18n.format(this.locale, "ubw.command.success.help.defaults.sub", I18n.format(this.locale, "ubw.command.success.get", ft.key, ft.type, value)));
 				}
 			} else {

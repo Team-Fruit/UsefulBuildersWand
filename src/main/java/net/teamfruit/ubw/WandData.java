@@ -17,6 +17,8 @@ import net.teamfruit.ubw.meta.WandConfigMeta;
 import net.teamfruit.ubw.meta.WandFeature;
 
 public class WandData {
+	public static final WandData INSTANCE = new WandData();
+
 	public static final String SETTING_LANG = "setting.lang";
 	public static final String SETTING_EFFECT_RANGE = "setting.effect.range";
 
@@ -90,7 +92,7 @@ public class WandData {
 
 	private FileConfiguration cfg;
 
-	public WandData() {
+	private WandData() {
 	}
 
 	public void initConfig(final FileConfiguration cfg) {
@@ -100,11 +102,17 @@ public class WandData {
 	}
 
 	public FileConfiguration getConfig() {
+		if (this.cfg==null)
+			throw new IllegalStateException("WandData config data is not initialized. call after initialized.");
 		return this.cfg;
 	}
 
+	private WandConfigMeta configMeta;
+
 	public WandConfigMeta configMeta() {
-		return new WandConfigMeta(getConfig());
+		if (this.configMeta==null)
+			this.configMeta = new WandConfigMeta(getConfig());
+		return this.configMeta;
 	}
 
 	public @Nonnull IWandWritableMeta wrapMeta(final IWandWritableMeta meta) {

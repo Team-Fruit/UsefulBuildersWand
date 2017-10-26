@@ -9,7 +9,7 @@ import com.google.common.collect.Lists;
 public class WandFeatureRegistry {
 	private static final List<WandFeature<?>> registry = Lists.newArrayList();
 
-	public static <T extends WandFeature<?>> T register(final T feature) {
+	public static <T> WandFeature<T> register(final WandFeature<T> feature) {
 		registry.add(feature);
 		return feature;
 	}
@@ -82,6 +82,6 @@ public class WandFeatureRegistry {
 	FEATURE_META_OWNER("owner.data", FLAG, false, "usefulbuilderswand.set.owner.manage"),
 	FEATURE_META_OWNER_ID("owner.id", TEXT, "", "usefulbuilderswand.set.owner.manage"),
 	;
-
+	
 	 */
 }

@@ -38,14 +38,12 @@ import net.teamfruit.ubw.WorldGuardHandler.WorldGuardHandleException;
 public class WandListener implements Listener {
 	private final Plugin plugin;
 	private final Locale locale;
-	private final WandData wanddata;
 	private NativeMinecraft nativemc;
 	private final WorldGuardHandler worldguard;
 
-	public WandListener(final Plugin plugin, final Locale locale, final WandData wanddata, final NativeMinecraft nativemc) {
+	public WandListener(final Plugin plugin, final Locale locale, final NativeMinecraft nativemc) {
 		this.plugin = plugin;
 		this.locale = locale;
-		this.wanddata = wanddata;
 		this.nativemc = nativemc;
 		this.worldguard = WorldGuardHandler.Factory.create(plugin);
 		new BukkitRunnable() {
@@ -58,7 +56,7 @@ public class WandListener implements Listener {
 
 	private void onEffect() {
 		for (final Player player : this.plugin.getServer().getOnlinePlayers()) {
-			final WandItemStage stage = new WandItemStage(this.wanddata);
+			final WandItemStage stage = new WandItemStage();
 			stage.setItem(this.nativemc.getItemInHand(player.getInventory()));
 			if (!stage.isItem()||!stage.isWandItem())
 				continue;
@@ -90,7 +88,7 @@ public class WandListener implements Listener {
 				final int color_r = or(stage.meta().getNumber(FEATURE_META_PARTICLE_COLOR_R.path), 255);
 				final int color_g = or(stage.meta().getNumber(FEATURE_META_PARTICLE_COLOR_G.path), 255);
 				final int color_b = or(stage.meta().getNumber(FEATURE_META_PARTICLE_COLOR_B.path), 255);
-				final int range = this.wanddata.getConfig().getInt(WandData.SETTING_EFFECT_RANGE);
+				final int range = WandData.INSTANCE.getConfig().getInt(WandData.SETTING_EFFECT_RANGE);
 				if (range>0&&or(stage.meta().getFlag(FEATURE_META_PARTICLE_SHARE.path), true)) {
 					for (final Player other : Bukkit.getOnlinePlayers())
 						if (other.getLocation().distance(player.getLocation())<=range)
@@ -115,7 +113,7 @@ public class WandListener implements Listener {
 
 	private ActionResult onPlayerUse(final Player player, final Action action, final Block target, final BlockFace face) {
 		final PlayerInventory inventory = player.getInventory();
-		final WandItemStage stage = new WandItemStage(this.wanddata);
+		final WandItemStage stage = new WandItemStage();
 		stage.setItem(this.nativemc.getItemInHand(inventory));
 		if (!stage.isItem()||!stage.isWandItem())
 			return ActionResult.error();

@@ -17,14 +17,9 @@ import net.teamfruit.ubw.meta.WandItem;
 import net.teamfruit.ubw.meta.WandTextUtils;
 
 public class WandItemStage implements ItemStackHolder {
-	private final WandData wanddata;
 	private ItemStack itemStack;
 	private WandItem witem;
 	private IWandWritableMeta wmeta;
-
-	public WandItemStage(final @Nonnull WandData wanddata) {
-		this.wanddata = wanddata;
-	}
 
 	@Override
 	public void setItem(final ItemStack itemStack) {
@@ -56,14 +51,14 @@ public class WandItemStage implements ItemStackHolder {
 
 	public @Nonnull IWandWritableMeta meta() {
 		if (this.wmeta==null)
-			this.wmeta = this.wanddata.wrapMeta(getWandItem().getMeta());
+			this.wmeta = WandData.INSTANCE.wrapMeta(getWandItem().getMeta());
 		return this.wmeta;
 	}
 
 	public void updateItem() {
 		if (!isItem()||!isWandItem())
 			return;
-		final FileConfiguration cfg = this.wanddata.getConfig();
+		final FileConfiguration cfg = WandData.INSTANCE.getConfig();
 
 		Object itemprefix = cfg.get(WandData.ITEM_PREFIX);
 		if (itemprefix==null)

@@ -12,17 +12,15 @@ import net.teamfruit.ubw.meta.WandFeatureRegistry;
 import net.teamfruit.ubw.meta.WandMetaUtils;
 
 public class WandItemEditorImpl implements WandItemEditor {
-	private final WandData wanddata;
 	private WandItemStage stage;
 	private IWandMeta defmeta;
 
-	public WandItemEditorImpl(final WandData wanddata, final ItemStack itemStack) {
-		this.wanddata = wanddata;
-		this.stage = new WandItemStage(wanddata);
+	public WandItemEditorImpl(final ItemStack itemStack) {
+		this.stage = new WandItemStage();
 		this.stage.setItem(itemStack);
 		if (!this.stage.isItem())
 			throw new IllegalArgumentException("This itemstack is null or empty");
-		this.defmeta = this.wanddata.configMeta();
+		this.defmeta = WandData.INSTANCE.configMeta();
 	}
 
 	private final WandItemProperty<String> NAME = new WandItemPropertyImpl<String>(WandFeatureRegistry.FEATURE_META_NAME);
