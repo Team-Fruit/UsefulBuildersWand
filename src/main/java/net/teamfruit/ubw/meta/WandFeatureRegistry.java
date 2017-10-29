@@ -17,33 +17,31 @@ import com.google.common.collect.Sets;
 import com.google.common.collect.Table;
 
 public class WandFeatureRegistry {
-	private static final FeatureCategory rootCategory = new FeatureCategory(null);
+	public static final FeatureCategory ROOT_CATEGORY = new FeatureCategory(null);
+	public static final FeatureCategory META_CATEGORY = ROOT_CATEGORY.createCategory();
 
 	public static <T> WandFeature<T> register(final WandFeature<T> feature) {
-		rootCategory.register(feature);
+		ROOT_CATEGORY.register(feature);
 		return feature;
 	}
 
-	public static FeatureCategory getRootCategory() {
-		return rootCategory;
-	}
+	public static final FeatureAttribute<Object> ATTRIBUTE_INIT_DEFAULT_VALUE = FeatureAttribute.attribute("attribute.default");
+	public static final FeatureAttribute<String> ATTRIBUTE_SHORT_KEY = FeatureAttribute.attribute("attribute.short_key");
 
-	public static final FeatureAttribute<Object> ATTRIBUTE_DEFAULT = FeatureAttribute.attribute("attribute.type.default");
-
-	public static final WandFeature<String> FEATURE_META_NAME = rootCategory.register(WandFeature.textFeature("name")).setAttribute(ATTRIBUTE_DEFAULT, "").feature();
-	public static final WandFeature<Integer> FEATURE_META_SIZE = rootCategory.register(WandFeature.numberFeature("size")).setAttribute(ATTRIBUTE_DEFAULT, 9).feature();
-	public static final WandFeature<Boolean> FEATURE_META_MODE = rootCategory.register(WandFeature.flagFeature("mode")).setAttribute(ATTRIBUTE_DEFAULT, false).feature();
-	public static final WandFeature<Integer> FEATURE_META_DURABILITY = rootCategory.register(WandFeature.numberFeature("durability.data")).setAttribute(ATTRIBUTE_DEFAULT, 27).feature();
-	public static final WandFeature<Integer> FEATURE_META_DURABILITY_MAX = rootCategory.register(WandFeature.numberFeature("durability.max")).setAttribute(ATTRIBUTE_DEFAULT, 27).feature();
-	public static final WandFeature<Boolean> FEATURE_META_DURABILITY_BLOCKCOUNT = rootCategory.register(WandFeature.flagFeature("durability.blockcount")).setAttribute(ATTRIBUTE_DEFAULT, false).feature();
-	public static final WandFeature<Integer> FEATURE_META_COUNT_PLACE = rootCategory.register(WandFeature.numberFeature("count.place")).setAttribute(ATTRIBUTE_DEFAULT, 0).feature();
-	public static final WandFeature<Integer> FEATURE_META_COUNT_USE = rootCategory.register(WandFeature.numberFeature("count.use")).setAttribute(ATTRIBUTE_DEFAULT, 0).feature();
-	public static final WandFeature<Integer> FEATURE_META_PARTICLE_COLOR_R = rootCategory.register(WandFeature.numberFeature("particle.color.r")).setAttribute(ATTRIBUTE_DEFAULT, 255).feature();
-	public static final WandFeature<Integer> FEATURE_META_PARTICLE_COLOR_G = rootCategory.register(WandFeature.numberFeature("particle.color.g")).setAttribute(ATTRIBUTE_DEFAULT, 255).feature();
-	public static final WandFeature<Integer> FEATURE_META_PARTICLE_COLOR_B = rootCategory.register(WandFeature.numberFeature("particle.color.b")).setAttribute(ATTRIBUTE_DEFAULT, 255).feature();
-	public static final WandFeature<Boolean> FEATURE_META_PARTICLE_SHARE = rootCategory.register(WandFeature.flagFeature("particle.share")).setAttribute(ATTRIBUTE_DEFAULT, true).feature();
-	public static final WandFeature<Boolean> FEATURE_META_OWNER = rootCategory.register(WandFeature.flagFeature("owner.data")).setAttribute(ATTRIBUTE_DEFAULT, false).feature();
-	public static final WandFeature<String> FEATURE_META_OWNER_ID = rootCategory.register(WandFeature.textFeature("owner.id")).setAttribute(ATTRIBUTE_DEFAULT, "").feature();
+	public static final WandFeature<String> FEATURE_META_NAME = META_CATEGORY.register(WandFeature.textFeature("feature.meta.name")).setAttribute(ATTRIBUTE_INIT_DEFAULT_VALUE, "").setAttribute(ATTRIBUTE_SHORT_KEY, "name").feature();
+	public static final WandFeature<Integer> FEATURE_META_SIZE = META_CATEGORY.register(WandFeature.numberFeature("feature.meta.size")).setAttribute(ATTRIBUTE_INIT_DEFAULT_VALUE, 9).setAttribute(ATTRIBUTE_SHORT_KEY, "size").feature();
+	public static final WandFeature<Boolean> FEATURE_META_MODE = META_CATEGORY.register(WandFeature.flagFeature("feature.meta.mode")).setAttribute(ATTRIBUTE_INIT_DEFAULT_VALUE, false).setAttribute(ATTRIBUTE_SHORT_KEY, "mode").feature();
+	public static final WandFeature<Integer> FEATURE_META_DURABILITY = META_CATEGORY.register(WandFeature.numberFeature("feature.meta.durability.data")).setAttribute(ATTRIBUTE_INIT_DEFAULT_VALUE, 27).setAttribute(ATTRIBUTE_SHORT_KEY, "durability").feature();
+	public static final WandFeature<Integer> FEATURE_META_DURABILITY_MAX = META_CATEGORY.register(WandFeature.numberFeature("feature.meta.durability.max")).setAttribute(ATTRIBUTE_INIT_DEFAULT_VALUE, 27).setAttribute(ATTRIBUTE_SHORT_KEY, "durability.max").feature();
+	public static final WandFeature<Boolean> FEATURE_META_DURABILITY_BLOCKCOUNT = META_CATEGORY.register(WandFeature.flagFeature("feature.meta.durability.blockcount")).setAttribute(ATTRIBUTE_INIT_DEFAULT_VALUE, false).setAttribute(ATTRIBUTE_SHORT_KEY, "durability.blockcount").feature();
+	public static final WandFeature<Integer> FEATURE_META_COUNT_PLACE = META_CATEGORY.register(WandFeature.numberFeature("feature.meta.count.place")).setAttribute(ATTRIBUTE_INIT_DEFAULT_VALUE, 0).setAttribute(ATTRIBUTE_SHORT_KEY, "count.place").feature();
+	public static final WandFeature<Integer> FEATURE_META_COUNT_USE = META_CATEGORY.register(WandFeature.numberFeature("feature.meta.count.use")).setAttribute(ATTRIBUTE_INIT_DEFAULT_VALUE, 0).setAttribute(ATTRIBUTE_SHORT_KEY, "count.use").feature();
+	public static final WandFeature<Integer> FEATURE_META_PARTICLE_COLOR_R = META_CATEGORY.register(WandFeature.numberFeature("feature.meta.particle.color.r")).setAttribute(ATTRIBUTE_INIT_DEFAULT_VALUE, 255).setAttribute(ATTRIBUTE_SHORT_KEY, "particle.color.r").feature();
+	public static final WandFeature<Integer> FEATURE_META_PARTICLE_COLOR_G = META_CATEGORY.register(WandFeature.numberFeature("feature.meta.particle.color.g")).setAttribute(ATTRIBUTE_INIT_DEFAULT_VALUE, 255).setAttribute(ATTRIBUTE_SHORT_KEY, "particle.color.g").feature();
+	public static final WandFeature<Integer> FEATURE_META_PARTICLE_COLOR_B = META_CATEGORY.register(WandFeature.numberFeature("feature.meta.particle.color.b")).setAttribute(ATTRIBUTE_INIT_DEFAULT_VALUE, 255).setAttribute(ATTRIBUTE_SHORT_KEY, "particle.color.b").feature();
+	public static final WandFeature<Boolean> FEATURE_META_PARTICLE_SHARE = META_CATEGORY.register(WandFeature.flagFeature("feature.meta.particle.share")).setAttribute(ATTRIBUTE_INIT_DEFAULT_VALUE, true).setAttribute(ATTRIBUTE_SHORT_KEY, "particle.share").feature();
+	public static final WandFeature<Boolean> FEATURE_META_OWNER = META_CATEGORY.register(WandFeature.flagFeature("feature.meta.owner.data")).setAttribute(ATTRIBUTE_INIT_DEFAULT_VALUE, false).setAttribute(ATTRIBUTE_SHORT_KEY, "owner").feature();
+	public static final WandFeature<String> FEATURE_META_OWNER_ID = META_CATEGORY.register(WandFeature.textFeature("feature.meta.owner.id")).setAttribute(ATTRIBUTE_INIT_DEFAULT_VALUE, "").setAttribute(ATTRIBUTE_SHORT_KEY, "owner.id").feature();
 
 	/*
 	("", NUMBER, , "usefulbuilderswand.set.settings.size"),

@@ -5,11 +5,8 @@ import java.util.Set;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-import org.apache.commons.lang.StringUtils;
-
 import com.google.common.collect.Sets;
 
-import net.teamfruit.ubw.WandData;
 import net.teamfruit.ubw.api.WandItemProperty;
 import net.teamfruit.ubw.api.WandItemReadOnlyProperty;
 
@@ -17,29 +14,19 @@ public class WandFeature<T> {
 	public static final String FEATURE_META = "feature.meta";
 	private static final Set<String> registeredPaths = Sets.newHashSet();
 
-	public final String key;
 	public final String path;
 	private final WandItemMetaType<T> type;
 
-	private WandFeature(final String key, final WandItemMetaType<T> type) {
-		this.path = FEATURE_META+"."+key;
+	private WandFeature(final String path, final WandItemMetaType<T> type) {
+		this.path = path;
 		if (registeredPaths.contains(this.path))
 			throw new IllegalStateException("The same path can be registered only once");
 		registeredPaths.add(this.path);
-		this.key = StringUtils.substringBeforeLast(key, ".data");
 		this.type = type;
-	}
-
-	public String getKey() {
-		return this.key;
 	}
 
 	public String getPath() {
 		return this.path;
-	}
-
-	public T getDefaultValue() {
-		return this.type.getImpl(WandData.INSTANCE.configMeta(), this.path);
 	}
 
 	public WandItemReadOnlyProperty<T> property(final IWandMeta meta) {
