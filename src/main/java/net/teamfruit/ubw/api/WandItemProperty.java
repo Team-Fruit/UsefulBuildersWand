@@ -5,7 +5,7 @@ package net.teamfruit.ubw.api;
  * @param <T> attribute type
  * @author TeamFruit
  */
-public interface WandItemProperty<T> extends WandProperty<T> {
+public interface WandItemProperty<T> extends WandItemReadOnlyProperty<T> {
 
 	/**
 	 * Set value to this property.
@@ -14,13 +14,5 @@ public interface WandItemProperty<T> extends WandProperty<T> {
 	 * @param value value of property
 	 */
 	void setValue(T value);
-
-	/**
-	 * Get value of this property.
-	 * <p>
-	 * This value is item-dependent
-	 * @return value of property
-	 */
-	T getValue();
 
 }

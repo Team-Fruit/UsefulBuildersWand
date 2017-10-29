@@ -22,11 +22,6 @@ public class WandConfigMeta implements IWandMeta {
 	}
 
 	@Override
-	public WandItemMetaType getType(final String key) {
-		return WandMetaUtils.getType(get(key));
-	}
-
-	@Override
 	public Integer getNumber(final String path) {
 		return WandMetaUtils.toNumber(get(path));
 	}

@@ -8,6 +8,7 @@ import org.apache.commons.lang.math.NumberUtils;
 
 public class WandMetaUtils {
 
+	@Deprecated
 	public static void set(final @Nonnull IWandWritableMeta meta, final WandItemMetaType type, final String path, final @Nullable Object value) {
 		if (type!=null)
 			switch (type) {
@@ -24,6 +25,7 @@ public class WandMetaUtils {
 			}
 	}
 
+	@Deprecated
 	public static @Nullable Object get(final @Nonnull IWandMeta meta, final WandItemMetaType type, final String path) {
 		if (type!=null)
 			switch (type) {
@@ -38,18 +40,22 @@ public class WandMetaUtils {
 		return null;
 	}
 
+	@Deprecated
 	public static void set(final @Nonnull IWandWritableMeta meta, final @Nonnull WandFeature<?> ft, final Object value) {
 		set(meta, ft.type, ft.path, value);
 	}
 
+	@Deprecated
 	public static Object get(final @Nonnull IWandMeta meta, final @Nonnull WandFeature<?> ft) {
 		return get(meta, ft.type, ft.path);
 	}
 
+	@Deprecated
 	public static void set(final IWandWritableMeta meta, final String path, final Object value) {
 		set(meta, meta.getType(path), path, value);
 	}
 
+	@Deprecated
 	public static Object get(final IWandMeta meta, final String path) {
 		return get(meta, meta.getType(path), path);
 	}

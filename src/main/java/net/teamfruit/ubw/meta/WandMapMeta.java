@@ -10,11 +10,6 @@ public class WandMapMeta implements IWandMeta {
 	}
 
 	@Override
-	public WandItemMetaType getType(final String path) {
-		return WandMetaUtils.getType(this.data.get(path));
-	}
-
-	@Override
 	public Integer getNumber(final String path) {
 		return WandMetaUtils.toNumber(this.data.get(path));
 	}

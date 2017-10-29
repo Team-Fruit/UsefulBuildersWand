@@ -15,6 +15,8 @@ import net.teamfruit.ubw.meta.IWandWritableMeta;
 import net.teamfruit.ubw.meta.WandCompoundMeta;
 import net.teamfruit.ubw.meta.WandConfigMeta;
 import net.teamfruit.ubw.meta.WandFeatureRegistry;
+import net.teamfruit.ubw.meta.WandFeatureRegistry.FeatureCategory;
+import net.teamfruit.ubw.meta.WandFeatureRegistry.FeatureRegistryEntry;
 
 public class WandData {
 	public static final WandData INSTANCE = new WandData();
@@ -33,7 +35,9 @@ public class WandData {
 		configInit.put(SETTING_LANG, "en_US.lang");
 		configInit.put(SETTING_EFFECT_RANGE, 48);
 
-		WandFeatureRegistry.injectFeatureConfig(configInit);
+		final FeatureCategory category = WandFeatureRegistry.getRootCategory();
+		for (final FeatureRegistryEntry<?> entry : category.getFeatureEntries())
+			configInit.put(entry.feature().getPath(), entry.getAttribute(WandFeatureRegistry.ATTRIBUTE_DEFAULT));
 
 		configInit.put("custom.durability.unbreakable.eval", "<=");
 		configInit.put("custom.durability.unbreakable.arg0", "${"+FEATURE_META_DURABILITY_MAX.path+"}");

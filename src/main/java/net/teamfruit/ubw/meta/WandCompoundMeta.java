@@ -16,16 +16,6 @@ public class WandCompoundMeta {
 		}
 
 		@Override
-		public WandItemMetaType getType(final String path) {
-			for (final IWandMeta meta : this.compound) {
-				final WandItemMetaType type = meta.getType(path);
-				if (type!=null)
-					return type;
-			}
-			return null;
-		}
-
-		@Override
 		public @Nullable Integer getNumber(final String key) {
 			for (final IWandMeta meta : this.compound) {
 				final Integer value = meta.getNumber(key);

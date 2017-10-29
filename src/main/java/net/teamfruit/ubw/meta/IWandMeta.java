@@ -4,9 +4,6 @@ import javax.annotation.Nullable;
 
 public interface IWandMeta {
 	@Nullable
-	WandItemMetaType getType(String key);
-
-	@Nullable
 	Integer getNumber(final String key);
 
 	@Nullable

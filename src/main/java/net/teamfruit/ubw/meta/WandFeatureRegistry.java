@@ -1,41 +1,49 @@
 package net.teamfruit.ubw.meta;
 
-import java.util.List;
+import java.util.Collections;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Objects;
+import java.util.Set;
+
+import javax.annotation.Nullable;
 
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang.Validate;
 
-import com.google.common.collect.Lists;
+import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
+import com.google.common.collect.Table;
 
 public class WandFeatureRegistry {
-	private static final Map<String, Object> featureConfig = Maps.newHashMap();
-	private static final List<WandFeature<?>> registry = Lists.newArrayList();
+	private static final FeatureCategory rootCategory = new FeatureCategory(null);
 
 	public static <T> WandFeature<T> register(final WandFeature<T> feature) {
-		registry.add(feature);
+		rootCategory.register(feature);
 		return feature;
 	}
 
-	private static <T> WandFeature<T> registerWithConfig(final WandFeature<T> feature, final T defaultValue) {
-		featureConfig.put(feature.path, defaultValue);
-		return register(feature);
+	public static FeatureCategory getRootCategory() {
+		return rootCategory;
 	}
 
-	public static WandFeature<String> FEATURE_META_NAME = registerWithConfig(WandFeature.textFeature("name"), "");
-	public static WandFeature<Integer> FEATURE_META_SIZE = registerWithConfig(WandFeature.numberFeature("size"), 9);
-	public static WandFeature<Boolean> FEATURE_META_MODE = registerWithConfig(WandFeature.flagFeature("mode"), false);
-	public static WandFeature<Integer> FEATURE_META_DURABILITY = registerWithConfig(WandFeature.numberFeature("durability.data"), 27);
-	public static WandFeature<Integer> FEATURE_META_DURABILITY_MAX = registerWithConfig(WandFeature.numberFeature("durability.max"), 27);
-	public static WandFeature<Boolean> FEATURE_META_DURABILITY_BLOCKCOUNT = registerWithConfig(WandFeature.flagFeature("durability.blockcount"), false);
-	public static WandFeature<Integer> FEATURE_META_COUNT_PLACE = registerWithConfig(WandFeature.numberFeature("count.place"), 0);
-	public static WandFeature<Integer> FEATURE_META_COUNT_USE = registerWithConfig(WandFeature.numberFeature("count.use"), 0);
-	public static WandFeature<Integer> FEATURE_META_PARTICLE_COLOR_R = registerWithConfig(WandFeature.numberFeature("particle.color.r"), 255);
-	public static WandFeature<Integer> FEATURE_META_PARTICLE_COLOR_G = registerWithConfig(WandFeature.numberFeature("particle.color.g"), 255);
-	public static WandFeature<Integer> FEATURE_META_PARTICLE_COLOR_B = registerWithConfig(WandFeature.numberFeature("particle.color.b"), 255);
-	public static WandFeature<Boolean> FEATURE_META_PARTICLE_SHARE = registerWithConfig(WandFeature.flagFeature("particle.share"), true);
-	public static WandFeature<Boolean> FEATURE_META_OWNER = registerWithConfig(WandFeature.flagFeature("owner.data"), false);
-	public static WandFeature<String> FEATURE_META_OWNER_ID = registerWithConfig(WandFeature.textFeature("owner.id"), "");
+	public static final FeatureAttribute<Object> ATTRIBUTE_DEFAULT = FeatureAttribute.attribute("attribute.type.default");
+
+	public static final WandFeature<String> FEATURE_META_NAME = rootCategory.register(WandFeature.textFeature("name")).setAttribute(ATTRIBUTE_DEFAULT, "").feature();
+	public static final WandFeature<Integer> FEATURE_META_SIZE = rootCategory.register(WandFeature.numberFeature("size")).setAttribute(ATTRIBUTE_DEFAULT, 9).feature();
+	public static final WandFeature<Boolean> FEATURE_META_MODE = rootCategory.register(WandFeature.flagFeature("mode")).setAttribute(ATTRIBUTE_DEFAULT, false).feature();
+	public static final WandFeature<Integer> FEATURE_META_DURABILITY = rootCategory.register(WandFeature.numberFeature("durability.data")).setAttribute(ATTRIBUTE_DEFAULT, 27).feature();
+	public static final WandFeature<Integer> FEATURE_META_DURABILITY_MAX = rootCategory.register(WandFeature.numberFeature("durability.max")).setAttribute(ATTRIBUTE_DEFAULT, 27).feature();
+	public static final WandFeature<Boolean> FEATURE_META_DURABILITY_BLOCKCOUNT = rootCategory.register(WandFeature.flagFeature("durability.blockcount")).setAttribute(ATTRIBUTE_DEFAULT, false).feature();
+	public static final WandFeature<Integer> FEATURE_META_COUNT_PLACE = rootCategory.register(WandFeature.numberFeature("count.place")).setAttribute(ATTRIBUTE_DEFAULT, 0).feature();
+	public static final WandFeature<Integer> FEATURE_META_COUNT_USE = rootCategory.register(WandFeature.numberFeature("count.use")).setAttribute(ATTRIBUTE_DEFAULT, 0).feature();
+	public static final WandFeature<Integer> FEATURE_META_PARTICLE_COLOR_R = rootCategory.register(WandFeature.numberFeature("particle.color.r")).setAttribute(ATTRIBUTE_DEFAULT, 255).feature();
+	public static final WandFeature<Integer> FEATURE_META_PARTICLE_COLOR_G = rootCategory.register(WandFeature.numberFeature("particle.color.g")).setAttribute(ATTRIBUTE_DEFAULT, 255).feature();
+	public static final WandFeature<Integer> FEATURE_META_PARTICLE_COLOR_B = rootCategory.register(WandFeature.numberFeature("particle.color.b")).setAttribute(ATTRIBUTE_DEFAULT, 255).feature();
+	public static final WandFeature<Boolean> FEATURE_META_PARTICLE_SHARE = rootCategory.register(WandFeature.flagFeature("particle.share")).setAttribute(ATTRIBUTE_DEFAULT, true).feature();
+	public static final WandFeature<Boolean> FEATURE_META_OWNER = rootCategory.register(WandFeature.flagFeature("owner.data")).setAttribute(ATTRIBUTE_DEFAULT, false).feature();
+	public static final WandFeature<String> FEATURE_META_OWNER_ID = rootCategory.register(WandFeature.textFeature("owner.id")).setAttribute(ATTRIBUTE_DEFAULT, "").feature();
 
 	/*
 	("", NUMBER, , "usefulbuilderswand.set.settings.size"),
@@ -54,29 +62,143 @@ public class WandFeatureRegistry {
 	;
 	*/
 
-	@Deprecated
-	public static List<WandFeature<?>> getFeatures() {
-		return registry;
+	public abstract static class FeatureAttribute<T> {
+		private FeatureAttribute() {
+		}
+
+		private static class ObjectFeatureAttribute<T> extends FeatureAttribute<T> {
+			private static final Map<Object, Class<?>> registeredTypes = Maps.newHashMap();
+
+			private final Object key;
+
+			public ObjectFeatureAttribute(final Object key, final T... emptyParamToCheckType) {
+				Validate.notNull(emptyParamToCheckType, "Do not pass anything to the variable array. (null value)");
+				final Class<?> clazz1 = emptyParamToCheckType.getClass().getComponentType();
+				Validate.notNull(clazz1, "Do not pass anything to the variable array. (non-array value)");
+				final Class<?> clazz2 = registeredTypes.get(key);
+				if (clazz2!=null) {
+					if (!clazz2.equals(clazz1))
+						throw new IllegalArgumentException("This key is registered as a different type");
+				} else
+					registeredTypes.put(key, clazz1);
+				this.key = key;
+			}
+
+			@Override
+			public int hashCode() {
+				final int prime = 31;
+				int result = 1;
+				result = prime*result+(this.key==null ? 0 : this.key.hashCode());
+				return result;
+			}
+
+			@Override
+			public boolean equals(final Object obj) {
+				if (this==obj)
+					return true;
+				if (obj==null)
+					return false;
+				if (!(obj instanceof ObjectFeatureAttribute))
+					return false;
+				final ObjectFeatureAttribute<?> other = (ObjectFeatureAttribute<?>) obj;
+				if (this.key==null) {
+					if (other.key!=null)
+						return false;
+				} else if (!this.key.equals(other.key))
+					return false;
+				return true;
+			}
+		}
+
+		private static class IdentityFeatureAttribute<T> extends FeatureAttribute<T> {
+		}
+
+		public static <T> FeatureAttribute<T> attribute(final Object key, final T... emptyParamToCheckType) {
+			return new ObjectFeatureAttribute<T>(key, emptyParamToCheckType);
+		}
+
+		public static <T> FeatureAttribute<T> attribute() {
+			return new IdentityFeatureAttribute<T>();
+		}
 	}
 
-	public static void injectFeatureConfig(final Map<String, Object> cfgInit) {
-		cfgInit.putAll(featureConfig);
+	public static class FeatureRegistryEntry<T> {
+		private final Table<WandFeature<?>, FeatureAttribute<?>, Object> metatable;
+		private final WandFeature<T> feature;
+
+		private FeatureRegistryEntry(final Table<WandFeature<?>, FeatureAttribute<?>, Object> metatable, final WandFeature<T> feature) {
+			this.metatable = metatable;
+			this.feature = feature;
+		}
+
+		public WandFeature<T> feature() {
+			return this.feature;
+		}
+
+		public <E> FeatureRegistryEntry<T> setAttribute(final FeatureAttribute<E> key, final E value) {
+			this.metatable.put(this.feature, key, value);
+			return this;
+		}
+
+		@SuppressWarnings("unchecked")
+		public <E> E getAttribute(final FeatureAttribute<E> key) {
+			return (E) this.metatable.get(this.feature, key);
+		}
 	}
 
-	@SuppressWarnings("unchecked")
-	public static <T> WandFeature<T> getFeaturePath(final String path) {
-		for (final WandFeature<?> feature : registry)
-			if (StringUtils.equals(feature.path, path))
-				return (WandFeature<T>) feature;
-		return null;
-	}
+	public static class FeatureCategory {
+		private final Set<WandFeature<?>> registry = Sets.newHashSet();
+		private final Table<WandFeature<?>, FeatureAttribute<?>, Object> metatable = HashBasedTable.create();
+		private final FeatureCategory parent;
 
-	@SuppressWarnings("unchecked")
-	public static <T> WandFeature<T> getFeatureKey(final String key) {
-		for (final WandFeature<?> feature : registry)
-			if (StringUtils.equals(feature.key, key))
-				return (WandFeature<T>) feature;
-		return null;
+		private FeatureCategory(final FeatureCategory parent) {
+			this.parent = parent;
+		}
+
+		public FeatureCategory createCategory() {
+			return new FeatureCategory(this);
+		}
+
+		public <T> FeatureRegistryEntry<T> register(final WandFeature<T> feature) {
+			if (this.parent!=null)
+				this.parent.register(feature);
+			this.registry.add(feature);
+			return getEntry(feature);
+		}
+
+		public @Nullable <T> FeatureRegistryEntry<T> getEntry(final WandFeature<T> feature) {
+			if (!this.metatable.containsRow(feature))
+				return null;
+			return new FeatureRegistryEntry<T>(this.metatable, feature);
+		}
+
+		@SuppressWarnings("unchecked")
+		public @Nullable <T> WandFeature<T> fromPath(final String path) {
+			for (final WandFeature<?> feature : this.registry)
+				if (StringUtils.equals(feature.path, path))
+					return (WandFeature<T>) feature;
+			return null;
+		}
+
+		@SuppressWarnings("unchecked")
+		public @Nullable <T> WandFeature<T> fromAttribute(final FeatureAttribute<T> attribute, final T value) {
+			for (final Entry<WandFeature<?>, Object> entry : this.metatable.column(attribute).entrySet())
+				if (Objects.equals(entry.getValue(), value))
+					return (WandFeature<T>) entry.getKey();
+			return null;
+		}
+
+		public Set<WandFeature<?>> getFeatures() {
+			return Collections.unmodifiableSet(this.registry);
+		}
+
+		@SuppressWarnings("unchecked")
+		public <T> Set<FeatureRegistryEntry<?>> getFeatureEntries() {
+			final Set<FeatureRegistryEntry<?>> entries = Sets.newHashSet();
+			for (final WandFeature<?> feature : this.registry)
+				entries.add(new FeatureRegistryEntry<Object>(this.metatable, (WandFeature<Object>) feature));
+			return entries;
+		}
 	}
 
 	/**
