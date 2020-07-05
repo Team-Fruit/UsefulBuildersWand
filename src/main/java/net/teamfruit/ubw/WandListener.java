@@ -136,32 +136,62 @@ public class WandListener implements Listener {
 
                     int data = -1;
 
-                    final ItemStack item1 = this.nativemc.getItemFromBlock(target);
+                    final ItemStack item0 = this.nativemc.getItemFromBlock(target);
+                    ItemStack item1 = item0;
 
                     if (this.nativemc.hasSubType(item1))
                         data = this.nativemc.getDropData(target);
 
-                    int slot = 0;
+                    if (player.getGameMode() == GameMode.CREATIVE) {
+                        for (int i = 0; i < inventory.getSize(); ++i) {
+                            final ItemStack itemslot = inventory.getItem(i);
+                            if (itemslot == null || itemslot.getAmount() == 0 || !itemslot.getType().equals(item1.getType()))
+                                continue;
+                            if (data == -1 || data == itemslot.getDurability()) {
+                                item1 = itemslot;
+                                break;
+                            }
+                        }
+                    }
+
+                    int cacheslot = -1;
                     int placecount = 0;
                     for (final Location temp : blocks) {
                         if (maxdurability > 0 && durability <= 0)
                             return ActionResult.error();
-                        for (slot = 0; slot < inventory.getSize(); ++slot) {
-                            final ItemStack itemslot = inventory.getItem(slot);
-                            if (itemslot == null || itemslot.getAmount() == 0 || !itemslot.getType().equals(item1.getType()))
-                                continue;
-                            if (data == -1 || data == itemslot.getDurability())
-                                break;
-                        }
 
-                        if (slot >= inventory.getSize())
-                            break;
-
-                        final ItemStack item = inventory.getItem(slot);
-                        ItemStack objitem = item;
+                        int slot = -1;
+                        final ItemStack item;
+                        ItemStack objitem;
                         if (player.getGameMode() == GameMode.CREATIVE) {
-                            objitem = objitem.clone();
+                            item = item1;
+                            objitem = item1.clone();
                             objitem.setAmount(1);
+                        } else {
+                            if (cacheslot >= 0) {
+                                final ItemStack itemslot = inventory.getItem(cacheslot);
+                                if (!(itemslot == null || itemslot.getAmount() == 0 || !itemslot.getType().equals(item1.getType())))
+                                    if (data == -1 || data == itemslot.getDurability()) {
+                                        slot = cacheslot;
+                                        break;
+                                    }
+                            }
+                            if (slot < 0) {
+                                for (int i = 0; i < inventory.getSize(); ++i) {
+                                    final ItemStack itemslot = inventory.getItem(i);
+                                    if (!(itemslot == null || itemslot.getAmount() == 0 || !itemslot.getType().equals(item1.getType())))
+                                        if (data == -1 || data == itemslot.getDurability()) {
+                                            cacheslot = slot = i;
+                                            break;
+                                        }
+                                }
+                            }
+
+                            if (slot < 0)
+                                break;
+
+                            item = inventory.getItem(slot);
+                            objitem = item;
                         }
 
                         final Block block = temp.getBlock().getRelative(face.getOppositeFace());
@@ -170,10 +200,12 @@ public class WandListener implements Listener {
 
                         if (placeresult) {
                             objitem.setAmount(objitem.getAmount() - 1);
-                            if (item.getAmount() <= 0)
-                                inventory.setItem(slot, null);
-                            else
-                                inventory.setItem(slot, item);
+                            if (slot >= 0) {
+                                if (objitem.getAmount() <= 0)
+                                    inventory.setItem(slot, null);
+                                else
+                                    inventory.setItem(slot, item);
+                            }
 
                             this.nativemc.playSound(player, temp, target, .25f, 1f);
                             placecount++;
@@ -226,19 +258,19 @@ public class WandListener implements Listener {
             data = this.nativemc.getDropData(target);
 
         int numBlocks = 0;
-        final Inventory inventory = player.getInventory();
-        for (int i = 0; i < inventory.getSize(); ++i) {
-            final ItemStack itemStack2 = inventory.getItem(i);
-            if (itemStack2 != null) {
-                if (itemStack2.getType().equals(blockItem.getType()) && (data == -1 || data == itemStack2.getDurability()))
-                    if (player.getGameMode() == GameMode.CREATIVE) {
+        if (player.getGameMode() == GameMode.CREATIVE) {
+            numBlocks = maxBlocks;
+        } else {
+            final Inventory inventory = player.getInventory();
+            for (int i = 0; i < inventory.getSize(); ++i) {
+                final ItemStack itemStack2 = inventory.getItem(i);
+                if (itemStack2 != null) {
+                    if (itemStack2.getType().equals(blockItem.getType()) && (data == -1 || data == itemStack2.getDurability()))
+                        numBlocks += itemStack2.getAmount();
+                    if (numBlocks >= maxBlocks) {
                         numBlocks = maxBlocks;
                         break;
-                    } else
-                        numBlocks += itemStack2.getAmount();
-                if (numBlocks >= maxBlocks) {
-                    numBlocks = maxBlocks;
-                    break;
+                    }
                 }
             }
         }
