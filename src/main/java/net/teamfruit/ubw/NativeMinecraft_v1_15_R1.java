@@ -57,6 +57,8 @@ public class NativeMinecraft_v1_15_R1 implements NativeMinecraft {
 	private final Class<?> c$RayTrace$FluidCollisionOption;
 	private final Class<?> c$Entity;
 	private final Class<?> c$ParticleParam;
+	private final Class<?> c$Particle;
+	private final Class<?> c$ParticleParamRedstone;
 
 	private final Method m$CraftItemStack$asNMSCopy;
 	private final Method m$ItemStack$getItem;
@@ -95,7 +97,6 @@ public class NativeMinecraft_v1_15_R1 implements NativeMinecraft {
 	private final Field f$EnumHand$OFF_HAND;
 	private final Field f$CraftWorld$world;
 	private final Field f$EntityPlayer$playerConnection;
-	private final Field f$EnumParticle$REDSTONE;
 	private final Field f$MovingObjectPositionBlock$isMiss;
 
 	private final Constructor<?> n$ItemActionContext;
@@ -103,6 +104,7 @@ public class NativeMinecraft_v1_15_R1 implements NativeMinecraft {
 	private final Constructor<?> n$Vec3D;
 	private final Constructor<?> n$PacketPlayOutWorldParticles;
 	private final Constructor<?> n$RayTrace;
+	private final Constructor<?> n$ParticleParamRedstone;
 
 	private final Map<Material, Boolean> cacheblock = new HashMap<Material, Boolean>();
 	private final Map<Material, String> cacheblocksound = new HashMap<Material, String>();
@@ -143,6 +145,8 @@ public class NativeMinecraft_v1_15_R1 implements NativeMinecraft {
 		this.c$RayTrace$FluidCollisionOption = $class("net.minecraft.server.%version%.RayTrace$FluidCollisionOption");
 		this.c$Entity = $class("net.minecraft.server.%version%.Entity");
 		this.c$ParticleParam = $class("net.minecraft.server.%version%.ParticleParam");
+		this.c$Particle = $class("net.minecraft.server.%version%.Particle");
+		this.c$ParticleParamRedstone = $class("net.minecraft.server.%version%.ParticleParamRedstone");
 
 		this.m$CraftItemStack$asNMSCopy = $method(this.c$CraftItemStack, "asNMSCopy", ItemStack.class);
 		this.m$ItemStack$getItem = $method(this.c$ItemStack, "getItem");
@@ -181,7 +185,6 @@ public class NativeMinecraft_v1_15_R1 implements NativeMinecraft {
 		this.f$EnumHand$OFF_HAND = $field(this.c$EnumHand, "OFF_HAND");
 		this.f$CraftWorld$world = $pfield(this.c$CraftWorld, "world");
 		this.f$EntityPlayer$playerConnection = $field(this.c$EntityPlayer, "playerConnection");
-		this.f$EnumParticle$REDSTONE = $field(this.c$EnumParticle, "DUST");
 		this.f$MovingObjectPositionBlock$isMiss = $pfield(this.c$MovingObjectPositionBlock, "d");
 
 		this.n$ItemActionContext = $new(this.c$ItemActionContext, this.c$EntityHuman, this.c$EnumHand, this.c$MovingObjectPositionBlock);
@@ -189,6 +192,7 @@ public class NativeMinecraft_v1_15_R1 implements NativeMinecraft {
 		this.n$Vec3D = $new(this.c$Vec3D, double.class, double.class, double.class);
 		this.n$PacketPlayOutWorldParticles = $new(this.c$PacketPlayOutWorldParticles, this.c$ParticleParam, boolean.class, double.class, double.class, double.class, float.class, float.class, float.class, float.class, int.class);
 		this.n$RayTrace = $new(this.c$RayTrace, this.c$Vec3D, this.c$Vec3D, this.c$RayTrace$BlockCollisionOption, this.c$RayTrace$FluidCollisionOption, this.c$Entity);
+		this.n$ParticleParamRedstone = $new(this.c$ParticleParamRedstone, float.class, float.class, float.class, float.class);
 	}
 
 	Class<?> $class(final String _class) throws Exception {
@@ -263,6 +267,7 @@ public class NativeMinecraft_v1_15_R1 implements NativeMinecraft {
 		if (block!=null)
 			if (this.c$CraftBlock!=null)
 				try {
+					final Object nItemStack = this.m$CraftItemStack$asNMSCopy.invoke(null, placeItemStack);
 					final Object nPlayer = this.m$CraftPlayer$getHandle.invoke(player);
 
 					final Location location = block.getLocation();
@@ -277,7 +282,7 @@ public class NativeMinecraft_v1_15_R1 implements NativeMinecraft {
 					final Object nVec3D = this.n$Vec3D.newInstance(eyeLocation.getX(), eyeLocation.getY(), eyeLocation.getZ());
 					final Object nMovingObjectPositionBlock = this.m$MovingObjectPositionBlock$a.invoke(null, nVec3D, nDirection, nBlockPosition);
 					final Object nItemActionContext = this.n$ItemActionContext.newInstance(nPlayer, nHand, nMovingObjectPositionBlock);
-					final Object nResult = this.m$ItemStack$placeItem.invoke(nItemActionContext, nHand);
+					final Object nResult = this.m$ItemStack$placeItem.invoke(nItemStack, nItemActionContext, nHand);
 					setItemInHand(inventory, itemhand);
 					handItemStack.setItem(getItemInHand(inventory));
 
@@ -345,11 +350,13 @@ public class NativeMinecraft_v1_15_R1 implements NativeMinecraft {
 
 	public void spawnParticles(final Player player, final Location loc, final float r, final float g, final float b) {
 		try {
-			final Object nPacket = this.n$PacketPlayOutWorldParticles.newInstance(this.f$EnumParticle$REDSTONE.get(null), true, loc.getBlockX()+.5, loc.getBlockY()+.5, loc.getBlockZ()+.5, r+Float.MIN_VALUE, g, b, 1f, 0);
+			final Object nParticle = this.n$ParticleParamRedstone.newInstance(r+Float.MIN_VALUE, g, b, 1f);
+			final Object nPacket = this.n$PacketPlayOutWorldParticles.newInstance(nParticle, true, loc.getBlockX()+.5, loc.getBlockY()+.5, loc.getBlockZ()+.5, r+Float.MIN_VALUE, g, b, 1f, 0);
 			final Object nPlayer = this.m$CraftPlayer$getHandle.invoke(player);
 			final Object nConnection = this.f$EntityPlayer$playerConnection.get(nPlayer);
 			this.m$PlayerConnection$sendPacket.invoke(nConnection, nPacket);
 		} catch (final Exception e) {
+			e.printStackTrace();
 		}
 	}
 
