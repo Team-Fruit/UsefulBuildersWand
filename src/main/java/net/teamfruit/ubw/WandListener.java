@@ -24,7 +24,10 @@ import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitRunnable;
 
 import javax.annotation.Nullable;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import java.util.logging.Level;
 
 public class WandListener implements Listener {
@@ -32,6 +35,11 @@ public class WandListener implements Listener {
     private final Locale locale;
     private NativeMinecraft nativemc;
     private final WorldGuardHandler worldguard;
+
+    private Map<UUID, PlayerWandData> playerWandDataStore = new HashMap<UUID, PlayerWandData>();
+    private static class PlayerWandData {
+        public boolean isVertical;
+    }
 
     public WandListener(final Plugin plugin, final Locale locale, final NativeMinecraft nativemc) {
         this.plugin = plugin;
@@ -66,7 +74,7 @@ public class WandListener implements Listener {
                 final int color_g = 255;
                 final int color_b = 255;
                 final int range = WandData.INSTANCE.getConfig().getInt(WandData.SETTING_EFFECT_RANGE);
-                if (range > 0) {
+                if (range > 0 && false) {
                     for (final Player other : Bukkit.getOnlinePlayers())
                         if (other.getLocation().distance(player.getLocation()) <= range)
                             for (final Location block : blocks)
@@ -219,7 +227,8 @@ public class WandListener implements Listener {
                     return ActionResult.success();
                 }
             } else if (player.isSneaking() && (action == Action.LEFT_CLICK_AIR || action == Action.LEFT_CLICK_BLOCK)) {
-                //stage.meta().setFlag(FEATURE_META_MODE.path, !or(stage.meta().getFlag(FEATURE_META_MODE.path), false));
+                PlayerWandData playerWandData = playerWandDataStore.computeIfAbsent(player.getUniqueId(), e -> new PlayerWandData());
+                playerWandData.isVertical = !playerWandData.isVertical;
                 return ActionResult.success();
             }
             return ActionResult.error();
@@ -242,7 +251,7 @@ public class WandListener implements Listener {
         if (maxdurability > 0 && durability <= 0)
             return blocks;
 
-        final int maxBlocks = 300; // MAX SIZE
+        final int maxBlocks = WandData.INSTANCE.getConfig().getInt(WandData.SETTING_MAX_BLOCKS);
 
         if (target == null || target.isEmpty())
             return blocks;
@@ -283,7 +292,8 @@ public class WandListener implements Listener {
         int mz = dz == 0 ? 1 : 0;
 
         if (player.isSneaking()) {
-            final boolean isVertical = false;//or(stage.meta().getFlag(FEATURE_META_MODE.path), false);
+            PlayerWandData playerWandData = playerWandDataStore.computeIfAbsent(player.getUniqueId(), e -> new PlayerWandData());
+            final boolean isVertical = playerWandData.isVertical;
             ;
             if (face != BlockFace.UP && face != BlockFace.DOWN)
                 if (isVertical) {

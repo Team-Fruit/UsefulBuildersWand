@@ -10,12 +10,14 @@ public class WandData {
 
     public static final String SETTING_LANG = "setting.lang";
     public static final String SETTING_EFFECT_RANGE = "setting.effect.range";
+    public static final String SETTING_MAX_BLOCKS = "setting.block.max";
 
     private static final Map<String, Object> configInit = Maps.newHashMap();
 
     static {
         configInit.put(SETTING_LANG, "en_US.lang");
         configInit.put(SETTING_EFFECT_RANGE, 48);
+        configInit.put(SETTING_MAX_BLOCKS, 64*64);
     }
 
     @Deprecated
