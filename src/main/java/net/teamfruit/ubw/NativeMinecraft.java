@@ -41,7 +41,7 @@ public interface NativeMinecraft {
 	void setItemInHand(final PlayerInventory inventory, final ItemStack itemStack);
 
 	class NativeMinecraftFactory {
-		// Tested Versions: "v1_8_R3", "v1_9_R2", "v1_10_R1", "v1_11_R1", "v1_12_R1"
+		// Tested Versions: "v1_8_R3", "v1_9_R2", "v1_10_R1", "v1_11_R1", "v1_12_R1", "v1_15_R1"
 		public static NativeMinecraft create(final Plugin plugin) {
 			final Class<?> $class = plugin.getServer().getClass();
 			final String fullname = $class.getPackage().getName();
@@ -49,7 +49,10 @@ public interface NativeMinecraft {
 			final Logger logger = plugin.getLogger();
 
 			try {
-				if (StringUtils.startsWith(vername, "v1_12")) {
+				if (StringUtils.startsWith(vername, "v1_15")) {
+					logger.info("applying v1_15_R1 -> [" + vername + "]");
+					return new NativeMinecraft_v1_15_R1(vername);
+				} else if (StringUtils.startsWith(vername, "v1_12")) {
 					logger.info("applying v1_12_R1 -> ["+vername+"]");
 					return new NativeMinecraft_v1_12_R1(vername);
 				} else if (StringUtils.startsWith(vername, "v1_11")) {
@@ -97,6 +100,13 @@ public interface NativeMinecraft {
 				logger.log(Level.WARNING, e.getMessage(), e);
 			}
 
+			try {
+				logger.warning("trying to apply v1_15_R1 -> ["+vername+"]");
+				return new NativeMinecraft_v1_15_R1(vername);
+			} catch (final Exception e) {
+				logger.log(Level.FINEST, e.getMessage(), e);
+				logger.warning("failed to apply v1_15_R1");
+			}
 			try {
 				logger.warning("trying to apply v1_12_R1 -> ["+vername+"]");
 				return new NativeMinecraft_v1_12_R1(vername);
