@@ -241,7 +241,6 @@ public class NativeMinecraft_v1_12_R1 implements NativeMinecraft {
 					this.cacheblocksound.put(type, keysound);
 					player.playSound(location, keysound, volume, pitch);
 				} catch (final Exception e) {
-					e.printStackTrace();
 					try {
 						player.playSound(location, Sound.valueOf("BLOCK_STONE_PLACE"), volume, pitch);
 					} catch (final IllegalArgumentException ex) {
@@ -251,7 +250,7 @@ public class NativeMinecraft_v1_12_R1 implements NativeMinecraft {
 	}
 
 	// public EnumInteractionResult placeItem(EntityHuman entityhuman, World world, BlockPosition blockposition, EnumHand enumhand, EnumDirection enumdirection, float f, float f1, float f2)
-	public boolean placeItem(final Player player, final Block block, final ItemStackHolder handItemStack, final ItemStack placeItemStack, final EquipmentSlot hand, final BlockFace face, final Location eyeLocation) {
+	public boolean placeItem(final Player player, final Block block, final ItemStackHolder handItemStack, final ItemStack placeItemStack, final BlockFace face, final Location eyeLocation) {
 		if (block!=null)
 			if (this.c$CraftBlock!=null)
 				try {
@@ -265,6 +264,7 @@ public class NativeMinecraft_v1_12_R1 implements NativeMinecraft {
 					final Location location = block.getLocation();
 					final Object nBlockPosition = this.n$BlockPosition.newInstance(location.getBlockX(), location.getBlockY(), location.getBlockZ());
 
+					EquipmentSlot hand = EquipmentSlot.HAND;
 					final Object nHand = hand!=EquipmentSlot.HAND ? this.f$EnumHand$OFF_HAND.get(null) : this.f$EnumHand$MAIN_HAND.get(null);
 					final Object nDirection = this.m$EnumDirection$valueOf.invoke(null, face.name());
 
@@ -276,7 +276,6 @@ public class NativeMinecraft_v1_12_R1 implements NativeMinecraft {
 
 					return "SUCCESS".equals(((Enum<?>) nResult).name());
 				} catch (final Exception e) {
-					e.printStackTrace();
 				}
 		return false;
 	}
@@ -292,7 +291,12 @@ public class NativeMinecraft_v1_12_R1 implements NativeMinecraft {
 		return block.getState().getData().toItemStack();
 	}
 
-	public int getDropData(final Block block) {
+    @Override
+    public int getVersion() {
+        return 12;
+    }
+
+    public int getDropData(final Block block) {
 		try {
 			final Object nBlock = this.m$CraftBlock$getNMSBlock.invoke(block);
 			final Object nBlockData = this.m$CraftBlock$getData0.invoke(block);

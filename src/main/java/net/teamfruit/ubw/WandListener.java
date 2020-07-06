@@ -10,6 +10,7 @@ import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.command.CommandSender;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -204,7 +205,7 @@ public class WandListener implements Listener {
 
                         final Block block = temp.getBlock().getRelative(face.getOppositeFace());
 
-                        final boolean placeresult = this.nativemc.placeItem(player, block, stage, objitem, EquipmentSlot.HAND, face, player.getEyeLocation());
+                        final boolean placeresult = this.nativemc.placeItem(player, block, stage, objitem, face, player.getEyeLocation());
 
                         if (placeresult) {
                             objitem.setAmount(objitem.getAmount() - 1);
@@ -238,6 +239,20 @@ public class WandListener implements Listener {
             return ActionResult.error(I18n.format(this.locale, "ubw.action.error", e.getMessage()), I18n.format(this.locale, "ubw.action.error.reportcode", errorcode));
         } finally {
             this.nativemc.setItemInHand(inventory, stage.getItem());
+        }
+    }
+
+    private boolean hasNearbyEntities(World world, Location modblockpos) {
+        if (this.nativemc.getVersion() <= 7) {
+            Location center = modblockpos.clone().add(.5, .5, .5);
+            for (Entity e : modblockpos.getChunk().getEntities()) {
+                if (e.getLocation().distance(center) <= .9) {
+                    return true;
+                }
+            }
+            return false;
+        } else {
+            return !world.getNearbyEntities(modblockpos.clone().add(.5, .5, .5), .5, .5, .5).isEmpty();
         }
     }
 
@@ -322,7 +337,7 @@ public class WandListener implements Listener {
         if (numBlocks <= 0 || !this.nativemc.canPlace(modblockpos.getBlock()) || modblockpos.getBlockY() >= 255)
             return blocks;
 
-        if (!world.getNearbyEntities(modblockpos.clone().add(.5, .5, .5), .5, .5, .5).isEmpty())
+        if (hasNearbyEntities(world, modblockpos))
             return blocks;
 
         if (!this.worldguard.canBuild(player, modblockpos))
@@ -347,7 +362,7 @@ public class WandListener implements Listener {
                                         !this.worldguard.canBuild(player, targetloc) ||
                                         !baseloc.getBlock().getState().getData().equals(target.getState().getData()) ||
                                         data != -1 && data != this.nativemc.getDropData(baseloc.getBlock()) ||
-                                        !world.getNearbyEntities(targetloc.clone().add(.5, .5, .5), .5, .5, .5).isEmpty()
+                                        hasNearbyEntities(world, targetloc)
                         )
                             continue;
                         blocks.add(targetloc);

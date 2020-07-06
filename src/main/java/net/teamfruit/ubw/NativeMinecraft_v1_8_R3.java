@@ -18,7 +18,6 @@ import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Player;
 import org.bukkit.event.player.PlayerInteractEvent;
-import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 
@@ -234,7 +233,7 @@ public class NativeMinecraft_v1_8_R3 implements NativeMinecraft {
 	}
 
 	// public EnumInteractionResult placeItem(EntityHuman entityhuman, World world, BlockPosition blockposition, EnumHand enumhand, EnumDirection enumdirection, float f, float f1, float f2)
-	public boolean placeItem(final Player player, final Block block, final ItemStackHolder handItemStack, final ItemStack placeItemStack, final EquipmentSlot hand, final BlockFace face, final Location eyeLocation) {
+	public boolean placeItem(final Player player, final Block block, final ItemStackHolder handItemStack, final ItemStack placeItemStack, final BlockFace face, final Location eyeLocation) {
 		if (block!=null)
 			if (this.c$CraftBlock!=null)
 				try {
@@ -255,7 +254,6 @@ public class NativeMinecraft_v1_8_R3 implements NativeMinecraft {
 
 					return (Boolean) nResult;
 				} catch (final Exception e) {
-					e.printStackTrace();
 				}
 		return false;
 	}
@@ -271,7 +269,12 @@ public class NativeMinecraft_v1_8_R3 implements NativeMinecraft {
 		return block.getState().getData().toItemStack();
 	}
 
-	public int getDropData(final Block block) {
+    @Override
+    public int getVersion() {
+        return 8;
+    }
+
+    public int getDropData(final Block block) {
 		try {
 			final Object nBlock = this.m$CraftBlock$getNMSBlock.invoke(block);
 
@@ -286,7 +289,6 @@ public class NativeMinecraft_v1_8_R3 implements NativeMinecraft {
 
 			return (Integer) this.m$Block$getDropData.invoke(nBlock, nIBlockState);
 		} catch (final Exception e) {
-			e.printStackTrace();
 		}
 		return 0;
 	}

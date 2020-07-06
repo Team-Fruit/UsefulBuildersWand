@@ -30,7 +30,7 @@ A Plugin for Builder's Wand from ExtraUtilities
 ## License
 
 * UsefulBuildersWand
-  - (c) 2017 TeamFruit
+  - (c) 2017-2020 TeamFruit
   - [![License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat)](https://github.com/Team-Fruit/UsefulBuildersWand/blob/master/LICENSE.md)
 * Text and Translations
   - [![License](https://img.shields.io/badge/License-No%20Restriction-green.svg?style=flat)](https://creativecommons.org/publicdomain/zero/1.0/)
