@@ -23,6 +23,9 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.scoreboard.Objective;
+import org.bukkit.scoreboard.Scoreboard;
+import org.bukkit.scoreboard.ScoreboardManager;
 
 import javax.annotation.Nullable;
 import java.util.HashMap;
@@ -37,10 +40,10 @@ public class WandListener implements Listener {
     private NativeMinecraft nativemc;
     private final WorldGuardHandler worldguard;
 
-    private Map<UUID, PlayerWandData> playerWandDataStore = new HashMap<UUID, PlayerWandData>();
-    private static class PlayerWandData {
-        public boolean isVertical;
-    }
+    private final Objective SCORE_WAND_SIZE;
+    private final Objective SCORE_WAND_VERTICAL;
+    private final Objective SCORE_WAND_EFFECT_RADIUS;
+    private final Objective SCORE_WAND_EFFECT_COLOR;
 
     public WandListener(final Plugin plugin, final Locale locale, final NativeMinecraft nativemc) {
         this.plugin = plugin;
@@ -53,6 +56,11 @@ public class WandListener implements Listener {
                 onEffect();
             }
         }.runTaskTimer(this.plugin, 3, 3);
+
+        SCORE_WAND_SIZE = WandData.INSTANCE.getOrNewObjective(WandData.SCOREBOARD_WAND_SIZE, "dummy", "Wand Size");
+        SCORE_WAND_VERTICAL = WandData.INSTANCE.getOrNewObjective(WandData.SCOREBOARD_WAND_VERTICAL, "dummy", "Wand Vertical");
+        SCORE_WAND_EFFECT_RADIUS = WandData.INSTANCE.getOrNewObjective(WandData.SCOREBOARD_WAND_EFFECT_RADIUS, "dummy", "Wand Effect Radius");
+        SCORE_WAND_EFFECT_COLOR = WandData.INSTANCE.getOrNewObjective(WandData.SCOREBOARD_WAND_EFFECT_COLOR, "dummy", "Wand Effect Color Code");
     }
 
     private void onEffect() {
@@ -71,11 +79,15 @@ public class WandListener implements Listener {
             }
 
             if (blocks != null) {
-                final int color_r = 255;
-                final int color_g = 255;
-                final int color_b = 255;
-                final int range = WandData.INSTANCE.getConfig().getInt(WandData.SETTING_EFFECT_RANGE);
-                if (range > 0 && false) {
+                final int color = WandData.INSTANCE.getScoreOrDefault(SCORE_WAND_EFFECT_COLOR, player, 0xffffff);
+                final int color_r = (color << 16) & 0xff;
+                final int color_g = (color << 8) & 0xff;
+                final int color_b = (color << 0) & 0xff;
+                final int range = Math.min(
+                        WandData.INSTANCE.getScoreOrDefault(SCORE_WAND_EFFECT_RADIUS, player, 0),
+                        WandData.INSTANCE.getConfig().getInt(WandData.SETTING_EFFECT_RANGE)
+                );
+                if (range > 0) {
                     for (final Player other : Bukkit.getOnlinePlayers())
                         if (other.getLocation().distance(player.getLocation()) <= range)
                             for (final Location block : blocks)
@@ -90,6 +102,9 @@ public class WandListener implements Listener {
     @EventHandler(priority = EventPriority.HIGH)
     public void onPlayerUse(final PlayerInteractEvent event) {
         if (!this.nativemc.isMainHand(event))
+            return;
+
+        if (!event.getPlayer().hasPermission(WandData.PERMISSION_WAND_USE))
             return;
 
         final Player player = event.getPlayer();
@@ -228,8 +243,9 @@ public class WandListener implements Listener {
                     return ActionResult.success();
                 }
             } else if (player.isSneaking() && (action == Action.LEFT_CLICK_AIR || action == Action.LEFT_CLICK_BLOCK)) {
-                PlayerWandData playerWandData = playerWandDataStore.computeIfAbsent(player.getUniqueId(), e -> new PlayerWandData());
-                playerWandData.isVertical = !playerWandData.isVertical;
+                boolean isVertical = WandData.INSTANCE.getScoreOrDefault(SCORE_WAND_VERTICAL, player, 0) != 0;
+                isVertical = !isVertical;
+                SCORE_WAND_VERTICAL.getScore(player).setScore(isVertical ? 1 : 0);
                 return ActionResult.success();
             }
             return ActionResult.error();
@@ -266,7 +282,10 @@ public class WandListener implements Listener {
         if (maxdurability > 0 && durability <= 0)
             return blocks;
 
-        final int maxBlocks = WandData.INSTANCE.getConfig().getInt(WandData.SETTING_MAX_BLOCKS);
+        final int maxBlocks = Math.min(
+                WandData.INSTANCE.getScoreOrDefault(SCORE_WAND_SIZE, player, Integer.MAX_VALUE),
+                WandData.INSTANCE.getConfig().getInt(WandData.SETTING_MAX_BLOCKS)
+        );
 
         if (target == null || target.isEmpty())
             return blocks;
@@ -307,9 +326,7 @@ public class WandListener implements Listener {
         int mz = dz == 0 ? 1 : 0;
 
         if (player.isSneaking()) {
-            PlayerWandData playerWandData = playerWandDataStore.computeIfAbsent(player.getUniqueId(), e -> new PlayerWandData());
-            final boolean isVertical = playerWandData.isVertical;
-            ;
+            final boolean isVertical = WandData.INSTANCE.getScoreOrDefault(SCORE_WAND_VERTICAL, player, 0) != 0;
             if (face != BlockFace.UP && face != BlockFace.DOWN)
                 if (isVertical) {
                     if (face != BlockFace.NORTH && face != BlockFace.SOUTH)
