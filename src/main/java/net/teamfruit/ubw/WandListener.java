@@ -9,7 +9,10 @@ import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
+import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -34,7 +37,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.logging.Level;
 
-public class WandListener implements Listener {
+public class WandListener implements Listener, CommandExecutor, TabCompleter {
     private final Plugin plugin;
     private final Locale locale;
     private NativeMinecraft nativemc;
@@ -403,6 +406,28 @@ public class WandListener implements Listener {
             case SUCCESS:
                 return true;
         }
+    }
+
+
+    @Override
+    public boolean onCommand(final CommandSender sender, final Command command, final String label, final String[] args) {
+        if (command.getName().equalsIgnoreCase("wand")) {
+            if (!sender.hasPermission(WandData.PERMISSION_WAND_GRANT)) {
+                sender.sendMessage("You don't have permission to do that");
+                return true;
+            }
+            if (args.length < 2)
+                return false;
+            if ("on".equalsIgnoreCase(args[0])) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @Override
+    public List<String> onTabComplete(final CommandSender sender, final Command command, final String alias, final String[] args) {
+        return null;
     }
 
     public static class ActionResult {

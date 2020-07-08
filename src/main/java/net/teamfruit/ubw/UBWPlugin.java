@@ -81,25 +81,4 @@ public class UBWPlugin extends JavaPlugin {
         }
         return lcb.build();
     }
-
-    @Override
-    public boolean onCommand(final CommandSender sender, final Command command, final String label, final String[] args) {
-        if (command.getName().equalsIgnoreCase("wand")) {
-            if (!sender.hasPermission(WandData.PERMISSION_WAND_GRANT)) {
-                sender.sendMessage("You don't have permission to do that");
-                return true;
-            }
-            if (args.length < 2)
-                return false;
-            if ("on".equalsIgnoreCase(args[0])) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    @Override
-    public List<String> onTabComplete(final CommandSender sender, final Command command, final String alias, final String[] args) {
-        return null;
-    }
 }
