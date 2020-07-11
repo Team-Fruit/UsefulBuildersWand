@@ -2,8 +2,6 @@ package net.teamfruit.ubw;
 
 import net.teamfruit.ubw.I18n.Locale;
 import net.teamfruit.ubw.I18n.Locale.LocaleBuilder;
-import org.bukkit.command.Command;
-import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -11,11 +9,12 @@ import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
 public class UBWPlugin extends JavaPlugin {
+    public static NativeMinecraft nativemc;
+
     @Override
     public void onDisable() {
 
@@ -38,10 +37,11 @@ public class UBWPlugin extends JavaPlugin {
         final String langcfg = config.getString(WandData.SETTING_LANG, langdef);
         final Locale locale = getLocale(langdef, langcfg);
 
-        final NativeMinecraft nativemc = NativeMinecraft.NativeMinecraftFactory.create(this);
+        nativemc = NativeMinecraft.NativeMinecraftFactory.create(this);
 
-        final WandListener listener = new WandListener(this, locale, nativemc);
+        final WandListener listener = new WandListener(this, locale);
         getServer().getPluginManager().registerEvents(listener, this);
+        getCommand("wand").setExecutor(listener);
     }
 
     private Locale getLocale(final String langdef, final String langcfg) {

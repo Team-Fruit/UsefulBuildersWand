@@ -3,10 +3,8 @@ package net.teamfruit.ubw;
 import com.google.common.collect.Lists;
 import net.teamfruit.ubw.I18n.Locale;
 import net.teamfruit.ubw.WorldGuardHandler.WorldGuardHandleException;
-import org.bukkit.Bukkit;
-import org.bukkit.GameMode;
-import org.bukkit.Location;
-import org.bukkit.World;
+import org.apache.commons.lang.math.NumberUtils;
+import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.command.Command;
@@ -20,21 +18,15 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
-import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scoreboard.Objective;
-import org.bukkit.scoreboard.Scoreboard;
-import org.bukkit.scoreboard.ScoreboardManager;
 
 import javax.annotation.Nullable;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.UUID;
 import java.util.logging.Level;
 
 public class WandListener implements Listener, CommandExecutor, TabCompleter {
@@ -42,17 +34,20 @@ public class WandListener implements Listener, CommandExecutor, TabCompleter {
     private final Locale locale;
     private NativeMinecraft nativemc;
     private final WorldGuardHandler worldguard;
+    private final WandSessionManager sessionManager;
 
     private final Objective SCORE_WAND_SIZE;
     private final Objective SCORE_WAND_VERTICAL;
+    private final Objective SCORE_WAND_RADIUS;
     private final Objective SCORE_WAND_EFFECT_RADIUS;
     private final Objective SCORE_WAND_EFFECT_COLOR;
 
-    public WandListener(final Plugin plugin, final Locale locale, final NativeMinecraft nativemc) {
+    public WandListener(final Plugin plugin, final Locale locale) {
         this.plugin = plugin;
         this.locale = locale;
-        this.nativemc = nativemc;
+        this.nativemc = UBWPlugin.nativemc;
         this.worldguard = WorldGuardHandler.Factory.create(plugin);
+        this.sessionManager = new WandSessionManager();
         new BukkitRunnable() {
             @Override
             public void run() {
@@ -62,15 +57,15 @@ public class WandListener implements Listener, CommandExecutor, TabCompleter {
 
         SCORE_WAND_SIZE = WandData.INSTANCE.getOrNewObjective(WandData.SCOREBOARD_WAND_SIZE, "dummy", "Wand Size");
         SCORE_WAND_VERTICAL = WandData.INSTANCE.getOrNewObjective(WandData.SCOREBOARD_WAND_VERTICAL, "dummy", "Wand Vertical");
+        SCORE_WAND_RADIUS = WandData.INSTANCE.getOrNewObjective(WandData.SCOREBOARD_WAND_RADIUS, "dummy", "Wand Radius");
         SCORE_WAND_EFFECT_RADIUS = WandData.INSTANCE.getOrNewObjective(WandData.SCOREBOARD_WAND_EFFECT_RADIUS, "dummy", "Wand Effect Radius");
         SCORE_WAND_EFFECT_COLOR = WandData.INSTANCE.getOrNewObjective(WandData.SCOREBOARD_WAND_EFFECT_COLOR, "dummy", "Wand Effect Color Code");
     }
 
     private void onEffect() {
         for (final Player player : this.plugin.getServer().getOnlinePlayers()) {
-            final WandItemStage stage = new WandItemStage();
-            stage.setItem(this.nativemc.getItemInHand(player.getInventory()));
-            if (!stage.isWandItem())
+            final ItemStack stage = this.nativemc.getItemInHand(player.getInventory());
+            if (stage.getType() != Material.STICK)
                 continue;
 
             List<Location> blocks = null;
@@ -83,9 +78,9 @@ public class WandListener implements Listener, CommandExecutor, TabCompleter {
 
             if (blocks != null) {
                 final int color = WandData.INSTANCE.getScoreOrDefault(SCORE_WAND_EFFECT_COLOR, player, 0xffffff);
-                final int color_r = (color << 16) & 0xff;
-                final int color_g = (color << 8) & 0xff;
-                final int color_b = (color << 0) & 0xff;
+                final int color_r = (color >> 16) & 0xff;
+                final int color_g = (color >> 8) & 0xff;
+                final int color_b = (color >> 0) & 0xff;
                 final int range = Math.min(
                         WandData.INSTANCE.getScoreOrDefault(SCORE_WAND_EFFECT_RADIUS, player, 0),
                         WandData.INSTANCE.getConfig().getInt(WandData.SETTING_EFFECT_RANGE)
@@ -117,18 +112,17 @@ public class WandListener implements Listener, CommandExecutor, TabCompleter {
 
     private ActionResult onPlayerUse(final Player player, final Action action, final Block target, final BlockFace face) {
         final PlayerInventory inventory = player.getInventory();
-        final WandItemStage stage = new WandItemStage();
-        stage.setItem(this.nativemc.getItemInHand(inventory));
-        if (!stage.isWandItem())
+        ItemStack stage = this.nativemc.getItemInHand(inventory);
+        if (stage.getType() != Material.STICK)
             return ActionResult.error();
-        if (stage.getItem().getAmount() > 1) {
+        if (stage.getAmount() > 1) {
             final ItemStack[] stacks = inventory.getContents();
             final int heldslot = inventory.getHeldItemSlot();
             stackbreak:
             {
-                final ItemStack newItemStack = stage.getItem().clone();
-                newItemStack.setAmount(stage.getItem().getAmount() - 1);
-                stage.getItem().setAmount(1);
+                final ItemStack newItemStack = stage.clone();
+                newItemStack.setAmount(stage.getAmount() - 1);
+                stage.setAmount(1);
                 for (int i = 0; i < stacks.length; i++)
                     if (i != heldslot && stacks[i] == null) {
                         inventory.setItem(i, newItemStack);
@@ -148,100 +142,25 @@ public class WandListener implements Listener, CommandExecutor, TabCompleter {
                     if (target.isEmpty())
                         return ActionResult.error();
 
-                    final int maxdurability = 0;
-
                     final List<Location> blocks = getPotentialBlocks(stage, player, target, face);
 
-                    if (blocks.isEmpty())
-                        return ActionResult.error();
-
-                    int durability = 0;
-                    final boolean blockcount = false;
-
-                    if (maxdurability > 0 && durability <= 0)
-                        return ActionResult.error();
+                    final ItemStack item0 = UBWPlugin.nativemc.getItemFromBlock(target);
 
                     int data = -1;
 
-                    final ItemStack item0 = this.nativemc.getItemFromBlock(target);
-                    ItemStack item1 = item0;
+                    if (UBWPlugin.nativemc.hasSubType(item0))
+                        data = UBWPlugin.nativemc.getDropData(target);
 
-                    if (this.nativemc.hasSubType(item1))
-                        data = this.nativemc.getDropData(target);
+                    ItemStackHolder wand = new ItemStackHolder.DefaultItemStackHolder(stage);
 
-                    if (player.getGameMode() == GameMode.CREATIVE) {
-                        for (int i = 0; i < inventory.getSize(); ++i) {
-                            final ItemStack itemslot = inventory.getItem(i);
-                            if (itemslot == null || itemslot.getAmount() == 0 || !itemslot.getType().equals(item1.getType()))
-                                continue;
-                            if (data == -1 || data == itemslot.getDurability()) {
-                                item1 = itemslot;
-                                break;
-                            }
-                        }
-                    }
+                    WandSession session = sessionManager.get(player);
+                    WandSession.EditSession editSession = new WandSession.EditSession(player, blocks, item0, data, wand, face);
+                    editSession.commit();
+                    session.remember(editSession);
 
-                    int cacheslot = -1;
-                    int placecount = 0;
-                    for (final Location temp : blocks) {
-                        if (maxdurability > 0 && durability <= 0)
-                            return ActionResult.error();
+                    stage = wand.getItem();
 
-                        int slot = -1;
-                        final ItemStack item;
-                        ItemStack objitem;
-                        if (player.getGameMode() == GameMode.CREATIVE) {
-                            item = item1;
-                            objitem = item1.clone();
-                            objitem.setAmount(1);
-                        } else {
-                            if (cacheslot >= 0) {
-                                final ItemStack itemslot = inventory.getItem(cacheslot);
-                                if (!(itemslot == null || itemslot.getAmount() == 0 || !itemslot.getType().equals(item1.getType())))
-                                    if (data == -1 || data == itemslot.getDurability()) {
-                                        slot = cacheslot;
-                                        break;
-                                    }
-                            }
-                            if (slot < 0) {
-                                for (int i = 0; i < inventory.getSize(); ++i) {
-                                    final ItemStack itemslot = inventory.getItem(i);
-                                    if (!(itemslot == null || itemslot.getAmount() == 0 || !itemslot.getType().equals(item1.getType())))
-                                        if (data == -1 || data == itemslot.getDurability()) {
-                                            cacheslot = slot = i;
-                                            break;
-                                        }
-                                }
-                            }
-
-                            if (slot < 0)
-                                break;
-
-                            item = inventory.getItem(slot);
-                            objitem = item;
-                        }
-
-                        final Block block = temp.getBlock().getRelative(face.getOppositeFace());
-
-                        final boolean placeresult = this.nativemc.placeItem(player, block, stage, objitem, face, player.getEyeLocation());
-
-                        if (placeresult) {
-                            objitem.setAmount(objitem.getAmount() - 1);
-                            if (slot >= 0) {
-                                if (objitem.getAmount() <= 0)
-                                    inventory.setItem(slot, null);
-                                else
-                                    inventory.setItem(slot, item);
-                            }
-
-                            this.nativemc.playSound(player, temp, target, .25f, 1f);
-                            placecount++;
-                            if (blockcount)
-                                durability--;
-                        }
-                    }
-                    if (!blockcount)
-                        durability--;
+                    UBWPlugin.nativemc.playSound(player, target.getLocation(), target, .25f, 1f);
 
                     return ActionResult.success();
                 }
@@ -257,7 +176,7 @@ public class WandListener implements Listener, CommandExecutor, TabCompleter {
             Log.log.log(Level.SEVERE, String.format("[player=%s, errorcode=%s]: A fatal error has occured: ", player.getName(), errorcode), e.getCause());
             return ActionResult.error(I18n.format(this.locale, "ubw.action.error", e.getMessage()), I18n.format(this.locale, "ubw.action.error.reportcode", errorcode));
         } finally {
-            this.nativemc.setItemInHand(inventory, stage.getItem());
+            this.nativemc.setItemInHand(inventory, stage);
         }
     }
 
@@ -275,7 +194,7 @@ public class WandListener implements Listener, CommandExecutor, TabCompleter {
         }
     }
 
-    private List<Location> getPotentialBlocks(final WandItemStage stage, final Player player, final @Nullable Block target, final BlockFace face) throws WorldGuardHandleException {
+    private List<Location> getPotentialBlocks(final ItemStack stage, final Player player, final @Nullable Block target, final BlockFace face) throws WorldGuardHandleException {
         final List<Location> blocks = Lists.newArrayList();
 
         final int maxdurability = 0;
@@ -289,6 +208,11 @@ public class WandListener implements Listener, CommandExecutor, TabCompleter {
                 WandData.INSTANCE.getScoreOrDefault(SCORE_WAND_SIZE, player, Integer.MAX_VALUE),
                 WandData.INSTANCE.getConfig().getInt(WandData.SETTING_MAX_BLOCKS)
         );
+        if (maxBlocks <= 0)
+            return blocks;
+        final int maxRadius = WandData.INSTANCE.getScoreOrDefault(SCORE_WAND_RADIUS, player, 48);
+        if (maxRadius <= 0)
+            return blocks;
 
         if (target == null || target.isEmpty())
             return blocks;
@@ -373,6 +297,13 @@ public class WandListener implements Listener, CommandExecutor, TabCompleter {
                         final Location targetloc = invblock.clone().add(ax, ay, az);
                         final Location baseloc = targetloc.clone().subtract(dx, dy, dz);
 
+                        final Location offset = targetloc.clone().subtract(modblockpos);
+                        if (Math.abs(offset.getX()) > maxRadius - 1 ||
+                                Math.abs(offset.getY()) > maxRadius - 1 ||
+                                Math.abs(offset.getZ()) > maxRadius - 1
+                        )
+                            continue;
+
                         final int count = blocks.size();
                         if (
                                 count >= numBlocks ||
@@ -385,6 +316,7 @@ public class WandListener implements Listener, CommandExecutor, TabCompleter {
                                         hasNearbyEntities(world, targetloc)
                         )
                             continue;
+                        Log.log.info(targetloc.toString());
                         blocks.add(targetloc);
                     }
         }
@@ -416,9 +348,51 @@ public class WandListener implements Listener, CommandExecutor, TabCompleter {
                 sender.sendMessage("You don't have permission to do that");
                 return true;
             }
+            if (!(sender instanceof Player)) {
+                sender.sendMessage("You need to be a Player.");
+                return true;
+            }
+            Player player = (Player) sender;
+            if (args.length < 1)
+                return false;
+            if ("undo".equalsIgnoreCase(args[0])) {
+                sessionManager.get(player).undo(player);
+                sender.sendMessage("Undo successful!");
+                return true;
+            }
+            if ("redo".equalsIgnoreCase(args[0])) {
+                sessionManager.get(player).redo(player);
+                sender.sendMessage("Redo successful!");
+                return true;
+            }
             if (args.length < 2)
                 return false;
-            if ("on".equalsIgnoreCase(args[0])) {
+            if ("effect_radius".equalsIgnoreCase(args[0]) || "fxr".equalsIgnoreCase(args[0])) {
+                int radius = NumberUtils.toInt(args[1]);
+                SCORE_WAND_EFFECT_RADIUS.getScore(sender.getName()).setScore(radius);
+                sender.sendMessage("Effect radius is set to " + radius);
+                return true;
+            }
+            if ("effect_color".equalsIgnoreCase(args[0]) || "fxc".equalsIgnoreCase(args[0])) {
+                int color = 0;
+                try {
+                    color = Integer.valueOf(args[1], 16);
+                } catch (NumberFormatException ignored) {
+                }
+                SCORE_WAND_EFFECT_COLOR.getScore(sender.getName()).setScore(color);
+                sender.sendMessage("Effect color is set to " + color);
+                return true;
+            }
+            if ("size".equalsIgnoreCase(args[0]) || "s".equalsIgnoreCase(args[0])) {
+                int size = NumberUtils.toInt(args[1]);
+                SCORE_WAND_SIZE.getScore(sender.getName()).setScore(size);
+                sender.sendMessage("Size limit is set to " + size);
+                return true;
+            }
+            if ("radius".equalsIgnoreCase(args[0]) || "r".equalsIgnoreCase(args[0])) {
+                int radius = NumberUtils.toInt(args[1]);
+                SCORE_WAND_RADIUS.getScore(sender.getName()).setScore(radius);
+                sender.sendMessage("Radius limit is set to " + radius);
                 return true;
             }
         }

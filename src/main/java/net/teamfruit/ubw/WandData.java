@@ -22,8 +22,9 @@ public class WandData {
 
     public static final String SCOREBOARD_WAND_SIZE = "wand_size";
     public static final String SCOREBOARD_WAND_VERTICAL = "wand_vertical";
-    public static final String SCOREBOARD_WAND_EFFECT_RADIUS = "wand_effect_radius";
-    public static final String SCOREBOARD_WAND_EFFECT_COLOR = "wand_effect_color";
+    public static final String SCOREBOARD_WAND_RADIUS = "wand_radius";
+    public static final String SCOREBOARD_WAND_EFFECT_RADIUS = "wand_fx_radius";
+    public static final String SCOREBOARD_WAND_EFFECT_COLOR = "wand_fx_color";
 
     public final Scoreboard board = Bukkit.getScoreboardManager().getMainScoreboard();
 

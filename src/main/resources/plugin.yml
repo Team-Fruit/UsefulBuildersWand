@@ -5,7 +5,7 @@ author: Kamesuta
 commands:
   wand:
     description: UsefulBuilder'sWand commands
-    usage: /wand <on|off|size|effect_radius|effect_color> <player> [args...]
+    usage: /wand <undo|redo|size|effect_radius|effect_color> [args...]
     permission: wand.grant
 permissions:
   wand.use:
