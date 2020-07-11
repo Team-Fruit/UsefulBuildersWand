@@ -68,6 +68,9 @@ public class WandListener implements Listener, CommandExecutor, TabCompleter {
             if (stage.getType() != Material.STICK)
                 continue;
 
+            if (!player.hasPermission("ubw.use"))
+                continue;
+
             List<Location> blocks = null;
             try {
                 final RayTraceResult res = this.nativemc.rayTrace(player);
@@ -111,6 +114,8 @@ public class WandListener implements Listener, CommandExecutor, TabCompleter {
     }
 
     private ActionResult onPlayerUse(final Player player, final Action action, final Block target, final BlockFace face) {
+        if (!player.hasPermission("ubw.use"))
+            return ActionResult.error();
         final PlayerInventory inventory = player.getInventory();
         ItemStack stage = this.nativemc.getItemInHand(inventory);
         if (stage.getType() != Material.STICK)
@@ -316,7 +321,7 @@ public class WandListener implements Listener, CommandExecutor, TabCompleter {
                                         hasNearbyEntities(world, targetloc)
                         )
                             continue;
-                        Log.log.info(targetloc.toString());
+                        //Log.log.info(targetloc.toString());
                         blocks.add(targetloc);
                     }
         }
